@@ -113,6 +113,7 @@ ESP-32/
 | STA 断开 | `HalWifiStaDisconnect()` | 主动断开当前连接 |
 | STA 状态查询 | `HalWifiStaStateGet()` | 返回 IDLE（无凭据/未连接）/ CONNECTING（连接中）/ CONNECTED（已获 IP） |
 | STA IP 查询 | `HalWifiStaIpGet()` | 输出点分十进制 IP 字符串（含结束符最长 16B） |
+| STA 收发字节查询 | `HalWifiStaTrafficGet()` | 开机累计 TX/RX 字节（数据源 `CONFIG_ESP_NETIF_REPORT_DATA_TRAFFIC` 包事件，含 NAPT 中继流量；32bit 自然回绕，上层差值法求速率） |
 | SoftAP NAT 中继 | 无新增 API（事件内自动启停） | STA 联网即开 NAPT：热点客户端报文改写源地址借道 STA 上网 + DHCP 下发 DNS（优先上游网关，退回 223.5.5.5）；STA 断开自动关闭、重连自动恢复 |
 | 周边热点扫描 | `HalWifiScanGet()` | 阻塞式全信道扫描（约 1.5~3s），按 RSSI 降序同名去重，最多 20 条（SSID/信号强度/是否加密）；扫描期间 SoftAP 信标短暂停发属正常 |
 | 事件回调注册 | `HalWifiSetCallback()` | GOT_IP / DISCONNECTED 事件上抛（运行于 ESP-IDF 事件任务上下文） |
@@ -193,6 +194,7 @@ ESP-32/
 | 周边热点扫描 | `BspWifiScanGet()` | 转发 HAL 扫描（阻塞 1.5~3s，最多 20 条）；扫描期间挂起自动重连（扫描与关联互斥），扫描结束恢复连接尝试 |
 | STA 状态查询 | `BspWifiStaStateGet()` | IDLE / CONNECTING / CONNECTED 板级语义 |
 | STA IP 查询 | `BspWifiStaIpGet()` | 点分十进制 IP 字符串 |
+| STA 收发字节查询 | `BspWifiStaTrafficGet()` | 开机累计 TX/RX 字节，上层差值法求实时速率 |
 | 事件回调注册 | `BspWifiSetCallback()` | GOT_IP / DISCONNECTED 事件转发 APP；**断线时本层自动重连**（DISCONNECTED 事件内重发 `HalWifiStaConnect`，重试上限 `BSP_WIFI_RETRY_MAX`=20 次防密码错误死循环，GOT_IP 清零计数） |
 
 > WiFi 为片上外设，无 DRV 层（第 2 节注），BSP 直达 HAL；热点参数集中在 `bsp_wifi.h`，换板改此处。
@@ -206,7 +208,7 @@ ESP-32/
 | WS 二进制广播 | `BspWebWsBroadcast()` | 向全部已连接网页串口工具推二进制帧（串口数据透传路径），失败连接自动跳过 |
 | WS 文本广播 | `BspWebWsBroadcastText()` | 同上推文本帧（JSON 状态推送用） |
 
-> 内置页面含配网表单与串口工具（波特率下拉 300~500000 / HEX 显示 / HEX 发送 / CRLF 选项 / 自动滚动），JS 侧经 `TextEncoder`/`TextDecoder` 处理二进制；表单提交经 URL 解码（`%XX` 与 `+`）后拆字段。
+> 内置页面含配网表单与串口工具（波特率下拉 300~921600 / HEX 显示 / HEX 发送 / CRLF 选项 / 自动滚动），JS 侧经 `TextEncoder`/`TextDecoder` 处理二进制；表单提交经 URL 解码（`%XX` 与 `+`）后拆字段。顶部状态栏按 WS 下发的 `state` 字段显示：**设备待连接**（未连接）/ **正在连接 xx ...**（连接中）/ **已连接 SSID @ IP | ↓下行速率 ↑上行速率**（1Hz 刷新，速率由收发字节差值计算）。
 
 ### bsp_bt（板载蓝牙封装：经典蓝牙 SPP 透传通道）
 
@@ -248,7 +250,7 @@ ESP-32/
 | 功能 | API | 说明 |
 |------|-----|------|
 | 业务初始化 | `AppNetInit()` | 依次拉起 bsp_wifi → bsp_web → bsp_bt 并注册三类回调（WiFi 事件/网页事件/蓝牙事件）；末尾接管 UART2 回调（覆盖 app_uart 回显，通信口数据改走网络路由） |
-| 周期处理 | `AppNetProcess()` | 1Hz 状态推送：向全部网页串口工具广播 JSON `{"ssid":"...","ip":"...","spp":0/1}`（当前 SSID / IP / 蓝牙连接态） |
+| 周期处理 | `AppNetProcess()` | 1Hz 状态推送：向全部网页串口工具广播 JSON `{"ssid":"...","ip":"...","spp":0/1,"net":0/1,"time":"...","state":0/1/2,"up":n,"down":n}`（SSID / IP / 蓝牙态 / 上网能力与北京时间 / STA 状态 0待连接1连接中2已连接 / 实时上下行速率 B/s，速率由收发字节差值÷间隔计算） |
 
 **数据路由规则**（本模块为四条业务通路的中枢）：
 
@@ -258,7 +260,7 @@ ESP-32/
 | WS_DATA（网页串口工具发送） | 写 UART2 TX（数据到达外部串口设备） |
 | BT DATA（蓝牙客户端发送） | 写 UART2 TX（数据到达外部串口设备） |
 | WIFI_SAVE（配网表单提交） | 拆分 `ssid\npwd` 调 `BspWifiConfigSet` 保存并连接 |
-| BAUD_SET（网页设置波特率） | `strtoul` 解析并校验 300~500000 后调 `BspUartSetBaud`（UART2 在线改波特率） |
+| BAUD_SET（网页设置波特率） | `strtoul` 解析并校验 300~921600 后调 `BspUartSetBaud`（UART2 在线改波特率） |
 | WS_OPEN（新网页连接） | 立即推送一次状态 JSON（页面状态栏即连即显） |
 
 > WS 与蓝牙之间不互转（两者均为"远端"，仅与 UART2 互通），避免数据回环。
@@ -398,10 +400,10 @@ idf.py size                  # 资源占用检查（结果回填 Project_Level_S
 
 **② 网页串口工具收发**：
 
-1. 页面打开后即自动建立 WebSocket 连接，顶部状态栏显示当前 SSID/IP/蓝牙状态（1Hz 刷新）
+1. 页面打开后即自动建立 WebSocket 连接，顶部状态栏显示连接状态与实时网速：未连接 **设备待连接** / 连接中 **正在连接 xx ...** / 已连接 **已连接 SSID @ IP | ↓xxKB/s ↑xxKB/s**（含蓝牙与 NTP 时间后缀，1Hz 刷新）
 2. PC 串口助手（115200-8N1）向 UART2 发送任意数据 → 网页串口工具接收区实时显示（可勾选 HEX 显示）
 3. 网页发送区输入内容点发送（可选 HEX 发送/追加 CRLF）→ 串口助手收到相同内容
-4. 波特率下拉选择新波特率（300~500000）→ 页面与串口助手同步改波特率后仍可互通
+4. 波特率下拉选择新波特率（300~921600）→ 页面与串口助手同步改波特率后仍可互通
 
 **③ 蓝牙 SPP 透传**：
 
