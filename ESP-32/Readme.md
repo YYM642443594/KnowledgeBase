@@ -23,12 +23,15 @@ ESP-32/
 │   ├── bsp_bt.h
 │   ├── bsp_web.h
 │   ├── bsp_wifi.h
+│   ├── bsp_store.h
 │   ├── app_uart.h
 │   ├── app_led.h
 │   ├── app_key.h
 │   ├── app_net.h
+│   ├── app_forward.h
+│   ├── web_page_ported.h        ← 内置网页（由参考工程 web_page.h 自动生成 + 手工增量，勿手改结构）
 │   └── app_main.h
-├── src/                       ← 与 inc/ 同名对应
+├── src/                       ← 与 inc/ 同名对应（新增 bsp_store.c / app_forward.c）
 │   ├── hal_uart.c
 │   ├── hal_led.c
 │   ├── hal_key.c
@@ -109,11 +112,13 @@ ESP-32/
 | WiFi 初始化 | `HalWifiInit()` | 初始化 NVS/netif/esp_wifi 并启动 SoftAP+STA 双模：SoftAP 常开供配网，STA 用于连接路由器；热点配置经 `HalWifiApConfig_S`（SSID/密码/信道 1~13/最大接入 1~4），密码空串=开放热点，0 值字段取默认（信道 1 / 接入 2） |
 | STA 凭据保存 | `HalWifiStaConfigSave()` | SSID/密码写入 NVS（命名空间 `wifi`，键 `ssid`/`pwd`）持久化，掉电不丢 |
 | STA 凭据读取 | `HalWifiStaConfigLoad()` | 从 NVS 读回凭据（自动截断至缓冲尺寸），供上层展示/回填 |
+| STA 凭据清除 | `HalWifiStaConfigClear()` | 擦除 NVS 凭据（键不存在视为已清除）；供“清除配网”接口使用 |
+| STA 信号强度查询 | `HalWifiStaRssiGet()` | 当前关联 AP 的 RSSI（dBm 负值），未连接返回失败 |
 | STA 发起连接 | `HalWifiStaConnect()` | 从 NVS 读凭据写入 STA 配置并连接（无凭据返回失败）；断开后可再次调用重试 |
 | STA 断开 | `HalWifiStaDisconnect()` | 主动断开当前连接 |
 | STA 状态查询 | `HalWifiStaStateGet()` | 返回 IDLE（无凭据/未连接）/ CONNECTING（连接中）/ CONNECTED（已获 IP） |
 | STA IP 查询 | `HalWifiStaIpGet()` | 输出点分十进制 IP 字符串（含结束符最长 16B） |
-| STA 收发字节查询 | `HalWifiStaTrafficGet()` | 开机累计 TX/RX 字节（数据源 `CONFIG_ESP_NETIF_REPORT_DATA_TRAFFIC` 包事件，含 NAPT 中继流量；32bit 自然回绕，上层差值法求速率） |
+| STA 收发字节查询 | `HalWifiStaTrafficGet()` | 开机累计 TX/RX 字节（数据源 `CONFIG_ESP_NETIF_REPORT_DATA_TRAFFIC` 包事件，含 NAPT 中继流量；32bit 自然回绕，上层差值法求速率）※当前固件未集成，接口随网速显示功能预留 |
 | SoftAP NAT 中继 | 无新增 API（事件内自动启停） | STA 联网即开 NAPT：热点客户端报文改写源地址借道 STA 上网 + DHCP 下发 DNS（优先上游网关，退回 223.5.5.5）；STA 断开自动关闭、重连自动恢复 |
 | 周边热点扫描 | `HalWifiScanGet()` | 阻塞式全信道扫描（约 1.5~3s），按 RSSI 降序同名去重，最多 20 条（SSID/信号强度/是否加密）；扫描期间 SoftAP 信标短暂停发属正常 |
 | 事件回调注册 | `HalWifiSetCallback()` | GOT_IP / DISCONNECTED 事件上抛（运行于 ESP-IDF 事件任务上下文） |
@@ -122,20 +127,20 @@ ESP-32/
 
 > **NAPT 热点中继**（sdkconfig：`LWIP_IP_FORWARD` + `LWIP_IPV4_NAPT`）：STA 联网即自动开启 —— 热点客户端（192.168.4.x）经 NAPT 改写源地址借道 STA 上网，DNS 由 DHCP 下发（优先上游网关，无效退回 223.5.5.5）；STA 断开自动关闭、重连自动恢复。单射频半双工中继，预期带宽 10~20Mbps，高清视频可能缓冲。
 
-### hal_http（HTTP/WebSocket 服务器驱动，封装 ESP-IDF esp_http_server）
+### hal_http（HTTP/WebSocket 服务器驱动，封装 ESP-IDF esp_http_server，双实例架构）
 
 | 功能 | API | 说明 |
 |------|-----|------|
-| 服务器初始化 | `HalHttpInit()` | 启动 HTTP 服务器（端口 80，最大并发 socket 7），含 WebSocket 支持 |
-| URI 注册 | `HalHttpUriRegister()` | 按 `HalHttpUri_S` 注册路径（如 `/`、`/wifi`、`/ws`）+ 方法（GET/POST/WS）+ 处理回调；配置须长期保活（建议常量/静态存储） |
+| 服务器初始化 | `HalHttpInit()` | 启动**双实例**：实例1（80 端口：内置页+/api 接口，并发 4）；实例2（81 端口：WebSocket 专用，并发 4，ctrl_port 32769 与实例1区分，send_wait_timeout=1s）；socket 总预算 `CONFIG_LWIP_MAX_SOCKETS=16` |
+| URI 注册 | `HalHttpUriRegister()` | 按 `HalHttpUri_S` 注册路径+方法（GET/POST/WS）+回调；**WS 路由自动注册到 81 端口实例**；配置须长期保活（建议常量/静态存储） |
 | 请求体长度 | `HalHttpReqContentLen()` | POST 请求体长度（字节） |
 | 请求体接收 | `HalHttpReqContentRecv()` | 读 POST 请求体到调用方缓冲（表单解析用） |
-| 请求应答 | `HalHttpReqRespond()` | 按 HTTP 状态码/Content-Type/响应体回复，支持重定向（配网提交后跳转） |
-| WebSocket 收帧 | `HalHttpReqWsRecv()` | 读一帧 WS 数据到缓冲，返回 0=握手阶段（仅触发 WS_OPEN 上抛）；超长帧（>512B）自动丢弃不阻塞 |
-| WebSocket 推送 | `HalHttpWsPush()` | 经服务器工作队列**异步**向指定 fd 推二进制帧，任意任务上下文可安全调用 |
+| 请求应答 | `HalHttpReqRespond()` | 按 HTTP 状态码/Content-Type/响应体回复 |
+| WebSocket 收帧 | `HalHttpReqWsRecv()` | 读一帧 WS 数据；超长帧自动丢弃不阻塞 |
+| WebSocket 推送 | `HalHttpWsPush()` | 向**全部在册且握手完成**的 WS 连接推二进制帧（跨任务安全但可能阻塞，勿在主循环/事件任务高频调用） |
 | WebSocket 文本推送 | `HalHttpWsPushText()` | 同上，推文本帧（JSON 状态用） |
 
-> `HalHttpReq_S` 的 `pRaw` 为厂商请求句柄占位，上层保持 opaque 仅回传本层；WS 推送走 `httpd` 工作队列异步通道，与 WS 收帧（服务器任务上下文）解耦。
+> **WS 连接登记表机制**：81 实例配 `open_fn/close_fn` 回调精确登记/注销连接 fd（fd 号为 VFS 全局分配不可盲扫，实测可达 57）；`ws_post_handshake_cb` 钩子（需 `CONFIG_HTTPD_WS_POST_HANDSHAKE_CB_SUPPORT=y`）标记握手完成——**IDF 握手时不调 URI 处理器**，握手未完成前推送会打乱 101 响应故设就绪门控；**推送失败≠会话死亡不注销**（超时/窗口满仅暂时不可达），注销只由 close_fn 唯一负责，否则洪水期一次超时就把活连接踢出名单致显示永久停止。`HalHttpReq_S` 的 `pRaw` 为厂商句柄占位，上层保持 opaque。
 
 ### hal_spp（经典蓝牙 SPP 驱动，封装 ESP-IDF Bluedroid SPP，服务端模式）
 
@@ -191,24 +196,28 @@ ESP-32/
 | WiFi 模块初始化 | `BspWifiInit()` | 以 `bsp_wifi.h` 集中定义的热点参数（SSID `ESP32_Config`/密码 `12345678`/信道 6/接入 2）初始化 AP+STA 双模；NVS 有凭据则自动发起 STA 连接 |
 | 配网凭据下发 | `BspWifiConfigSet()` | 保存 SSID/密码到 NVS 并连接（网页表单提交路径）；IDLE 态直接发起，连接中/已连接态先断开、由断开事件回调自动以新凭据重连（规避 disconnect 未完成即 connect 的状态冲突） |
 | 当前 SSID 查询 | `BspWifiConfigSsidGet()` | 从 NVS 读回已配网 SSID（状态栏展示用） |
+| 完整凭据读取 | `BspWifiConfigGet()` | 读回完整 SSID+密码（配网接口失败时恢复原配置用） |
+| 凭据清除 | `BspWifiConfigClear()` | 擦除 NVS 凭据（“清除配网”接口，清除后重启回纯热点待配网态） |
+| 信号强度查询 | `BspWifiStaRssiGet()` | 当前关联 AP 的 RSSI（dBm 负值），未连接返回失败 |
 | 周边热点扫描 | `BspWifiScanGet()` | 转发 HAL 扫描（阻塞 1.5~3s，最多 20 条）；扫描期间挂起自动重连（扫描与关联互斥），扫描结束恢复连接尝试 |
 | STA 状态查询 | `BspWifiStaStateGet()` | IDLE / CONNECTING / CONNECTED 板级语义 |
 | STA IP 查询 | `BspWifiStaIpGet()` | 点分十进制 IP 字符串 |
-| STA 收发字节查询 | `BspWifiStaTrafficGet()` | 开机累计 TX/RX 字节，上层差值法求实时速率 |
+| STA 收发字节查询 | `BspWifiStaTrafficGet()` | ※当前固件未集成（随网速显示功能预留） |
 | 事件回调注册 | `BspWifiSetCallback()` | GOT_IP / DISCONNECTED 事件转发 APP；**断线时本层自动重连**（DISCONNECTED 事件内重发 `HalWifiStaConnect`，重试上限 `BSP_WIFI_RETRY_MAX`=20 次防密码错误死循环，GOT_IP 清零计数） |
 
 > WiFi 为片上外设，无 DRV 层（第 2 节注），BSP 直达 HAL；热点参数集中在 `bsp_wifi.h`，换板改此处。
 
-### bsp_web（板载网页封装：内置配网页 + 网页串口工具 + WebSocket 通道）
+### bsp_web（板载网页封装：暗色单页三标签 + /api 接口 + WS 通道，参照 ESP8266-develop 工程）
 
 | 功能 | API | 说明 |
 |------|-----|------|
-| 网页模块初始化 | `BspWebInit()` | 启动 HTTP 服务器并注册 5 个 URI：`/`（GET 配网页+串口工具单页）、`/wifi`（POST 配网表单）、`/scan`（GET 周边热点扫描 JSON 列表）、`/baud`（POST 波特率设置）、`/ws`（WebSocket 数据通道）；页面 HTML/JS 内置于固件，无外部资源 |
-| 事件回调注册 | `BspWebSetCallback()` | 上抛 4 类事件：WS_OPEN（新连接，应推状态）/ WS_DATA（网页串口工具发来数据）/ WIFI_SAVE（配网表单，数据格式 `ssid\npwd`）/ BAUD_SET（波特率数字串）；回调运行于 HTTP 服务器任务上下文 |
-| WS 二进制广播 | `BspWebWsBroadcast()` | 向全部已连接网页串口工具推二进制帧（串口数据透传路径），失败连接自动跳过 |
-| WS 文本广播 | `BspWebWsBroadcastText()` | 同上推文本帧（JSON 状态推送用） |
+| 网页模块初始化 | `BspWebInit()` | 启动双实例 HTTP 服务器并注册 9 路由：GET `/`（内置暗色单页：**配网/串口终端/转发**三标签，GitHub 风格，由参考工程 web_page.h 自动生成于 `web_page_ported.h`）；GET `/api/status`（状态 JSON）、GET `/api/scan`（扫描列表 ssid/rssi/secure）；POST `/api/wifi`（同步等连接 12s，失败恢复原配置）、POST `/api/serial`（波特率 300~2000000 + NVS 持久化）、POST `/api/forward`（转发配置+蓝牙开关）、POST `/api/reboot`、POST `/api/resetwifi`（清凭据+延时重启）；WS `/`（81 端口数据通道） |
+| 事件回调注册 | `BspWebSetCallback()` | 上抛 3 类事件：WS_OPEN / WS_DATA（网页终端发送数据）/ FORWARD_SET（转发配置提交，格式 `proto\nip\nport\nbt`）；回调运行于 HTTP 服务器任务上下文 |
+| 状态提供者注册 | `BspWebStatusProviderSet()` | APP 层注册回调供 `/api/status` 拉取实时状态 JSON（避免 BSP 反向依赖 APP） |
+| WS 二进制广播 | `BspWebWsBroadcast()` | 向全部在册且握手完成的连接推二进制帧（内部经 HAL 登记表定向，单次调用即达全部） |
+| WS 文本广播 | `BspWebWsBroadcastText()` | 同上推文本帧（状态 JSON 用） |
 
-> 内置页面含配网表单与串口工具（波特率下拉 300~921600 / HEX 显示 / HEX 发送 / CRLF 选项 / 自动滚动），JS 侧经 `TextEncoder`/`TextDecoder` 处理二进制；表单提交经 URL 解码（`%XX` 与 `+`）后拆字段。顶部状态栏按 WS 下发的 `state` 字段显示：**设备待连接**（未连接）/ **正在连接 xx ...**（连接中）/ **已连接 SSID @ IP | ↓下行速率 ↑上行速率**（1Hz 刷新，速率由收发字节差值计算）。
+> 页面 JS 3s 轮询 `/api/status` + WS 文本推送双路刷新状态卡（模式/SSID/IP/信号强度/波特率/内存/运行时长/收发字节/转发状态）；`/api/wifi` 同步阻塞等待（vTaskDelay 让出 CPU 保证 WiFi 事件推进）；`/api/reboot` 与 `/api/resetwifi` 应答后经 esp_timer 延时 500ms 重启（先送响应再重启）；表单经 URL 解码（`%XX` 与 `+`）拆字段。
 
 ### bsp_bt（板载蓝牙封装：经典蓝牙 SPP 透传通道）
 
@@ -220,6 +229,16 @@ ESP-32/
 | 事件回调注册 | `BspBtSetCallback()` | OPENED / CLOSED / DATA 事件转发 APP（DATA 数据仅回调期间有效） |
 
 > 蓝牙为片上外设，无 DRV 层（第 2 节注），BSP 直达 HAL；与 WiFi 共存依赖 `CONFIG_ESP_COEX_SW_COEXIST_ENABLE` 软件共存。
+
+### bsp_store（板载配置存储封装：NVS 键值对，对应参考工程 LittleFS /config.txt 机制）
+
+| 功能 | API | 说明 |
+|------|-----|------|
+| 存储初始化 | `BspStoreInit()` | 打开 NVS 命名空间 `xcom`（句柄常开复用；须在 WiFi 初始化（NVS 就绪）后调用） |
+| 字符串写入/读取 | `BspStoreSetStr()` / `BspStoreGetStr()` | 键值对字符串，写入立即 commit 持久化 |
+| 整型写入/读取 | `BspStoreSetU32()` / `BspStoreGetU32()` | 32 位无符号整型，读取无键返回默认值 |
+
+> 当前存储键：`baud`（波特率）、`fwproto`/`fwip`/`fwport`（转发配置）、`btsw`（蓝牙转发开关）；WiFi 凭据仍在 `wifi` 命名空间由 hal_wifi 管理。
 
 ## APP 层功能记录
 
@@ -245,25 +264,38 @@ ESP-32/
 | 业务初始化 | `AppKeyInit()` | 初始化 BSP 按键模块并按 `app_key.c` 顶部宏（`APP_KEY_1_GPIO_NUM`/`APP_KEY_1_ACTIVE_LOW`）绑定默认按键（BSP_KEY_1 → GPIO0 BOOT 键，低有效）；换绑任意 GPIO 只改该宏；绑定失败打印告警不阻断启动 |
 | 扫描驱动与事件消费 | `AppKeyProcess()` | 先驱动 `BspKeyTick()` 扫描状态机，再消费事件：单击翻转运行灯 + 打印，双击/长按/连发打印事件名（演示用，用户在此挂自己的业务） |
 
-### app_net（网络业务：WiFi 配网 + 网页串口工具 + 蓝牙 SPP 转发数据路由）
+### app_net（网络业务：WiFi 配网 + 网页串口终端 + 转发 + 蓝牙的数据路由中枢）
 
 | 功能 | API | 说明 |
 |------|-----|------|
-| 业务初始化 | `AppNetInit()` | 依次拉起 bsp_wifi → bsp_web → bsp_bt 并注册三类回调（WiFi 事件/网页事件/蓝牙事件）；末尾接管 UART2 回调（覆盖 app_uart 回显，通信口数据改走网络路由） |
-| 周期处理 | `AppNetProcess()` | 1Hz 状态推送：向全部网页串口工具广播 JSON `{"ssid":"...","ip":"...","spp":0/1,"net":0/1,"time":"...","state":0/1/2,"up":n,"down":n}`（SSID / IP / 蓝牙态 / 上网能力与北京时间 / STA 状态 0待连接1连接中2已连接 / 实时上下行速率 B/s，速率由收发字节差值÷间隔计算） |
+| 业务初始化 | `AppNetInit()` | 依次拉起 bsp_wifi → bsp_store（加载持久化波特率/蓝牙开关并应用）→ bsp_web（注册事件回调 + 状态提供者 + 创建 ws_tx 发送任务）→ bsp_bt → 接管 UART0/UART2 回调 → app_forward（按持久化配置恢复转发通道） |
+| 周期处理 | `AppNetProcess()` | 主循环槽：转发通道轮询（TCP 重连/收数据 + UDP 收数据）+ NTP 首次成功日志；**不含任何 WS 推送**（全部在 ws_tx 任务，防阻塞发送冻结主循环） |
+| WS 发送任务 | `AppNetWsTxTask()`（内部） | 专职任务（10ms 节拍）：合批排水 + 发送回显排水 + 状态推送（3s 周期/事件请求）；所有可能阻塞的 WS 推送集中于此，慢客户端仅延迟显示不冻结系统 |
+| 合批缓冲追加 | `AppNetWsTxAppend()` | 串口/转发入向/回显数据先入乒乓双缓冲（512B×2，跨任务安全）；满 30ms 或缓冲将满时合并为一帧广播（防 10ms 级高频逐帧推送卡顿） |
 
-**数据路由规则**（本模块为四条业务通路的中枢）：
+**数据路由规则**（本模块为五条业务通路的中枢）：
 
 | 输入事件 | 路由动作 |
 |---------|---------|
-| UART2 RX（外部串口设备→ESP32） | 同步双路转发：① WS 广播到全部网页串口工具；② SPP 发给已连接蓝牙客户端（256B 分批） |
-| WS_DATA（网页串口工具发送） | 写 UART2 TX（数据到达外部串口设备） |
-| BT DATA（蓝牙客户端发送） | 写 UART2 TX（数据到达外部串口设备） |
-| WIFI_SAVE（配网表单提交） | 拆分 `ssid\npwd` 调 `BspWifiConfigSet` 保存并连接 |
-| BAUD_SET（网页设置波特率） | `strtoul` 解析并校验 300~921600 后调 `BspUartSetBaud`（UART2 在线改波特率） |
-| WS_OPEN（新网页连接） | 立即推送一次状态 JSON（页面状态栏即连即显） |
+| UART2/UART0 RX（外部串口设备/COM15 → ESP32） | 三路转发：① 经合批缓冲 → WS 广播到网页终端；② SPP 发给已连接蓝牙客户端（受蓝牙转发开关控制，NVS 持久化默认关）；③ 网络转发推送（AppForwardPush）；收发计数累加 |
+| WS_DATA（网页终端发送） | 写 UART2 + UART0 TX（COM15 串口助手可见）+ 同步网络转发 + 经回显缓冲广播回终端（发送可见） |
+| BT DATA（蓝牙客户端发送） | 写 UART2 TX（到达外部串口设备） |
+| FORWARD_SET（转发配置提交） | 拆四段 `proto\nip\nport\nbt`：蓝牙开关立即生效并持久化；转发参数交 app_forward 校验/持久化/应用 |
+| WS_OPEN（新网页连接） | 不做即时推送（3s 周期推送兜底；握手上下文推送会死锁服务器任务） |
 
-> WS 与蓝牙之间不互转（两者均为"远端"，仅与 UART2 互通），避免数据回环。
+> 状态 JSON 与参考工程 `/api/status` 字段一致：`ver/mode/ssid/ip/rssi/heap/baud/uptime/rx/tx/ws/fwproto/fwip/fwport/fwup/fwrx/fwtx/bt`（3s 周期 + WS 文本推送双路刷新页面状态卡）。WS 与蓝牙之间不互转（均为远端，仅与串口互通），避免回环。
+
+### app_forward（串口转发业务：UART2 ↔ TCP 客户端/UDP 双向透传，参照 ESP8266-develop 工程移植）
+
+| 功能 | API | 说明 |
+|------|-----|------|
+| 初始化恢复 | `AppForwardInit()` | 从 NVS 加载转发配置（fwproto/fwip/fwport）并按上次配置恢复通道 |
+| 配置设置 | `AppForwardConfigSet()` | 校验（IP 格式/端口 1~65535）+ NVS 持久化 + 立即应用（关闭旧通道建新通道） |
+| 轮询 | `AppForwardPoll()` | 主循环槽（10ms）：TCP 非阻塞连接 select 探测 + 2s 重连；网络入向数据 → 写 UART2 + 经合批缓冲显示到网页终端 + 计数 |
+| 串口→网络 | `AppForwardPush()` | 串口 RX 数据推送到网络目标（TCP 已连接才发，未连接丢弃；UDP 直接 sendto，本地绑 INADDR_ANY 对称端口） |
+| 状态查询 | `AppForwardXxxGet()` 系列 | proto/ip/port/up/rx/tx 供状态 JSON 组装（TCP up=已连接，UDP up=socket 已建） |
+
+> 转发目标必须是设备可达地址（VMware 虚拟网卡等本机专用网段路由不到，UDP 无连接故“已连接”但丢包、TCP 诚实报连不上）；网络入向数据同时写入串口与网页终端显示（双向可视）。
 
 ### app_main（应用入口与主调度）
 
@@ -282,9 +314,10 @@ ESP-32/
 | P2 运行灯 | 调度节拍（app_main 主循环 10ms） | app_led 闪烁策略（500ms 到期翻转） | 1Hz 槽（主循环轮询，非阻塞） | G_BlinkTick 节拍累加器 | app_led 闪烁策略 | bsp_led → hal_led → GPIO2 板载灯亮灭 |
 | P3 按键 | BOOT 键按下/松开（GPIO0 电平变化） | bsp_key 扫描状态机（`BspKeyTick` 主循环 10ms 驱动，20ms 消抖采样，识别单击/双击/长按/连发） | 轮询槽（主循环轮询，非阻塞） | G_KeyFlag 每键事件标志（0x01~0x40 位图） | app_key 事件消费（`BspKeyCheck` 消费型读取） | 单击 → bsp_led → hal_led 翻转 GPIO2 运行灯 + UART0 日志打印事件 |
 | P4 WiFi 配网 | 手机/电脑连接热点 `ESP32_Config` → 浏览器提交表单（POST /wifi） | hal_http 服务器任务 + bsp_web 表单解析（URL 解码 + 字段拆分 `ssid\npwd`） | 浏览器请求触发 | 事件回调参数（栈上透传） | app_net 配网处理（`BspWifiConfigSet`） | bsp_wifi → hal_wifi → NVS 持久化 + STA 连接路由器；页面重定向回首页 |
-| P5 串口→网页 | 外部串口设备 → UART2 RX（GPIO16） | esp-idf uart 驱动 ISR + hal_uart 接收任务事件分发 | 中断触发（帧间隔超时 3 符号） | uart 驱动 RX 环形缓冲 256B | app_net 串口路由（256B 分批） | ① bsp_web WS 广播 → hal_http 异步推送 → 浏览器串口工具显示；② bsp_bt → hal_spp → 蓝牙客户端 |
-| P6 网页→串口 | 浏览器串口工具发送（WS /ws 帧） | hal_http WS 收帧 + bsp_web 事件上抛 | 浏览器发送触发 | 事件回调参数（仅回调期间有效） | app_net 网页路由 | bsp_uart → hal_uart → UART2 TX（GPIO17）到达外部串口设备 |
+| P5 串口→网页 | 外部串口设备/COM15 → UART2/UART0 RX | esp-idf uart 驱动 ISR + hal_uart 接收任务事件分发 | 中断触发（帧间隔超时 3 符号） | uart 驱动 RX 环形缓冲 256B | app_net 串口路由（256B 分批） | ① 经合批缓冲（30ms 合帧）→ ws_tx 任务 → WS 广播显示；② bsp_bt → hal_spp → 蓝牙客户端（蓝牙开关控制）；③ app_forward → TCP/UDP 目标 |
+| P6 网页→串口 | 浏览器串口终端发送（WS 帧） | hal_http WS 收帧 + bsp_web 事件上抛 | 浏览器发送触发 | 事件回调参数（仅回调期间有效） | app_net 网页路由 | bsp_uart → UART2+UART0 TX（COM15 串口助手可见）+ app_forward 同步转发 + 回显缓冲→终端显示 |
 | P7 蓝牙→串口 | 手机/电脑蓝牙串口客户端发送（SPP） | hal_spp Bluedroid 事件任务 + bsp_bt 事件转发 | 蓝牙接收触发 | 事件回调参数（仅回调期间有效） | app_net 蓝牙路由 | bsp_uart → hal_uart → UART2 TX（GPIO17）到达外部串口设备 |
+| P8 网络转发（双向） | UART2 RX ↔ TCP/UDP 目标 | app_forward 轮询（非阻塞 connect+select 探测，2s 重连） | 主循环 10ms 槽 | 合批缓冲（显示路径） | app_net / app_forward | 串口→网络：send/sendto；网络→串口：recv 后写 UART2 + 终端显示 + 计数 |
 
 **分阶段流程图**：
 
@@ -355,6 +388,8 @@ flowchart LR
 ```
 
 > 虚线 `-.->` = 中断直达；实线 `-->` = 任务上下文阻塞/轮询。日志通路（UART0）为系统通路，不计入特性表。
+>
+> 下图为基础通路示意；串口→蓝牙/网络转发与 30ms 合批机制见上方通路表（P5/P8）。
 
 ## 构建与烧录
 
@@ -390,28 +425,26 @@ idf.py size                  # 资源占用检查（结果回填 Project_Level_S
 
 **① WiFi 网页配网（扫描列表选择）**：
 
-1. 手机/电脑连接热点 `ESP32_Config`
-2. 浏览器访问 `http://192.168.4.1`，打开内置页面（配网表单 + 串口工具）
-3. 点击 **Scan** 扫描周边热点（约 2~3s，状态栏显示 scanning）→ 下拉列表按信号强度列出热点（`[+]`=加密 / `[O]`=开放，ESP32 仅支持 2.4GHz，列表即 2.4G 可连网络）
-4. 下拉选择家里的路由器（SSID 自动填入）→ 输入密码 → 点 **Save & Connect** → 日志打印连接过程，成功后状态栏显示 SSID/IP
-5. 重启 ESP32 验证凭据持久化：日志自动打印已保存的 SSID 并连接（无需再次配网）
+1. 手机/电脑连接热点 `ESP32_Config`，浏览器访问 `http://192.168.4.1` → 暗色单页（**配网 / 串口终端 / 转发**三标签，GitHub 风格）
+2. 配网页签点“扫描”（约 2~3s）→ 列表按信号强度排列（ESP32 仅支持 2.4GHz；5GHz 频段的 SSID 物理不可连）
+3. 选择路由器（SSID 自动填入）→ 输密码 → 点“连接”（同步等待最长 12s）：成功显示 IP，失败自动恢复原配置并提示
+4. 重启 ESP32 验证凭据持久化：自动连接无需再配网
 
-> 注：密码错误时重试 20 次后停止自动重连（防死循环），重新提交正确密码即可；SSID 也可不经扫描直接手动输入。
+> 注：密码错误时重试 20 次后停止自动重连（防死循环），重新提交正确密码即可；也可不经扫描直接手动输入 SSID。
 
-**② 网页串口工具收发**：
+**② 网页串口终端（四路数据源）**：
 
-1. 页面打开后即自动建立 WebSocket 连接，顶部状态栏显示连接状态与实时网速：未连接 **设备待连接** / 连接中 **正在连接 xx ...** / 已连接 **已连接 SSID @ IP | ↓xxKB/s ↑xxKB/s**（含蓝牙与 NTP 时间后缀，1Hz 刷新）
-2. PC 串口助手（115200-8N1）向 UART2 发送任意数据 → 网页串口工具接收区实时显示（可勾选 HEX 显示）
-3. 网页发送区输入内容点发送（可选 HEX 发送/追加 CRLF）→ 串口助手收到相同内容
-4. 波特率下拉选择新波特率（300~921600）→ 页面与串口助手同步改波特率后仍可互通
+1. 切到“串口终端”标签自动建立 WebSocket（81 端口）；状态卡 3s 自动刷新（模式/SSID/IP/信号强度/波特率/可用内存/运行时长/收发字节/转发状态）
+2. 接收区显示四路数据：UART2 设备数据、COM15（调试口）数据、网页发送回显、**网络转发入向数据**（30ms 合帧防高频卡顿）
+3. 发送区输入 → 点发送 → UART2 与 COM15 串口助手**同时**收到，且同步走网络转发
+4. 页面可改波特率（300~2000000），NVS 持久化重启保留
 
-**③ 蓝牙 SPP 透传**：
+**③ 蓝牙 SPP 透传（含转发开关）**：
 
-1. 手机安装蓝牙串口 App（如 Serial Bluetooth Terminal），搜索并连接 `ESP32-UART`
-2. 日志打印 `[bsp_bt] spp opened`，网页状态栏 `spp:1`
-3. 串口助手向 UART2 发数据 → 手机蓝牙串口 App 收到（串口→蓝牙转发）
-4. 手机 App 发数据 → 串口助手收到（蓝牙→串口转发）
-5. 三端同时在线验证：串口助手发一条数据，网页串口工具与手机 App **同时**收到
+1. 手机安装蓝牙串口 App（如 Serial Bluetooth Terminal），搜索并连接 `ESP32-UART`（**已配对过的设备在“已配对列表”里，不会出现在搜索列表**）
+2. 日志打印 `[bsp_bt] spp opened`
+3. **转发页签开启“蓝牙转发”开关并保存**（默认关）→ 串口数据同步推到手机 App（串口→蓝牙）
+4. 手机 App 发数据 → 串口助手收到（蓝牙→串口，不受开关影响）；开关状态 NVS 持久化
 
 **④ 热点上网（NAT 中继）**：
 
@@ -419,6 +452,13 @@ idf.py size                  # 资源占用检查（结果回填 Project_Level_S
 2. 手机**关闭移动数据**，连接热点 `ESP32_Config`；若此前连过须先“忘记此网络”再连（重新获取 DHCP 下发的 DNS）
 3. 浏览器打开任意网站应正常加载；短视频 App 可正常刷（单射频中继，预期 10~20Mbps，高清可能缓冲）
 4. STA 断网（如关路由器）：热点与 192.168.4.1 配网页仍可用，仅外网断开；路由恢复后 NAPT 自动重开
+
+**⑤ TCP/UDP 转发（UART2 ↔ 网络目标双向透传）**：
+
+1. 转发页签 → 模式选 **TCP 客户端** 或 **UDP** → 填目标 IP 与端口（目标必须是设备可达地址）→ 保存（NVS 持久化重启恢复）
+2. UART2/COM15 收到的数据实时转发到目标；目标发来的数据写入 UART2 并同步显示在网页终端（双向可视）
+3. 验证：PC 网络调试助手本地监听地址绑 `0.0.0.0`，目标填 PC 局域网 IP → 串口助手发数据到网络助手、反向发送到串口
+4. 注意：目标不可达时 TCP 显示“未连接”（诚实），UDP 无连接概念显示已连接但丢包；VMware 虚拟网卡等本机专用网段地址不可作目标；TCP 断开后 2s 自动重连
 
 ## MCU 移植提示
 
