@@ -2,6 +2,7 @@
 
 - **MCU**：ESP32-WROOM-32（SoC：ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / 520KB SRAM）
 - **SDK**：ESP-IDF **v6.1**（本机安装于 `F:\00.Code\11ESP\esp-idf`，工具链 `D:\software\31ESP`，激活脚本 `F:\00.Code\11ESP\idf-env.bat`；v5.x 亦可编译）
+- **版本号规则**：`V主.次.大功能.小功能`（如 V1.0.0.0），小功能完成末位+1、大功能完成第3位+1；状态 JSON `ver` 字段与页面状态卡同步显示
 - **架构**：`APP → BSP → DRV → HAL → ESP-IDF` 四层单向依赖，规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
 - **IDE**：VS Code（Trae）+ ESP-IDF 扩展，或 idf.py 命令行
 
@@ -445,6 +446,8 @@ idf.py size                  # 资源占用检查（结果回填 Project_Level_S
 2. 日志打印 `[bsp_bt] spp opened`
 3. **转发页签开启“蓝牙转发”开关并保存**（默认关）→ 串口数据同步推到手机 App（串口→蓝牙）
 4. 手机 App 发数据 → 串口助手收到（蓝牙→串口，不受开关影响）；开关状态 NVS 持久化
+
+> **无线环境使用法则（实测踩坑）**：模块插在电脑上或靠近路由器时，电脑 WiFi/USB3.0 噪声与路由器 2.4GHz 会把蓝牙可发现距离从正常 10 米+压缩到约 0.5 米——现象为“搜索时有时无/搜不到”，易误判为固件或硬件故障。**用蓝牙时让模块离开电脑/路由器 1 米以上**。排查路径：①官方例程交叉验证（排除代码）→ ②SDP 直连查询（区分射频通/断）→ ③距离梯度测试（0.5m/2-3m）→ ④充电宝隔离测试（区分干扰 vs 硬件）。另：SPP 服务注册会复位 GAP 设置，设备名/可发现模式须在 `esp_spp_start_srv` 后重新应用。
 
 **④ 热点上网（NAT 中继）**：
 
