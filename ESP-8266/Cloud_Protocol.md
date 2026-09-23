@@ -1,7 +1,7 @@
 # 物联网云平台接入协议速查
 
 > 来源：巴法官方文档（cloud.bemfa.com/docs/src/）实测核实 + 阿里云/OneNET 官方签名规范。
-> 2026-09 巴法接入调试中沉淀；巴法 TCP 模式已端到端实测，其余待实测。
+> 2026-09 巴法接入调试中沉淀；TCP 8344 与 MQTT 9501 已实测在线，其余待实测。
 
 ## 巴法云 bemfa.com
 
@@ -52,3 +52,9 @@
 - CONNECT 可变头：`MQTT`+\x04（3.1.1），flags **0xC2** = clean session + username + password 三位必须随 payload 声明，keepalive 60s
 - 订阅/发布走 QoS0 最简路径；解析用显式状态机（HDR→LEN→TOPIC→PAYLOAD），每字节 `available()` 门控防 TCP 分段撕裂
 - ESP8266 上 BearSSL：`br_hmac_key_init(&kc,&br_md5_vtable,key,len)` → `br_hmac_update` → `br_hmac_out`（16B）
+
+## 实测踩坑补充（2026-09-23）
+
+- **CONNACK 解析陷阱**：CONNACK = `20 02 <session-present> <return-code>` 四字节，返回码在**第 4 字节**；若把"剩余长度02"当 payload 校验（`a==2&&b==0`），服务器明明接受（rc=0）也会被误判为拒绝——表现为设备永远"未连接"而平台无任何异常。巴法 9501 实测命中此坑，已修。
+- 诊断方法：固件埋 cloudtag（阶段）/clouderr（计数）/cloudrc（最近 CONNACK 返回码）暴露到 /api/status，一次烧录即可定位卡点，比串口打印干净（串口是数据通道不可占用）。
+- 巴法 MQTT 控制台需单独建 MQTT 类型主题（如 sensor004）；TCP 主题与 MQTT 主题不互通。
