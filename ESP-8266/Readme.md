@@ -84,6 +84,16 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | 转发客户端管理 | `forwardLoop()` | TCP 客户端模式断线 2s 间隔自动重连；UDP 模式 `begin` 后无连接开销；无路由不发起连接 |
 | 状态指示 | `ledLoop()` | 三态闪烁策略见硬件资源表（STA 心跳 / AP 慢闪 / 连接快闪） |
 
+## 转发功能记录（app_forward / app_config）
+
+| 功能 | 函数 | 说明 |
+|------|------|------|
+| 三种转发模式 | `G_Cfg.Fwd.Proto` | 0=关 / 1=TCP 客户端 / 2=UDP / 3=MQTT 客户端；TCP/UDP 双向透传，MQTT 上行发布+下行订阅 |
+| **按协议分槽存储（V1.0.2.10）** | `AppConfigFwdSet/Select/Migrate` | 每协议独立一组键（ftcp_/fudp_/fmqtt_ 前缀）存完整配置（地址/端口/MQTT 全套凭据），fwproto 只记选择；切协议时 `AppConfigFwdSelect` 从槽位带出，互不覆盖；旧版 fw* 单组键由 `AppFwdCfgMigrate` 一次性迁入当前协议槽位 |
+| 切换与保存语义 | `/api/forward` 的 `sel=1` | 网页协议单选 onchange 带 `sel=1` → 后端只带出槽位忽略表单；保存按钮不带 sel → 写入当前协议槽位。**二者必须区分**，否则保存请求被误当切换、表单被静默丢弃（V1.0.2.8 实测踩坑） |
+| 局域网直连豁免（V1.0.2.10） | `AppFwdTargetLanIp()` | 目标为私网/环回 IP 字面量时不受无互联网 NTP 门控限制（connect 毫秒级无 DNS），纯内网转发可持续保持连接；域名/公网目标仍需等 NTP 同步 |
+| 连接维护 | `AppFwdTcpMaintain/AppFwdMqttMaintain` | 断线指数退避重连 4s→16s→64s→256s 封顶 300s；无路由或网页忙时不发起阻塞连接 |
+
 ## 物联网云桥功能记录（app_cloud）
 
 | 功能 | API | 说明 |
@@ -214,5 +224,8 @@ python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（
 | 板子热点连掋 PC 后 git push 突然全部失败 | 板子 captive portal DNS 把所有域名劫持到 192.168.4.1，SSH/HTTPS 全不通；**先切办公网再推远程**（之前能推是 DNS 缓存未过期） |
 | Poll 轮询重绘导致定时面板/输入被打断 | a) 面板展开状态用 JS 变量（tOpen）在重绘时还原；b) 正在输 number 时跳过整轮刷新；c) 新版再加 10s 无操作自动收起，体验与轮询和解 |
 | 无互联网时网页终端数据一卡一卡（≤V1.0.2.6） | 阻塞式 connect 的 DNS+TCP 超时卡死主循环 5~8s，云重试封顶 30s=每 30s 卡一次；**修复=NTP 未同步(time<2000-01-01)即无互联网，跳过建链等 SNTP 后台同步，退避改 4s→16s→64s→256s 封顶 300s（V1.0.2.7）**；边界：若网络放行 TCP 却屏蔽 UDP123，NTP 永不同步则永不建链（罕见环境） |
+| 转发协议切换/保存语义冲突（V1.0.2.8） | 切换与保存都是 POST /api/forward，后端靠 proto≠当前值判断"切换"——保存请求恰好换协议时被误判为切换，**表单被静默丢弃还返回 ok**；修复=网页切换请求加 `sel=1` 标记，后端只认 sel=1 为切换；教训：**同一路由多意图必须显式标记，不能靠参数值猜** |
+| 分槽改造丢老配置（V1.0.2.8→.9 升级路径） | 新格式只写槽位键后，旧版 fw* 键在下次保存时被覆盖删除，而老配置还在生效字段没进槽位——首次切换再切回就丢；修复=加载后 `AppFwdCfgMigrate` 把生效配置一次性迁入当前协议槽位（照 AppCloudCfgMigrate 模式）；教训：**改存储格式必须写迁移，覆盖旧键前先检查数据去向** |
+| 网页终端高频小帧卡顿（前端） | 每帧 appendChild+scrollTop=scrollHeight 强制同步布局，帧率越高卡得越狠；修复=文本节点攒入 DocumentFragment，裁剪与滚动合并进 requestAnimationFrame 单次重排（V1.0.2.10） |
 | 重启后云平台永远连不上（cloudpk 空，≤V1.0.2.5） | config.txt 分槽存了各平台凭据（cloudali_/cloudone_/cloudbf_），但加载后没人把当前平台槽位带回生效配置 G_Cfg——MQTT CONNECT 拿空凭据必被拒；**修复=AppConfigLoad 末尾补 AppCloudCfgSelect(proto)**；教训：**读写路径要成对设计**，CfgSet 写 G_Cfg+G_Slot 双份，恢复路径也必须补齐 |
 | 验证恢复后凭据非空≠云已连上 | 纯 AP/无互联网环境下只能验到 tag=1（建链失败属预期，DNS 不通）；真实连云需板子联网后看 cloudon:1 |
