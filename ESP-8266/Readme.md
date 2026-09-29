@@ -5,6 +5,7 @@
 - **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.2.5**（develop=master）
 - **仓库**：ESP8266；远程经 SSH 别名 `git@github-esp8266`
 - **架构铁律**：串口=数据通道，**生产固件禁止任何 DBG/调试打印**；AP 热点常开 + 全异步（主循环非阻塞）
+- **云配置分槽**：三平台凭据独立存 config.txt（cloudali_/cloudone_/cloudbf_ 前缀），cloudproto 记当前选择；加载后须 AppCloudCfgSelect 带出生效（V1.0.2.6）
 
 ## 目录结构（模块化架构，2026-09 重构）
 
@@ -167,7 +168,7 @@ flowchart LR
 | 巴法云 MQTT | 3 | tra=1 | 9501 明文 | clientId=uid | ✅ 实测在线（CONNACK 解析修复后） |
 | 巴法云 MQTTS | 3 | tra=2 | 9503 TLS | clientId=uid | ⏳ 代码就绪未实测 |
 | 阿里云 IoT | 1 | TLS | 8883 | 三元组+HMAC-MD5 | ⏳ 待真实凭据 |
-| OneNET | 2 | TLS | 8883 | token 2018-10-31 | ⏳ 待真实凭据 |
+| OneNET | 2 | TLS | 8883 | token 2018-10-31 | ⏳ 凭据已配，待联网实测（V1.0.2.6 修复重启丢凭据后可连） |
 
 协议细节（指令表/签名格式/主题后缀语义）见 [Cloud_Protocol.md](Cloud_Protocol.md)。
 
@@ -212,3 +213,5 @@ python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（
 | 静态分析穷尽仍无头绪 | 给固件埋诊断字段暴露到 /api/status（tag/err/rc），一次烧录定位——比串口打印合规 |
 | 板子热点连掋 PC 后 git push 突然全部失败 | 板子 captive portal DNS 把所有域名劫持到 192.168.4.1，SSH/HTTPS 全不通；**先切办公网再推远程**（之前能推是 DNS 缓存未过期） |
 | Poll 轮询重绘导致定时面板/输入被打断 | a) 面板展开状态用 JS 变量（tOpen）在重绘时还原；b) 正在输 number 时跳过整轮刷新；c) 新版再加 10s 无操作自动收起，体验与轮询和解 |
+| 重启后云平台永远连不上（cloudpk 空，≤V1.0.2.5） | config.txt 分槽存了各平台凭据（cloudali_/cloudone_/cloudbf_），但加载后没人把当前平台槽位带回生效配置 G_Cfg——MQTT CONNECT 拿空凭据必被拒；**修复=AppConfigLoad 末尾补 AppCloudCfgSelect(proto)**；教训：**读写路径要成对设计**，CfgSet 写 G_Cfg+G_Slot 双份，恢复路径也必须补齐 |
+| 验证恢复后凭据非空≠云已连上 | 纯 AP/无互联网环境下只能验到 tag=1（建链失败属预期，DNS 不通）；真实连云需板子联网后看 cloudon:1 |
