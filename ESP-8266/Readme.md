@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.2.13**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.3.0**（develop）
 
 
 
@@ -25,7 +25,7 @@
 
 | 目标 | 现状 | 缺口 |
 |------|------|------|
-| 1 转发协议 | TCP✅ UDP✅ MQTT✅ | **HTTP 转发未实现** |
+| 1 转发协议 | TCP✅ UDP✅ MQTT✅ **HTTP✅（V1.0.3.0 端到端实测）** | 无（目标达成） |
 | 2 双向终端显示 | 串口→终端✅；转发下行→终端✅（AppTerminalBroadcast）；云下行→终端✅；网页发送回显✅ | 无 |
 | 3 云平台 | 阿里✅ OneNET✅ 巴法✅ | **腾讯云、华为云未实现** |
 | 4 GPIO 控制 | 电平✅ PWM✅ ONCE 倒计时✅ DAILY 每日闹钟✅（掉电保存） | 无 |
@@ -142,7 +142,8 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 
 | 功能 | 函数 | 说明 |
 |------|------|------|
-| 三种转发模式 | `G_Cfg.Fwd.Proto` | 0=关 / 1=TCP 客户端 / 2=UDP / 3=MQTT 客户端；TCP/UDP 双向透传，MQTT 上行发布+下行订阅；**规划（工程目标 1）：proto=4 HTTP 客户端，待定交互形态** |
+| 三种转发模式 | `G_Cfg.Fwd.Proto` | 0=关 / 1=TCP 客户端 / 2=UDP / 3=MQTT 客户端 / 4=HTTP 客户端；TCP/UDP 双向透传，MQTT 上行发布+下行订阅；HTTP=串口数据攒批 POST（octet-stream）+ 响应体写回串口（下行）+ 空闲 1s GET 探询 |
+| **HTTP 转发（V1.0.3.0）** | `AppFwdHttpStart/Maintain/BodyDone` | 手工 HTTP/1.1 报文 Connection:close 短连接；非阻塞状态机（待响应/收头/收体，总超时 8s；Content-Length 或断链判收完）；上一事务未完成时新数据丢弃不排队（防堆积）；配置字段 HttpPath（fhttp_ 槽位键，4 槽扩 5 槽）；**实测：1Hz 串口上行 213B、echo 服务回写 130B、空闲探询 1s 周期精准** |
 | **按协议分槽存储（V1.0.2.10）** | `AppConfigFwdSet/Select/Migrate` | 每协议独立一组键（ftcp_/fudp_/fmqtt_ 前缀）存完整配置（地址/端口/MQTT 全套凭据），fwproto 只记选择；切协议时 `AppConfigFwdSelect` 从槽位带出，互不覆盖；旧版 fw* 单组键由 `AppFwdCfgMigrate` 一次性迁入当前协议槽位 |
 | 切换与保存语义 | `/api/forward` 的 `sel=1` | 网页协议单选 onchange 带 `sel=1` → 后端只带出槽位忽略表单；保存按钮不带 sel → 写入当前协议槽位。**二者必须区分**，否则保存请求被误当切换、表单被静默丢弃（V1.0.2.8 实测踩坑） |
 | 局域网直连豁免（V1.0.2.10） | `AppFwdTargetLanIp()` | 目标为私网/环回 IP 字面量时不受无互联网 NTP 门控限制（connect 毫秒级无 DNS），纯内网转发可持续保持连接；域名/公网目标仍需等 NTP 同步 |
@@ -156,7 +157,7 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 |------|-----|------|
 | 配置结构 | `CloudCfg cc` | proto：0 关 / 1 阿里云 / 2 OneNET / 3 巴法云；tra（巴法）：0 TCP8344 / 1 MQTT9501 / 2 MQTTS9503；pk/id/ps/pub/sub 按平台复用 |
 | 配置持久化 | `cloudLoad()` / `cloudSaveTo()` | 挂接在 main 的 config.txt 读写流程 |
-| **规划：腾讯云/华为云（工程目标 3）** | 待实现 | 腾讯云 IoT Explorer（MQTT，HMAC-SHA1/SHA256 密码含时间戳）、华为云 IoTDA（MQTTS，HMAC-SHA256 密码推导）；复用手工组包架构，新增密码/签名算法即可 |
+| **规划：腾讯云/华为云（工程目标 3，下一个迭代）** | 待实现 | 腾讯云 IoT Explorer（MQTT，HMAC-SHA1/SHA256 密码含时间戳）、华为云 IoTDA（MQTTS，HMAC-SHA256 密码推导）；复用手工组包架构，新增密码/签名算法即可 |
 | 上行队列 | `cloudPush()` / `cloudMarkSerialIo()` | 1024B 环形队列，满丢最旧；发布条件 = **串口静默>500ms 或 距上次发布>1s**（"且"会永久饿死持续流式数据——实测教训） |
 | 主泵 | `cloudLoop()` | 主循环每圈调用：未连接按 10s 退避重连；TCP 模式 25s `ping\r\n` 心跳；MQTT 模式 30s PINGREQ；会话断开自动重建 |
 | 连接建立 | `cloudStart()` | 按平台/接入方式选明文 `WiFiClient` 或 TLS `WiFiClientSecure`（`setInsecure()` + `setBufferSizes(256,512)`，无 MFLN 探测）；巴法 TCP 发 `cmd=1` 订阅、其余发 MQTT CONNECT |
