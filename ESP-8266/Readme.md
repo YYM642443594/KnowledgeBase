@@ -229,7 +229,7 @@ flowchart LR
 | 阿里云 IoT | 1 | TLS | 8883 | 三元组+HMAC-MD5 | ⏳ 待真实凭据 |
 | OneNET | 2 | TLS | 8883 | token 2018-10-31 | ⚠️ 实测（V1.0.2.13 固件+PC 双重复现）：认证通过（CONNACK rc=0）但**发任何 PUBLISH 即被服务器静默断链**（~3s EOF，任意主题/载荷含合法 OneJSON）；只发 PINGREQ 可长期存活 → 非固件问题，疑产品级配置（接入模式/物模型强校验），待控制台核实 |
 
-协议细节（指令表/签名格式/主题后缀语义）见 [Cloud_Protocol.md](Cloud_Protocol.md)。
+协议细节（指令表/签名格式/主题后缀语义）见 [Cloud_Protocol.md](Cloud_Protocol.md)；版本逐条修改记录见 [Version_History.md](Version_History.md)。
 
 ## 构建与烧录
 
