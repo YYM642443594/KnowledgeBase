@@ -2,7 +2,7 @@
 
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.2.5**（develop=master）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.2.12**（develop）
 - **仓库**：ESP8266；远程经 SSH 别名 `git@github-esp8266`
 - **架构铁律**：串口=数据通道，**生产固件禁止任何 DBG/调试打印**；AP 热点常开 + 全异步（主循环非阻塞）
 - **云配置分槽**：三平台凭据独立存 config.txt（cloudali_/cloudone_/cloudbf_ 前缀），cloudproto 记当前选择；加载后须 AppCloudCfgSelect 带出生效（V1.0.2.6）
@@ -35,7 +35,7 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | WiFi | 射频；AP `ESP8266-XCOM-xxxx` @192.168.4.1 常开 + STA | AP 供配网/内网访问，STA 连路由（凭据持久化，断线自动重连） | main.cpp / web_page.h |
 | HTTP | 80 端口 ESP8266WebServer | 单页门户 + 13 条 API 路由；**首页必须发 `Cache-Control: no-store`** | bsp_web / app_web |
 | WebSocket | 81 端口 WebSocketsServer | 网页串口终端二进制通道（串口数据广播 / 网页下发） | app_terminal |
-| LittleFS | `/config.txt`（key=value 全部配置） | 配网/串口/转发/云平台/GPIO电平/PWM/闹钟持久化，事务式原子保存（临时文件+rename） | drv_storage / app_config |
+| LittleFS | `/config.txt`（key=value 全部配置） | 配网/串口/转发/云平台/GPIO电平/PWM/闹钟/芯片绑定持久化，事务式原子保存（临时文件+rename） | drv_storage / app_config |
 | mDNS | `xcom.local` | 局域网域名（辅助发现） | bsp_net |
 | NTP | ntp.aliyun.com / pool.ntp.org，东八区 | 上行就绪后同步；就绪后解锁每日闹钟 | app_main |
 | GPIO 输出 | D0/D1/D2/D5/D6/D7/D8 七通道（D1/D2 与按键手势共用，D8 启动须低） | 网页开关/PWM 调光/闹钟定时，状态掉电保存 | bsp_gpio |
@@ -109,6 +109,33 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | 运行诊断 | cloudtag / clouderr / cloudrc（状态 JSON） | tag：1 TCP 连不上 2 等 CONNACK 3 在线 4 CONNACK 拒绝 5 CONNACK 超时 6/7 中途断开；err 累计异常次数；rc 最近 CONNACK 返回码——**免串口打印即可远程定位卡点** |
 
 > 手工 MQTT 规范：CONNECT flags 必须 **0xC2**（clean session + username + password 声明位，0x02 会被标准 broker 拒连）；QoS0 最简路径；报文解析显式状态机（HDR→LEN→TOPIC→PAYLOAD），每字节 `available()` 门控防 TCP 分段撕裂。
+
+## 防克隆芯片绑定功能记录（app_bind / V1.0.2.12）
+
+纯离线场景防"整片 flash 拷贝到其它板子直接用"：ESP8266 无 Secure Boot/Flash 加密，采用软件层芯片身份绑定（eFuse 芯片 ID 不随 flash dump 走）。
+
+| 功能 | 接口/机制 | 说明 |
+|------|-----------|------|
+| 绑定值计算 | `AppBindCalc()` HMAC-MD5(盐,"bind-"+芯片ID) 前 4 字节 hex 8 字符 | 盐 `xcombind1` 防芯片 ID 全空间预计算；BearSSL 纯算法库零新增依赖（app_cloud 同款） |
+| 首次静默绑定 | `bindid` 键为空视为首次启动，写入绑定值 | **缺失一律视为首次启动，绝不惩罚**（防误伤真实设备）；走事务原子写 |
+| 不匹配计数 | `bindfl` 键连续不匹配开机次数 | 绑定不匹配先 +1 落盘；**宽容 3 次**（`APP_BIND_FAIL_LIMIT`）才降级：产线对拷/维修换板留窗口 + 稀释"改动即变砖"的时机信号 |
+| 沉默降级 | `AppBindFailActive()` → AppMainSetup 短路 | 不起 AP/门户/STA/终端/转发/云，LED 常灭，主循环仅 `BspSysYield()` 喂狗；全程零输出不暴露校验存在（串口本就禁打印，天然合规） |
+| 计数落盘自保护 | `AppConfigSave()` 失败则不降级顺延重试 | 计数没写进去就不惩罚，宁慢勿误 |
+
+**数据通路**：①输入=flash bindid + eFuse 芯片ID → ②采集=AppConfigLoad / ESP.getChipId → ③缓存=G_BindId/G_BindFl → ④决策=AppBindInit 开机 HMAC 比对+计数 → ⑤输出=降级标志短路主流程 / 正常启动
+
+```mermaid
+flowchart LR
+    A[flash bindid/bindfl + eFuse 芯片ID] --> B[AppConfigLoad + AppBindInit HMAC 计算]
+    B --> C{G_BindId 比对}
+    C -->|缺失| D[静默写入绑定+落盘]
+    C -->|匹配| E[清零计数, 正常启动]
+    C -->|不匹配| F[bindfl+1 落盘]
+    F -->|≥3 次| G[沉默降级: 短路 setup, loop 仅喂狗]
+    F -->|<3 次| H[本次正常运行]
+```
+
+> 边界（诚实声明）：防的是非技术用户顺手克隆，**防不了会逆向固件 patch 掉校验分支的专业抄袭者**；硬件级防护只有换 ESP32-C3（Flash 加密+Secure Boot v2，离线同样生效）。
 
 ## 硬件号数据流转
 
@@ -229,3 +256,4 @@ python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（
 | 网页终端高频小帧卡顿（前端） | 每帧 appendChild+scrollTop=scrollHeight 强制同步布局，帧率越高卡得越狠；修复=文本节点攒入 DocumentFragment，裁剪与滚动合并进 requestAnimationFrame 单次重排（V1.0.2.10） |
 | 重启后云平台永远连不上（cloudpk 空，≤V1.0.2.5） | config.txt 分槽存了各平台凭据（cloudali_/cloudone_/cloudbf_），但加载后没人把当前平台槽位带回生效配置 G_Cfg——MQTT CONNECT 拿空凭据必被拒；**修复=AppConfigLoad 末尾补 AppCloudCfgSelect(proto)**；教训：**读写路径要成对设计**，CfgSet 写 G_Cfg+G_Slot 双份，恢复路径也必须补齐 |
 | 验证恢复后凭据非空≠云已连上 | 纯 AP/无互联网环境下只能验到 tag=1（建链失败属预期，DNS 不通）；真实连云需板子联网后看 cloudon:1 |
+| 绑定校验双缓冲混用（V1.0.2.12 自查） | 参考值与本次计算值共用一个缓冲区，`AppBindGet` 一执行就把算好的绑定值覆盖掉；修复=拆 `Id`/`RefId` 两缓冲；教训：**成对出现的输入/参考值各自独立缓冲，命名先区分再写码** |
