@@ -40,12 +40,14 @@
 - 企业版实例接入域名不同，需自填 host
 - 三元组 = ProductKey / DeviceName / DeviceSecret
 
-## OneNET（MQTT over TLS 8883，固件已实现未实测）
+## OneNET（MQTT over TLS 8883，固件已实现，V1.0.2.13 时期实测）
 
 - token 鉴权：version `2018-10-31`，res=`products/{pid}/devices/{dn}`，et=`4102444800`，method=md5
-- 签名密钥 = **AccessKey 先 base64 解码**再 HMAC-MD5（不是直接用字符串）
+- 签名密钥 = **AccessKey 先 base64 解码**再 HMAC-MD5（不是直接用字符串）——2026-09-30 用真实凭据 PC 复现验证：该算法 CONNACK rc=0 认证通过 ✅
 - payload 为原始字节（OneJSON 物模型未实现，接物模型需另加包装层）
 - 三元组 = 产品ID / 设备名 / AccessKey
+- **⚠️ 实测平台侧问题（待控制台核实）**：认证正常但**发任何 PUBLISH 即被服务器静默断链**（~3s EOF，无 DISCONNECT/错误码；任意主题——含 $sys 物模型主题与自定义主题，任意载荷——含合法 OneJSON）；只发 PINGREQ/PINGRESP 可长期存活。PC 与固件双端同现象 → 非固件 bug，疑产品接入模式/物模型强校验配置问题
+- 附：keepalive 内完全无任何报文时，服务端 ~1.5×keepalive 断链（60s→实测 90s）属标准 MQTT 行为，勿误判
 
 ## 通用 MQTT 底层备忘（手工组包）
 
@@ -58,3 +60,4 @@
 - **CONNACK 解析陷阱**：CONNACK = `20 02 <session-present> <return-code>` 四字节，返回码在**第 4 字节**；若把"剩余长度02"当 payload 校验（`a==2&&b==0`），服务器明明接受（rc=0）也会被误判为拒绝——表现为设备永远"未连接"而平台无任何异常。巴法 9501 实测命中此坑，已修。
 - 诊断方法：固件埋 cloudtag（阶段）/clouderr（计数）/cloudrc（最近 CONNACK 返回码）暴露到 /api/status，一次烧录即可定位卡点，比串口打印干净（串口是数据通道不可占用）。
 - 巴法 MQTT 控制台需单独建 MQTT 类型主题（如 sensor004）；TCP 主题与 MQTT 主题不互通。
+- **OneNET 排查方法论（2026-09-30 补）**：PC 端 Python 手工组 MQTT 报文（与固件同款 token/CONNECT）+ 分组对照实验（只连 / 只 PINGREQ / 发包），可把"连上就断"这类问题干净地分离为固件侧 vs 平台侧；**注意实验脚本自身的 EOF/SSLError 检测要先写对**（吞异常会造成"活着"的假阴性，本次实测踩过）。
