@@ -1,5 +1,9 @@
 # ESP8266-XCOM 串口 WiFi 透传器 工程功能记录
 
+[TOC]
+
+## 工程概述
+
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
