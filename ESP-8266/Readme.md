@@ -9,6 +9,8 @@
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
 - **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.2.13**（develop）
 
+
+
 ## 工程目标（2026-09-30 确立，后续迭代对照实现）
 
 1. **UART 数据可通过 TCP/UDP/MQTT/HTTP 协议透传转发**
@@ -16,6 +18,8 @@
 3. **物联网平台支持主流平台连接：阿里云、OneNET、腾讯云、巴法云、华为云**
 4. **GPIO 控制支持电平控制、PWM 控制、定时控制**
 5. **配网页面支持 WiFi 配网、设备重启、清除配网**
+
+
 
 ### 目标达成现状（2026-09-30 对照）
 
@@ -31,6 +35,8 @@
 - **仓库**：ESP8266；远程经 SSH 别名 `git@github-esp8266`
 - **架构铁律**：串口=数据通道，**生产固件禁止任何 DBG/调试打印**；AP 热点常开 + 全异步（主循环非阻塞）
 - **云配置分槽**：三平台凭据独立存 config.txt（cloudali_/cloudone_/cloudbf_ 前缀），cloudproto 记当前选择；加载后须 AppCloudCfgSelect 带出生效（V1.0.2.6）
+
+
 
 ## 目录结构（模块化架构，2026-09 重构）
 
@@ -51,6 +57,8 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 
 依赖单向：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心`；主循环全轮询无阻塞。
 
+
+
 ## 硬件资源占用表
 
 | 外设 | 引脚/资源 | 用途 | 归属模块 |
@@ -65,6 +73,8 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | NTP | ntp.aliyun.com / pool.ntp.org，东八区 | 上行就绪后同步；就绪后解锁每日闹钟 | app_main |
 | GPIO 输出 | D0/D1/D2/D5/D6/D7/D8 七通道（D1/D2 与按键手势共用，D8 启动须低） | 网页开关/PWM 调光/闹钟定时，状态掉电保存 | bsp_gpio |
 | FLASH 键 | GPIO0 | 长按清配网 / 短按双击手势输出（与 D1/D2 联动） | bsp_key |
+
+
 
 ## 网页 API 记录
 
@@ -87,6 +97,8 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 
 > 注意：固件只注册 GET/POST 实际用到的方法，`curl -I`（HEAD 请求 `/`）返回 404 属正常现象。
 
+
+
 ## GPIO 控制与闹钟功能记录（bsp_gpio / app_web）
 
 | 功能 | 接口/机制 | 说明 |
@@ -100,6 +112,8 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | 网页面板 | app_web_page.h `tOpen`/`tHide` | 每通道独立展开；**10s 无操作自动收起**（面板内点击/输入重置计时；定时按钮点开再点关闭；取消即清计时）；2s 轮询刷新在输入 number 时自动跳过，不打断输入 |
 | **设备时钟本地走秒（V1.0.2.13）** | app_web_page.h `todSet`/`todFmt`/`#todclk` | 底部"设备时间"不再等 2s 轮询：每次 `/api/gpio` 响应用 `nowhh/mm/ss` 校准本地基准，前端 250ms tick 走秒渲染，不累积漂移；切离 GPIO 页同步停表。修"时间显示慢约 1s"（秒级显示只能 2s 跳格的轮询渲染所致） |
 
+
+
 ## 串口透传层功能记录（app_terminal / bsp_uart）
 
 | 功能 | 函数 | 说明 |
@@ -110,6 +124,8 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | 转发客户端管理 | `forwardLoop()` | TCP 客户端模式断线 2s 间隔自动重连；UDP 模式 `begin` 后无连接开销；无路由不发起连接 |
 | 状态指示 | `ledLoop()` | 三态闪烁策略见硬件资源表（STA 心跳 / AP 慢闪 / 连接快闪） |
 
+
+
 ## 转发功能记录（app_forward / app_config）
 
 | 功能 | 函数 | 说明 |
@@ -119,6 +135,8 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | 切换与保存语义 | `/api/forward` 的 `sel=1` | 网页协议单选 onchange 带 `sel=1` → 后端只带出槽位忽略表单；保存按钮不带 sel → 写入当前协议槽位。**二者必须区分**，否则保存请求被误当切换、表单被静默丢弃（V1.0.2.8 实测踩坑） |
 | 局域网直连豁免（V1.0.2.10） | `AppFwdTargetLanIp()` | 目标为私网/环回 IP 字面量时不受无互联网 NTP 门控限制（connect 毫秒级无 DNS），纯内网转发可持续保持连接；域名/公网目标仍需等 NTP 同步 |
 | 连接维护 | `AppFwdTcpMaintain/AppFwdMqttMaintain` | 断线指数退避重连 4s→16s→64s→256s 封顶 300s；无路由或网页忙时不发起阻塞连接 |
+
+
 
 ## 物联网云桥功能记录（app_cloud）
 
@@ -136,6 +154,8 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | 运行诊断 | cloudtag / clouderr / cloudrc（状态 JSON） | tag：1 TCP 连不上 2 等 CONNACK 3 在线 4 CONNACK 拒绝 5 CONNACK 超时 6/7 中途断开；err 累计异常次数；rc 最近 CONNACK 返回码——**免串口打印即可远程定位卡点** |
 
 > 手工 MQTT 规范：CONNECT flags 必须 **0xC2**（clean session + username + password 声明位，0x02 会被标准 broker 拒连）；QoS0 最简路径；报文解析显式状态机（HDR→LEN→TOPIC→PAYLOAD），每字节 `available()` 门控防 TCP 分段撕裂。
+
+
 
 ## 防克隆芯片绑定功能记录（app_bind / V1.0.2.12）
 
@@ -163,6 +183,8 @@ flowchart LR
 ```
 
 > 边界（诚实声明）：防的是非技术用户顺手克隆，**防不了会逆向固件 patch 掉校验分支的专业抄袭者**；硬件级防护只有换 ESP32-C3（Flash 加密+Secure Boot v2，离线同样生效）。
+
+
 
 ## 硬件号数据流转
 
@@ -224,6 +246,8 @@ flowchart LR
 
 > 串口上行一帧三投（P1/P2/P3 同源）；两条下行路径（P4/P5 本地、P6 云）都直达 `Serial.write`；云下行同时镜像网页终端，方便观察。
 
+
+
 ## 云平台接入矩阵
 
 | 平台 | proto | 接入方式 | 端口 | 鉴权 | 实测状态 |
@@ -236,6 +260,8 @@ flowchart LR
 
 协议细节（指令表/签名格式/主题后缀语义）见 [Cloud_Protocol.md](Cloud_Protocol.md)；版本逐条修改记录见下文「版本修改史」章节。
 
+
+
 ## 构建与烧录
 
 ```bash
@@ -247,6 +273,8 @@ python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（
 - 出厂/换布局：`pio run -t erase`；配置存 LittleFS `/config.txt`
 - 验证舞步：`nmcli dev wifi connect ESP8266-XCOM-9A2A` → `curl http://192.168.4.1/api/status` → `nmcli con up <办公WiFi>`
 
+
+
 ## 功能验证
 
 1. 上电 → 热点 `ESP8266-XCOM-9A2A`（MAC 后 4 位）出现，LED 仅 AP 模式 200ms 慢闪
@@ -254,6 +282,8 @@ python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（
 3. 串口终端标签：注入串口数据 → 网页实时显示（P1 通路）；网页发送 → 设备收到（P4 通路）
 4. 物联网平台标签选巴法/uid/主题保存 → `cloudon:1`（诊断 tag=3）；平台控制台下行 → 设备串口收到（P6 通路）；PC 注入串口数据 → 云控制台历史数据出现（P3 通路）
 5. 转发标签填 TCP 服务器 IP:PORT → `nc -l <port>` 收到串口数据（P2 通路）
+
+
 
 ## 已知限制
 
@@ -263,6 +293,8 @@ python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（
 - 单连接模型：转发目标 1 个、云平台 1 个（不可并发双云）
 - 每日闹钟依赖 NTP：纯 AP 模式（无上行）时钟不可用，`timeok=0` 拒绝设置；闹钟恢复后须等 NTP 同步才触发
 - 倒计时定时（ONCE）为易失设计，重启丢失（仅每日闹钟掉电保存）
+
+
 
 ## 踩坑记录
 
@@ -286,6 +318,8 @@ python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（
 | 绑定校验双缓冲混用（V1.0.2.12 自查） | 参考值与本次计算值共用一个缓冲区，`AppBindGet` 一执行就把算好的绑定值覆盖掉；修复=拆 `Id`/`RefId` 两缓冲；教训：**成对出现的输入/参考值各自独立缓冲，命名先区分再写码** |
 | OneNET "连上就断"（V1.0.2.12 时期排查） | 现象=一有串口数据就被踢（cloudtag=6，无数据则稳在线）。PC 同 token 复现分组实验：只连/只 PINGREQ→存活 100s+；**发任何 PUBLISH（任意主题/载荷含合法 OneJSON）→~3s 静默 EOF**（无 DISCONNECT 无错误码）→ 踢线条件与固件报文内容无关，疑平台产品配置（接入模式/强校验），待控制台核实；教训：**服务器裸断≠固件 bug，先 PC 复现分离变量（只连/只 ping/发包），别急着改代码**；另外 keepalive=60 完全无流量 ~90s（1.5×）被断属标准 MQTT 超时，非异常 |
 | 设备时钟显示慢约 1s（V1.0.2.13） | 秒级时间在 2s 轮询回调里渲染，只能 2s 跳格且平均滞后 1s；修复=轮询校准基准+前端 250ms 本地走秒（todSet/todFmt）；教训：**秒级显示用"轮询校准+本地走秒"模式，别把显示频率绑死在轮询频率上** |
+
+
 
 ## 版本修改史
 
