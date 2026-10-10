@@ -285,9 +285,25 @@ flowchart LR
 
 ```bash
 PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages ~/.local/bin/pio run   # 编译（先确认 grep -rc DBG src/ modules/ 为 0）
+**一键脚本（推荐，跨 Linux 机器零配置）**：
+
+```bash
+./flash.sh                 # 自动探测 /dev/ttyUSB* → /dev/ttyACM*
+./flash.sh /dev/ttyUSB0    # 显式指定串口
+FLASH_PORT=/dev/ttyUSB1 FLASH_BAUD=115200 ./flash.sh   # 环境变量方式
+```
+
+脚本能力：pio 三路径查找（PATH/~/.local/bin/~/.platformio/penv）；pyserial 缺失自动补 PYTHONPATH；CH340 tcflush 怪癖经 runpy 注入补丁；esptool.py→esptool CLI→pio upload 三级回退；烧录前自动停占口进程（如 serial_sim.py）并在出口自动原样恢复。2ec9d0b 实测一次跑通。
+
+<details><summary>手动等价命令（脚本不可用时）</summary>
+
+```bash
+# 编译：
 # 烧录（内置 CH340 tcflush 怪癖绕法；先 lsof /dev/ttyUSB0 查占用；烧完重启 serial_sim.py）：
 PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import serial.serialposix; serial.serialposix.Serial._reset_input_buffer=lambda self: None; import runpy,sys; sys.argv=['esptool.py','--chip','esp8266','--port','/dev/ttyUSB0','--baud','115200','write_flash','0x0','.pio/build/nodemcuv2/firmware.bin']; runpy.run_path('/home/yym/.local/bin/esptool.py',run_name='__main__')"
 ```
+
+</details>
 
 - 烧录会断串口：**烧完必须重启上位机串口脚本**（serial_sim.py）
 - 出厂/换布局：`pio run -t erase`；配置存 LittleFS `/config.txt`
