@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.0**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.1**（develop）
 
 
 
@@ -334,6 +334,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 | 分槽改造丢老配置（V1.0.2.8→.9 升级路径） | 新格式只写槽位键后，旧版 fw* 键在下次保存时被覆盖删除，而老配置还在生效字段没进槽位——首次切换再切回就丢；修复=加载后 `AppFwdCfgMigrate` 把生效配置一次性迁入当前协议槽位（照 AppCloudCfgMigrate 模式）；教训：**改存储格式必须写迁移，覆盖旧键前先检查数据去向** |
 | 网页终端高频小帧卡顿（前端） | 每帧 appendChild+scrollTop=scrollHeight 强制同步布局，帧率越高卡得越狠；修复=文本节点攒入 DocumentFragment，裁剪与滚动合并进 requestAnimationFrame 单次重排（V1.0.2.10） |
 | 重启后云平台永远连不上（cloudpk 空，≤V1.0.2.5） | config.txt 分槽存了各平台凭据（cloudali_/cloudone_/cloudbf_），但加载后没人把当前平台槽位带回生效配置 G_Cfg——MQTT CONNECT 拿空凭据必被拒；**修复=AppConfigLoad 末尾补 AppCloudCfgSelect(proto)**；教训：**读写路径要成对设计**，CfgSet 写 G_Cfg+G_Slot 双份，恢复路径也必须补齐 |
+| 网页串口终端周期性卡 1~2s（V1.0.5.0） | 选了云平台但凭据为空+有互联网：TryConnect 每个退避周期拿空域名 connect，DNS/TCP 同步阻塞主循环数秒，WS 推送停摆；**修复=AppCloudCredOk() 建链前置校验，缺凭据挂起零开销**；教训：connect 前除了 NTP 门控还要查参数有效性——"看起来不会发生的调用路径"（空域名）恰恰是用户配了一半的状态 |
 | 验证恢复后凭据非空≠云已连上 | 纯 AP/无互联网环境下只能验到 tag=1（建链失败属预期，DNS 不通）；真实连云需板子联网后看 cloudon:1 |
 | 绑定校验双缓冲混用（V1.0.2.12 自查） | 参考值与本次计算值共用一个缓冲区，`AppBindGet` 一执行就把算好的绑定值覆盖掉；修复=拆 `Id`/`RefId` 两缓冲；教训：**成对出现的输入/参考值各自独立缓冲，命名先区分再写码** |
 | OneNET "连上就断"（V1.0.2.12 时期排查） | 现象=一有串口数据就被踢（cloudtag=6，无数据则稳在线）。PC 同 token 复现分组实验：只连/只 PINGREQ→存活 100s+；**发任何 PUBLISH（任意主题/载荷含合法 OneJSON）→~3s 静默 EOF**（无 DISCONNECT 无错误码）→ 踢线条件与固件报文内容无关，疑平台产品配置（接入模式/强校验），待控制台核实；教训：**服务器裸断≠固件 bug，先 PC 复现分离变量（只连/只 ping/发包），别急着改代码**；另外 keepalive=60 完全无流量 ~90s（1.5×）被断属标准 MQTT 超时，非异常 |
@@ -349,6 +350,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.1 | 10-10 | （本次提交） | 【修复】云平台凭据缺失时建链门控：空凭据+有互联网时（如选了华为云但未填三元组）`AppCloudTryConnect` 每个退避周期拿空域名发起 connect，DNS/TCP 同步阻塞主循环数秒——网页串口终端表现为 1~2s 周期性卡顿（数据停走后恢复，循环往复）。新增 `AppCloudCredOk()` 建链前置校验（巴法查 uid、阿里/OneNET/腾讯/华为查 pk/id/ps 三元组齐备），缺失直接挂起建链（零开销不碰网络），填好凭据点"应用"即恢复；与 V1.0.2.7 的无互联网 NTP 门控互补，DNS 卡主循环的两条路径都封死 |
 | V1.0.5.0 | 10-10 | （本次提交） | 【新增】华为云 IoTDA 平台接入（proto=5，工程目标 3 补齐第 5 家=五家全通）：密钥认证 MQTT 1883 明文（`{product_id}.iot-mqtts.cn-north-4.myhuaweicloud.com`，8883=MQTTS 需 CA），username=device_id，clientId=`{device_id}_0_0_{UTC YYYYMMDDHH}`（官方四段式，签名类型 0=不校验时间戳），password=hex(hmac_sha256(UTC时间戳,secret))——密钥=时间戳/内容=secret（官方 SDK EncryptWithHMac 源码+官方文档测试向量双核实，方向易反），BearSSL br_sha256_vtable 新增 HMAC-SHA256；timestamp 仿官方 SDK gmtime 取 UTC（无 RTC=1970010100 可用，NTP 后自动真实）；上行默认 `$oc/devices/{id}/sys/messages/up`（平台不校验格式=裸流透传），下行 sys/messages/down 靠平台 CONNACK 后自动订阅 QoS0 系统主题（免 SUBSCRIBE）；云配置槽位 5→6（cloudhw_ 前缀键），proto 上限 5；网页物联网平台标签新增华为云单选+字段标签/占位符/secret 必填校验；版本 V1.0.5.0（第三位+1：新功能大改） |
 | V1.0.4.0 | 10-01 | 49110f5 | 【新增】腾讯云 IoT 平台接入（proto=4，工程目标 3 补齐第 4 家）：密钥认证 MQTT 1883 明文（`{pid}.iotcloud.tencentdevices.com`，8883 仅证书认证用），username=`{pid}{dn};12010126;xcom1;4102444800`（sdkappid 官方固定值，expiry 固定 2100 免 RTC），password=hex(hmac_sha1(b64dec(PSK),username));hmacsha1，BearSSL br_sha1_vtable 新增 HMAC-SHA1 纯算法；默认主题 `{pid}/{dn}/data` 订阅+发布（官方默认权限双向通吃，无需控制台建主题）；clientId=`{pid}{dn}`；云配置槽位 4→5（cloudtx_ 前缀键），proto 上限 4；网页物联网平台标签新增腾讯云单选+PSK 必填校验；签名算法经官方 qcloud_iot_mqtt_sign C 工具对拍一致；版本 V1.0.4.0（第三位+1：新功能大改） |
 | V1.0.3.0 | 09-30 | c11355b | 【新增】HTTP 协议转发（proto=4，工程目标 1 补齐）：串口数据攒批 POST + 响应体写回串口（下行）+ 空闲 1s GET 探询；手工报文短连接非阻塞状态机；fhttp_ 槽位键；端到端实测通过 |
