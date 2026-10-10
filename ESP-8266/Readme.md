@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.4.0**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.0**（develop）
 
 
 
@@ -15,7 +15,7 @@
 
 1. **UART 数据可通过 TCP/UDP/MQTT/HTTP 协议透传转发**
 2. **UART 发送和接收到的数据均在网页串口终端显示**
-3. **物联网平台支持主流平台连接：阿里云、OneNET、腾讯云、巴法云、华为云**
+3. **物联网平台支持主流平台连接：阿里云、OneNET、腾讯云、巴法云、华为云（五家全通，V1.0.5.0）**
 4. **GPIO 控制支持电平控制、PWM 控制、定时控制**
 5. **配网页面支持 WiFi 配网、设备重启、清除配网**
 6. **所有的功能实现应该遵循Project_Level_Skill.md文档要求**
@@ -30,11 +30,11 @@
 |------|------|------|
 | 1 转发协议 | TCP✅ UDP✅ MQTT✅ **HTTP✅（V1.0.3.0 端到端实测）** | 无（目标达成） |
 | 2 双向终端显示 | 串口→终端✅；转发下行→终端✅（AppTerminalBroadcast）；云下行→终端✅；网页发送回显✅ | 无 |
-| 3 云平台 | 阿里✅ OneNET✅ 巴法✅ **腾讯✅（V1.0.4.0 已接入）** | **华为云未实现** |
+| 3 云平台 | 阿里✅ OneNET✅ 巴法✅ 腾讯✅ **华为✅（V1.0.5.0 已接入）** | 五家云平台全部打通 ✅ |
 | 4 GPIO 控制 | 电平✅ PWM✅ ONCE 倒计时✅ DAILY 每日闹钟✅（掉电保存） | 无 |
 | 5 配网页 | WiFi 配网✅ 重启 `/api/reboot`✅ 清配网 `/api/resetwifi`✅ | 无 |
 
-> 待定实现决策：华为云 IoTDA 接入（最后一个云平台缺口：MQTT，鉴权=HMAC-SHA256 密码推导，具体拼接格式实现前需 web_fetch 官方文档核实，不凭记忆）；云配置槽位扩 6 槽（cloudhw_ 前缀风格），复用手工组包架构
+> 华为云 IoTDA 已接入（V1.0.5.0）：MQTT 1883 明文，鉴权=HMAC-SHA256 密码推导（官方 SDK 源码 + 官方文档双核实，签名类型 0 不校验时间戳），云配置槽位扩 6 槽（cloudhw_ 前缀），复用手工组包架构
 - **仓库**：ESP8266；远程经 SSH 别名 `git@github-esp8266`
 - **架构铁律**：串口=数据通道，**生产固件禁止任何 DBG/调试打印**；AP 热点常开 + 全异步（主循环非阻塞）
 - **云配置分槽**：四平台凭据独立存 config.txt（cloudali_/cloudone_/cloudbf_/cloudtx_ 前缀），cloudproto 记当前选择；加载后须 AppCloudCfgSelect 带出生效（V1.0.2.6）
@@ -101,7 +101,7 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | POST | `/api/wifi` | ssid&pass | 连接并持久化 |
 | POST | `/api/serial` | baud | 在线改波特率并持久化 |
 | POST | `/api/forward` | proto(0/1/2/3)&ip&port&mqtt参数 | 转发配置：0 关 / 1 TCP 客户端 / 2 UDP / 3 MQTT 客户端 |
-| POST | `/api/cloud` | proto(0/1/2/3/4)&tra&pk&id&ps… | 云平台配置；变更即生效（`cloudApply` 断开重连） |
+| POST | `/api/cloud` | proto(0~5)&tra&pk&id&ps… | 云平台配置；变更即生效（`cloudApply` 断开重连） |
 | GET | `/api/gpio` | — | 七通道状态 JSON（lv/duty/pwm + tmrmode/tmrremain/tmrlv/tmrhh/tmrmm + timeok/now 时分秒 + key/led/adc） |
 | POST | `/api/gpio` | ch&val / ch&duty / ch&tmode | 电平开关 / PWM 占空比 / 定时：`tmode=once&sec&tmrlv`、`tmode=daily&hh&mm&tmrlv`、`tmode=off` |
 | GET | `/api/multi` | — | 串口终端多条发送条目（内容+勾选） |
@@ -159,8 +159,9 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | 功能 | API | 说明 |
 |------|-----|------|
 | 配置结构 | `CloudCfg cc` | proto：0 关 / 1 阿里云 / 2 OneNET / 3 巴法云 / 4 腾讯云；tra（巴法）：0 TCP8344 / 1 MQTT9501 / 2 MQTTS9503；pk/id/ps/pub/sub 按平台复用（腾讯 pk=产品ID，id=设备名，ps=PSK） |
-| 配置持久化 | `cloudLoad()` / `cloudSaveTo()` | 挂接在 main 的 config.txt 读写流程；四平台槽位键（cloudali_/cloudone_/cloudbf_/cloudtx_ 前缀，各存 pk/id/ps/pub/sub，巴法多 tra），cloudproto 记当前选择；旧版单组 cloud* 键由 `AppCloudCfgMigrate` 一次性迁入 |
+| 配置持久化 | `cloudLoad()` / `cloudSaveTo()` | 挂接在 main 的 config.txt 读写流程；五平台槽位键（cloudali_/cloudone_/cloudbf_/cloudtx_/cloudhw_ 前缀，各存 pk/id/ps/pub/sub，巴法多 tra），cloudproto 记当前选择；旧版单组 cloud* 键由 `AppCloudCfgMigrate` 一次性迁入 |
 | **腾讯云接入（V1.0.4.0）** | `AppCloudTencentPass()` / `AppCloudHmacSha1()` | 接入点 `{pid}.iotcloud.tencentdevices.com:1883`（密钥认证明文；8883 仅证书认证用）；username=`{pid}{dn};12010126;xcom1;4102444800`（sdkappid 官方固定值，expiry 固定 2100 免 RTC），password=`hex(hmac_sha1(b64dec(PSK), username));hmacsha1`；clientId=`{pid}{dn}`；默认主题 `{pid}/{dn}/data` 官方默认权限双向通吃（无需控制台建主题）；签名经官方 `qcloud_iot_mqtt_sign` C 工具对拍一致；**板端验证 CONNECT 被接受（tag=3/cloudon=1），控制台收发实测待真实凭据** |
+| **华为云接入（V1.0.5.0）** | `AppCloudHuaweiPass()` / `AppCloudHmacSha256()` / `AppCloudHwTimestamp()` | 接入点 `{product_id}.iot-mqtts.cn-north-4.myhuaweicloud.com:1883`（明文 MQTT；8883 为 MQTTS 需 CA 证书）；username=device_id；clientId=`{device_id}_0_0_{UTC YYYYMMDDHH}`（四段式：身份标识类型 0=设备ID，签名类型 0=HMACSHA256 不校验时间戳，官方 3009）；password=`hex(hmac_sha256(UTC时间戳, secret))`——**密钥=时间戳、内容=secret**（官方 SDK `EncryptWithHMac` 源码+官方文档测试向量双核实，方向极易记反）；timestamp 仿官方 SDK `GetClientTimesStamp()` gmtime 取 UTC（格式 YYYYMMDDHH），无 RTC 时为 1970010100（类型 0 不校验时间故可用），NTP 同步后自动变真实时间；上行默认主题 `$oc/devices/{device_id}/sys/messages/up`（平台不校验消息格式，串口裸流直发=透传保真），下行 `sys/messages/down` 由平台 CONNACK 后自动订阅 QoS0 系统主题、免显式 SUBSCRIBE；BearSSL br_sha256_vtable 新增 HMAC-SHA256 纯算法；云端需先在 IoTDA 控制台创建产品/设备并获得 device_id、secret |
 | 上行队列 | `AppCloudPush()` / `AppCloudMarkSerialIo()` | 1024B 环形队列，满丢最旧；发布条件 = **串口静默>500ms 或 距上次发布>1s**（"且"会永久饿死持续流式数据——实测教训） |
 | 主泵 | `AppCloudLoop()` | 主循环每圈调用：未连接按退避（4s→16s→64s→256s 封顶 300s）重连；TCP 模式 25s `ping\r\n` 心跳；MQTT 模式 30s PINGREQ；会话断开自动重建 |
 | 连接建立 | `AppCloudStart()` | 按平台/接入方式选明文 `WiFiClient` 或 TLS `WiFiClientSecure`（`setInsecure()` + `setBufferSizes(256,512)`，无 MFLN 探测）；腾讯云密钥认证走 1883 明文；巴法 TCP 发 `cmd=1` 订阅、其余发 MQTT CONNECT |
@@ -273,6 +274,7 @@ flowchart LR
 | 巴法云 MQTTS | 3 | tra=2 | 9503 TLS | clientId=uid | ⏳ 代码就绪未实测 |
 | 阿里云 IoT | 1 | TLS | 8883 | 三元组+HMAC-MD5 | ⏳ 待真实凭据 |
 | 腾讯云 IoT | 4 | 密钥认证 MQTT | 1883 明文（8883 仅证书） | `{pid}{dn};12010126;xcom1;{expiry}` + HMAC-SHA1(PSK) | ⚙️ V1.0.4.0 已实现；板端 CONNECT 验证通过（tag=3）；控制台收发实测待真实凭据 |
+| 华为云 IoTDA | 5 | 密钥认证 MQTT | 1883 明文（8883=MQTTS 需 CA） | clientId=`{id}_0_0_{ts}`，password=HMAC-SHA256(ts, secret) | ⚙️ V1.0.5.0 已实现；签名经官方 SDK 源码+官方测试向量对拍一致；控制台收发实测待真实凭据 |
 | OneNET | 2 | TLS | 8883 | token 2018-10-31 | ⚠️ 实测（V1.0.2.13 固件+PC 双重复现）：认证通过（CONNACK rc=0）但**发任何 PUBLISH 即被服务器静默断链**（~3s EOF，任意主题/载荷含合法 OneJSON）；只发 PINGREQ 可长期存活 → 非固件问题，疑产品级配置（接入模式/物模型强校验），待控制台核实 |
 
 协议细节（指令表/签名格式/主题后缀语义）见 [Cloud_Protocol.md](Cloud_Protocol.md)；版本逐条修改记录见下文「版本修改史」章节。
@@ -343,10 +345,11 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 
 > 依据代码仓库 git log 逐条整理（2026-09-30）；早期提交无正式版本号（stage 阶段号/无号），自 V1.0.2.x 起版本号写入 `APP_WEB_VER`（app_web.cpp），规则：小修第四位 +1，大改第三位 +1 且第四位保留。
 
-### V1.0.2.x ~ V1.0.4.x 系列（正式版本号）
+### V1.0.2.x ~ V1.0.5.x 系列（正式版本号）
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.0 | 10-10 | （本次提交） | 【新增】华为云 IoTDA 平台接入（proto=5，工程目标 3 补齐第 5 家=五家全通）：密钥认证 MQTT 1883 明文（`{product_id}.iot-mqtts.cn-north-4.myhuaweicloud.com`，8883=MQTTS 需 CA），username=device_id，clientId=`{device_id}_0_0_{UTC YYYYMMDDHH}`（官方四段式，签名类型 0=不校验时间戳），password=hex(hmac_sha256(UTC时间戳,secret))——密钥=时间戳/内容=secret（官方 SDK EncryptWithHMac 源码+官方文档测试向量双核实，方向易反），BearSSL br_sha256_vtable 新增 HMAC-SHA256；timestamp 仿官方 SDK gmtime 取 UTC（无 RTC=1970010100 可用，NTP 后自动真实）；上行默认 `$oc/devices/{id}/sys/messages/up`（平台不校验格式=裸流透传），下行 sys/messages/down 靠平台 CONNACK 后自动订阅 QoS0 系统主题（免 SUBSCRIBE）；云配置槽位 5→6（cloudhw_ 前缀键），proto 上限 5；网页物联网平台标签新增华为云单选+字段标签/占位符/secret 必填校验；版本 V1.0.5.0（第三位+1：新功能大改） |
 | V1.0.4.0 | 10-01 | 49110f5 | 【新增】腾讯云 IoT 平台接入（proto=4，工程目标 3 补齐第 4 家）：密钥认证 MQTT 1883 明文（`{pid}.iotcloud.tencentdevices.com`，8883 仅证书认证用），username=`{pid}{dn};12010126;xcom1;4102444800`（sdkappid 官方固定值，expiry 固定 2100 免 RTC），password=hex(hmac_sha1(b64dec(PSK),username));hmacsha1，BearSSL br_sha1_vtable 新增 HMAC-SHA1 纯算法；默认主题 `{pid}/{dn}/data` 订阅+发布（官方默认权限双向通吃，无需控制台建主题）；clientId=`{pid}{dn}`；云配置槽位 4→5（cloudtx_ 前缀键），proto 上限 4；网页物联网平台标签新增腾讯云单选+PSK 必填校验；签名算法经官方 qcloud_iot_mqtt_sign C 工具对拍一致；版本 V1.0.4.0（第三位+1：新功能大改） |
 | V1.0.3.0 | 09-30 | c11355b | 【新增】HTTP 协议转发（proto=4，工程目标 1 补齐）：串口数据攒批 POST + 响应体写回串口（下行）+ 空闲 1s GET 探询；手工报文短连接非阻塞状态机；fhttp_ 槽位键；端到端实测通过 |
 | V1.0.2.13 | 09-30 | 9eafc35 | 【优化】GPIO 页设备时钟本地走秒：轮询响应校准基准 + 前端 250ms 渲染，消除 2s 轮询造成的约 1s 显示滞后；切离页面停表 |
@@ -406,4 +409,4 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 
 ### 规划中（工程目标缺口）
 
-- **华为云 IoTDA**（最后一个云缺口）：MQTT 接入，鉴权=HMAC-SHA256 密码推导（实现前须 web_fetch 官方文档核实拼接格式）；云配置槽位扩 cloudhw_
+- ~~华为云 IoTDA~~ ✅ 已完成（V1.0.5.0，五家云平台全通）。控制台收发实测待真实凭据（华为/腾讯/阿里/OneNET 均同此状态）

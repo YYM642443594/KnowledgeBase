@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.0 | 10-10 | （本次提交） | 【新增】华为云 IoTDA 平台接入（proto=5，工程目标 3 补齐第 5 家=**五家云平台全通**）：密钥认证 MQTT 1883 明文（`{product_id}.iot-mqtts.cn-north-4.myhuaweicloud.com`，8883=MQTTS 需 CA），username=device_id，clientId=`{device_id}_0_0_{UTC YYYYMMDDHH}`（官方四段式：身份类型 0=设备ID、签名类型 0=HMACSHA256 不校验时间戳），password=hex(hmac_sha256(UTC时间戳, secret))——**密钥=时间戳/内容=secret**（官方 SDK EncryptWithHMac 源码+官方文档测试向量双核实，方向易反），BearSSL br_sha256_vtable 新增 HMAC-SHA256 纯算法；timestamp 仿官方 SDK gmtime 取 UTC（无 RTC=1970010100 可用，NTP 后自动真实）；上行默认 `$oc/devices/{id}/sys/messages/up`（平台不校验消息格式=裸流透传保真），下行 sys/messages/down 靠平台 CONNACK 后自动订阅 QoS0 系统主题（免 SUBSCRIBE）；云配置槽位 5→6（cloudhw_ 前缀键），proto 上限 5；网页物联网平台标签新增华为云单选+字段标签/占位符/secret 必填校验；版本 V1.0.5.0（第三位+1：新功能大改） |
 | V1.0.4.0 | 10-01 | 49110f5 | 【新增】腾讯云 IoT 平台接入（proto=4，工程目标 3 补齐第 4 家）：密钥认证 MQTT 1883 明文（`{pid}.iotcloud.tencentdevices.com`，8883 仅证书认证用），username=`{pid}{dn};12010126;xcom1;4102444800`（sdkappid 官方固定值，expiry 固定 2100 免 RTC），password=hex(hmac_sha1(b64dec(PSK), username));hmacsha1，BearSSL br_sha1_vtable 新增 HMAC-SHA1 纯算法；默认主题 `{pid}/{dn}/data` 订阅+发布（官方默认权限双向通吃，无需控制台建主题）；clientId=`{pid}{dn}`；云配置槽位 4→5（cloudtx_ 前缀键），proto 上限 4；网页物联网平台标签新增腾讯云单选+字段标签/占位符/必填校验（PSK 必填）；签名算法经官方 qcloud_iot_mqtt_sign C 工具对拍一致；版本 V1.0.4.0（第三位+1：新功能大改） |
 | V1.0.3.0 | 09-30 | c11355b | 【新增】HTTP 协议转发（proto=4，工程目标 1 补齐）：串口数据攒批 POST + 响应体写回串口（下行）+ 空闲 1s GET 探询；手工报文短连接非阻塞状态机；fhttp_ 槽位键；端到端实测通过 |
 | V1.0.2.13 | 09-30 | 9eafc35 | 【优化】GPIO 页设备时钟本地走秒：轮询响应校准基准 + 前端 250ms 渲染，消除 2s 轮询造成的约 1s 显示滞后；切离页面停表 |
@@ -65,5 +66,5 @@
 
 ## 规划中（工程目标缺口）
 
-- **HTTP 转发**（proto=4）：POST 上行 + 响应/轮询下行
-- **华为云 IoTDA**（最后一个云缺口）：MQTT 接入，鉴权=HMAC-SHA256 密码推导（实现前须 web_fetch 官方文档核实拼接格式）；云配置槽位扩 cloudhw_
+- ~~HTTP 转发~~ ✅ V1.0.3.0 已完成；~~华为云 IoTDA~~ ✅ V1.0.5.0 已完成（**五大工程目标全部落地**）
+- 各云平台控制台收发实测待真实凭据（华为/腾讯/阿里/OneNET；巴法 TCP 已实测）
