@@ -49,11 +49,25 @@
 - **⚠️ 实测平台侧问题（待控制台核实）**：认证正常但**发任何 PUBLISH 即被服务器静默断链**（~3s EOF，无 DISCONNECT/错误码；任意主题——含 $sys 物模型主题与自定义主题，任意载荷——含合法 OneJSON）；只发 PINGREQ/PINGRESP 可长期存活。PC 与固件双端同现象 → 非固件 bug，疑产品接入模式/物模型强校验配置问题
 - 附：keepalive 内完全无任何报文时，服务端 ~1.5×keepalive 断链（60s→实测 90s）属标准 MQTT 行为，勿误判
 
+## 腾讯云 IoT Explorer（MQTT 1883 明文·密钥认证，固件已实现 V1.0.4.0）
+
+- 接入点：`{productKey}.iotcloud.tencentdevices.com:1883`（**密钥认证走 1883 明文**；8883 仅证书认证用——官方文档 634/32546 核实，与阿里/OneNET 全 TLS 不同）
+- username = `{pid}{dn};12010126;xcom1;4102444800`
+  - 格式 `{productId}{deviceName};{sdkappid};{connid};{expiry}`；sdkappid=12010126 为官方固定值；connid 自定义（固件固定 xcom1）；expiry 固定 4102444800（2100 年，免 RTC）
+- password = `hex( hmac_sha1( b64dec(PSK), username ) );hmacsha1`
+  - **PSK 先 base64 解码**再 HMAC-SHA1（同 OneNET"先解码"思路）；摘要 hex 小写；尾部拼 `;hmacsha1` 算法声明段
+  - 签名串就是整个 username，不含独立时间戳参数（时效在 expiry 里）
+- clientId = `{pid}{dn}`
+- 默认主题 `{pid}/{dn}/data`：官方默认权限**发布+订阅双向通吃**，无需控制台建主题（与阿里不同）
+- 固件：BearSSL `br_sha1_vtable` HMAC-SHA1 纯算法（AppCloudHmacSha1）；签名经官方 `qcloud_iot_mqtt_sign` C 工具对拍一致；CONNECT flags 0xC2 照旧
+- 三元组 = 产品ID / 设备名 / 设备密钥(PSK)
+- 板端验证：CONNECT 被 broker 接受（cloudtag=3/cloudon=1）；平台控制台收发实测待真实设备凭据
+
 ## 通用 MQTT 底层备忘（手工组包）
 
 - CONNECT 可变头：`MQTT`+\x04（3.1.1），flags **0xC2** = clean session + username + password 三位必须随 payload 声明，keepalive 60s
 - 订阅/发布走 QoS0 最简路径；解析用显式状态机（HDR→LEN→TOPIC→PAYLOAD），每字节 `available()` 门控防 TCP 分段撕裂
-- ESP8266 上 BearSSL：`br_hmac_key_init(&kc,&br_md5_vtable,key,len)` → `br_hmac_update` → `br_hmac_out`（16B）
+- ESP8266 上 BearSSL：`br_hmac_key_init(&kc,&br_md5_vtable,key,len)` → `br_hmac_update` → `br_hmac_out`（16B）；SHA1 版换 `br_sha1_vtable`（20B，腾讯云用）
 
 ## 实测踩坑补充（2026-09-23）
 

@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.4.0 | 10-01 | 49110f5 | 【新增】腾讯云 IoT 平台接入（proto=4，工程目标 3 补齐第 4 家）：密钥认证 MQTT 1883 明文（`{pid}.iotcloud.tencentdevices.com`，8883 仅证书认证用），username=`{pid}{dn};12010126;xcom1;4102444800`（sdkappid 官方固定值，expiry 固定 2100 免 RTC），password=hex(hmac_sha1(b64dec(PSK), username));hmacsha1，BearSSL br_sha1_vtable 新增 HMAC-SHA1 纯算法；默认主题 `{pid}/{dn}/data` 订阅+发布（官方默认权限双向通吃，无需控制台建主题）；clientId=`{pid}{dn}`；云配置槽位 4→5（cloudtx_ 前缀键），proto 上限 4；网页物联网平台标签新增腾讯云单选+字段标签/占位符/必填校验（PSK 必填）；签名算法经官方 qcloud_iot_mqtt_sign C 工具对拍一致；版本 V1.0.4.0（第三位+1：新功能大改） |
 | V1.0.3.0 | 09-30 | c11355b | 【新增】HTTP 协议转发（proto=4，工程目标 1 补齐）：串口数据攒批 POST + 响应体写回串口（下行）+ 空闲 1s GET 探询；手工报文短连接非阻塞状态机；fhttp_ 槽位键；端到端实测通过 |
 | V1.0.2.13 | 09-30 | 9eafc35 | 【优化】GPIO 页设备时钟本地走秒：轮询响应校准基准 + 前端 250ms 渲染，消除 2s 轮询造成的约 1s 显示滞后；切离页面停表 |
 | V1.0.2.12 | 09-30 | 386067c | 【新增】芯片绑定校验+沉默降级防克隆：app_bind 模块，HMAC-MD5(芯片ID) 绑定（bindid/bindfl 键），3 次宽容后禁 AP/门户/终端/转发/云 |
@@ -65,4 +66,4 @@
 ## 规划中（工程目标缺口）
 
 - **HTTP 转发**（proto=4）：POST 上行 + 响应/轮询下行
-- **腾讯云 / 华为云**：复用手工 MQTT 组包架构，新增鉴权算法（腾讯 HMAC-SHA1/SHA256、华为 HMAC-SHA256 密码推导）
+- **华为云 IoTDA**（最后一个云缺口）：MQTT 接入，鉴权=HMAC-SHA256 密码推导（实现前须 web_fetch 官方文档核实拼接格式）；云配置槽位扩 cloudhw_

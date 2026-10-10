@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.3.0**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.4.0**（develop）
 
 
 
@@ -30,14 +30,14 @@
 |------|------|------|
 | 1 转发协议 | TCP✅ UDP✅ MQTT✅ **HTTP✅（V1.0.3.0 端到端实测）** | 无（目标达成） |
 | 2 双向终端显示 | 串口→终端✅；转发下行→终端✅（AppTerminalBroadcast）；云下行→终端✅；网页发送回显✅ | 无 |
-| 3 云平台 | 阿里✅ OneNET✅ 巴法✅ | **腾讯云、华为云未实现** |
+| 3 云平台 | 阿里✅ OneNET✅ 巴法✅ **腾讯✅（V1.0.4.0 已接入）** | **华为云未实现** |
 | 4 GPIO 控制 | 电平✅ PWM✅ ONCE 倒计时✅ DAILY 每日闹钟✅（掉电保存） | 无 |
 | 5 配网页 | WiFi 配网✅ 重启 `/api/reboot`✅ 清配网 `/api/resetwifi`✅ | 无 |
 
-> 待定实现决策：① HTTP 转发的形态（POST 上行? 长轮询下行? 事件流?）——HTTP 无长连接，下行需轮询，与现有 TCP 式全双工模型不同，需先定交互模式；② 腾讯云/华为云接入优先级与接入方式（MQTT 物联网平台,同现有手工组包架构可复用,主要是鉴权算法差异：腾讯=TLS+PSK 或证书，华为=HMAC-SHA256 密码推导）
+> 待定实现决策：华为云 IoTDA 接入（最后一个云平台缺口：MQTT，鉴权=HMAC-SHA256 密码推导，具体拼接格式实现前需 web_fetch 官方文档核实，不凭记忆）；云配置槽位扩 6 槽（cloudhw_ 前缀风格），复用手工组包架构
 - **仓库**：ESP8266；远程经 SSH 别名 `git@github-esp8266`
 - **架构铁律**：串口=数据通道，**生产固件禁止任何 DBG/调试打印**；AP 热点常开 + 全异步（主循环非阻塞）
-- **云配置分槽**：三平台凭据独立存 config.txt（cloudali_/cloudone_/cloudbf_ 前缀），cloudproto 记当前选择；加载后须 AppCloudCfgSelect 带出生效（V1.0.2.6）
+- **云配置分槽**：四平台凭据独立存 config.txt（cloudali_/cloudone_/cloudbf_/cloudtx_ 前缀），cloudproto 记当前选择；加载后须 AppCloudCfgSelect 带出生效（V1.0.2.6）
 
 
 
@@ -101,7 +101,7 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | POST | `/api/wifi` | ssid&pass | 连接并持久化 |
 | POST | `/api/serial` | baud | 在线改波特率并持久化 |
 | POST | `/api/forward` | proto(0/1/2/3)&ip&port&mqtt参数 | 转发配置：0 关 / 1 TCP 客户端 / 2 UDP / 3 MQTT 客户端 |
-| POST | `/api/cloud` | proto(0/1/2/3)&tra&pk&id&ps… | 云平台配置；变更即生效（`cloudApply` 断开重连） |
+| POST | `/api/cloud` | proto(0/1/2/3/4)&tra&pk&id&ps… | 云平台配置；变更即生效（`cloudApply` 断开重连） |
 | GET | `/api/gpio` | — | 七通道状态 JSON（lv/duty/pwm + tmrmode/tmrremain/tmrlv/tmrhh/tmrmm + timeok/now 时分秒 + key/led/adc） |
 | POST | `/api/gpio` | ch&val / ch&duty / ch&tmode | 电平开关 / PWM 占空比 / 定时：`tmode=once&sec&tmrlv`、`tmode=daily&hh&mm&tmrlv`、`tmode=off` |
 | GET | `/api/multi` | — | 串口终端多条发送条目（内容+勾选） |
@@ -158,15 +158,15 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 
 | 功能 | API | 说明 |
 |------|-----|------|
-| 配置结构 | `CloudCfg cc` | proto：0 关 / 1 阿里云 / 2 OneNET / 3 巴法云；tra（巴法）：0 TCP8344 / 1 MQTT9501 / 2 MQTTS9503；pk/id/ps/pub/sub 按平台复用 |
-| 配置持久化 | `cloudLoad()` / `cloudSaveTo()` | 挂接在 main 的 config.txt 读写流程 |
-| **规划：腾讯云/华为云（工程目标 3，下一个迭代）** | 待实现 | 腾讯云 IoT Explorer（MQTT，HMAC-SHA1/SHA256 密码含时间戳）、华为云 IoTDA（MQTTS，HMAC-SHA256 密码推导）；复用手工组包架构，新增密码/签名算法即可 |
-| 上行队列 | `cloudPush()` / `cloudMarkSerialIo()` | 1024B 环形队列，满丢最旧；发布条件 = **串口静默>500ms 或 距上次发布>1s**（"且"会永久饿死持续流式数据——实测教训） |
-| 主泵 | `cloudLoop()` | 主循环每圈调用：未连接按 10s 退避重连；TCP 模式 25s `ping\r\n` 心跳；MQTT 模式 30s PINGREQ；会话断开自动重建 |
-| 连接建立 | `cloudStart()` | 按平台/接入方式选明文 `WiFiClient` 或 TLS `WiFiClientSecure`（`setInsecure()` + `setBufferSizes(256,512)`，无 MFLN 探测）；巴法 TCP 发 `cmd=1` 订阅、其余发 MQTT CONNECT |
-| 在线判定 | `cloudTcpLine()` / CONNACK 解析 | TCP 模式收到 `cmd=1&res=1` 才置在线（防假连接）；MQTT 模式解析 CONNACK，**返回码在第 4 字节**（`20 02 <session-present> <rc>`），rc=0 在线并自动 SUBSCRIBE |
-| 下行分发 | `cloudParsePackets()` 内部 | 云下行数据 URL 解码后：`Serial.write` 到设备 + 镜像广播网页终端；TCP 行内搜 `&msg=` 兼容解析 |
-| 签名/编码 | `cloudAliyunPass()` / `cloudOnenetToken()` / `cloudHmacMd5()` / `cloudB64()` / `cloudUrlEnc()` | 阿里云 password=base64(hmac_md5(ds,"productKey…&timestamp2524576000000&"))；OneNET token 版本 2018-10-31（AccessKey 先 b64 解码再 HMAC-MD5）；全部手工实现零依赖 |
+| 配置结构 | `CloudCfg cc` | proto：0 关 / 1 阿里云 / 2 OneNET / 3 巴法云 / 4 腾讯云；tra（巴法）：0 TCP8344 / 1 MQTT9501 / 2 MQTTS9503；pk/id/ps/pub/sub 按平台复用（腾讯 pk=产品ID，id=设备名，ps=PSK） |
+| 配置持久化 | `cloudLoad()` / `cloudSaveTo()` | 挂接在 main 的 config.txt 读写流程；四平台槽位键（cloudali_/cloudone_/cloudbf_/cloudtx_ 前缀，各存 pk/id/ps/pub/sub，巴法多 tra），cloudproto 记当前选择；旧版单组 cloud* 键由 `AppCloudCfgMigrate` 一次性迁入 |
+| **腾讯云接入（V1.0.4.0）** | `AppCloudTencentPass()` / `AppCloudHmacSha1()` | 接入点 `{pid}.iotcloud.tencentdevices.com:1883`（密钥认证明文；8883 仅证书认证用）；username=`{pid}{dn};12010126;xcom1;4102444800`（sdkappid 官方固定值，expiry 固定 2100 免 RTC），password=`hex(hmac_sha1(b64dec(PSK), username));hmacsha1`；clientId=`{pid}{dn}`；默认主题 `{pid}/{dn}/data` 官方默认权限双向通吃（无需控制台建主题）；签名经官方 `qcloud_iot_mqtt_sign` C 工具对拍一致；**板端验证 CONNECT 被接受（tag=3/cloudon=1），控制台收发实测待真实凭据** |
+| 上行队列 | `AppCloudPush()` / `AppCloudMarkSerialIo()` | 1024B 环形队列，满丢最旧；发布条件 = **串口静默>500ms 或 距上次发布>1s**（"且"会永久饿死持续流式数据——实测教训） |
+| 主泵 | `AppCloudLoop()` | 主循环每圈调用：未连接按退避（4s→16s→64s→256s 封顶 300s）重连；TCP 模式 25s `ping\r\n` 心跳；MQTT 模式 30s PINGREQ；会话断开自动重建 |
+| 连接建立 | `AppCloudStart()` | 按平台/接入方式选明文 `WiFiClient` 或 TLS `WiFiClientSecure`（`setInsecure()` + `setBufferSizes(256,512)`，无 MFLN 探测）；腾讯云密钥认证走 1883 明文；巴法 TCP 发 `cmd=1` 订阅、其余发 MQTT CONNECT |
+| 在线判定 | `AppCloudTcpLine()` / CONNACK 解析 | TCP 模式收到 `cmd=1&res=1` 才置在线（防假连接）；MQTT 模式解析 CONNACK，**返回码在第 4 字节**（`20 02 <session-present> <rc>`），rc=0 在线并自动 SUBSCRIBE |
+| 下行分发 | `AppCloudParsePackets()` 内部 | 云下行数据 URL 解码后：`Serial.write` 到设备 + 镜像广播网页终端；TCP 行内搜 `&msg=` 兼容解析 |
+| 签名/编码 | `AppCloudAliyunPass()` / `AppCloudOnenetToken()` / `AppCloudTencentPass()` / `AppCloudHmacMd5()` / `AppCloudHmacSha1()` / `AppCloudB64Enc()` / `AppCloudUrlEnc()` | 阿里云 password=base64(hmac_md5(ds,"productKey…&timestamp2524576000000&"))；OneNET token 版本 2018-10-31（AccessKey 先 b64 解码再 HMAC-MD5）；腾讯云 password=hex(hmac_sha1(b64dec(PSK),username));hmacsha1（BearSSL br_sha1_vtable 纯算法）；全部手工实现零依赖 |
 | 运行诊断 | cloudtag / clouderr / cloudrc（状态 JSON） | tag：1 TCP 连不上 2 等 CONNACK 3 在线 4 CONNACK 拒绝 5 CONNACK 超时 6/7 中途断开；err 累计异常次数；rc 最近 CONNACK 返回码——**免串口打印即可远程定位卡点** |
 
 > 手工 MQTT 规范：CONNECT flags 必须 **0xC2**（clean session + username + password 声明位，0x02 会被标准 broker 拒连）；QoS0 最简路径；报文解析显式状态机（HDR→LEN→TOPIC→PAYLOAD），每字节 `available()` 门控防 TCP 分段撕裂。
@@ -272,6 +272,7 @@ flowchart LR
 | 巴法云 MQTT | 3 | tra=1 | 9501 明文 | clientId=uid | ✅ 实测在线（CONNACK 解析修复后） |
 | 巴法云 MQTTS | 3 | tra=2 | 9503 TLS | clientId=uid | ⏳ 代码就绪未实测 |
 | 阿里云 IoT | 1 | TLS | 8883 | 三元组+HMAC-MD5 | ⏳ 待真实凭据 |
+| 腾讯云 IoT | 4 | 密钥认证 MQTT | 1883 明文（8883 仅证书） | `{pid}{dn};12010126;xcom1;{expiry}` + HMAC-SHA1(PSK) | ⚙️ V1.0.4.0 已实现；板端 CONNECT 验证通过（tag=3）；控制台收发实测待真实凭据 |
 | OneNET | 2 | TLS | 8883 | token 2018-10-31 | ⚠️ 实测（V1.0.2.13 固件+PC 双重复现）：认证通过（CONNACK rc=0）但**发任何 PUBLISH 即被服务器静默断链**（~3s EOF，任意主题/载荷含合法 OneJSON）；只发 PINGREQ 可长期存活 → 非固件问题，疑产品级配置（接入模式/物模型强校验），待控制台核实 |
 
 协议细节（指令表/签名格式/主题后缀语义）见 [Cloud_Protocol.md](Cloud_Protocol.md)；版本逐条修改记录见下文「版本修改史」章节。
@@ -281,8 +282,9 @@ flowchart LR
 ## 构建与烧录
 
 ```bash
-python3.8 ~/.local/bin/pio run                                   # 编译（先 grep -c DBG src/* 确认 0）
-python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（先 lsof /dev/ttyUSB0 查占用）
+PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages ~/.local/bin/pio run   # 编译（先确认 grep -rc DBG src/ modules/ 为 0）
+# 烧录（内置 CH340 tcflush 怪癖绕法；先 lsof /dev/ttyUSB0 查占用；烧完重启 serial_sim.py）：
+PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import serial.serialposix; serial.serialposix.Serial._reset_input_buffer=lambda self: None; import runpy,sys; sys.argv=['esptool.py','--chip','esp8266','--port','/dev/ttyUSB0','--baud','115200','write_flash','0x0','.pio/build/nodemcuv2/firmware.bin']; runpy.run_path('/home/yym/.local/bin/esptool.py',run_name='__main__')"
 ```
 
 - 烧录会断串口：**烧完必须重启上位机串口脚本**（serial_sim.py）
@@ -341,10 +343,12 @@ python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（
 
 > 依据代码仓库 git log 逐条整理（2026-09-30）；早期提交无正式版本号（stage 阶段号/无号），自 V1.0.2.x 起版本号写入 `APP_WEB_VER`（app_web.cpp），规则：小修第四位 +1，大改第三位 +1 且第四位保留。
 
-### V1.0.2.x 系列（正式版本号）
+### V1.0.2.x ~ V1.0.4.x 系列（正式版本号）
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.4.0 | 10-01 | 49110f5 | 【新增】腾讯云 IoT 平台接入（proto=4，工程目标 3 补齐第 4 家）：密钥认证 MQTT 1883 明文（`{pid}.iotcloud.tencentdevices.com`，8883 仅证书认证用），username=`{pid}{dn};12010126;xcom1;4102444800`（sdkappid 官方固定值，expiry 固定 2100 免 RTC），password=hex(hmac_sha1(b64dec(PSK),username));hmacsha1，BearSSL br_sha1_vtable 新增 HMAC-SHA1 纯算法；默认主题 `{pid}/{dn}/data` 订阅+发布（官方默认权限双向通吃，无需控制台建主题）；clientId=`{pid}{dn}`；云配置槽位 4→5（cloudtx_ 前缀键），proto 上限 4；网页物联网平台标签新增腾讯云单选+PSK 必填校验；签名算法经官方 qcloud_iot_mqtt_sign C 工具对拍一致；版本 V1.0.4.0（第三位+1：新功能大改） |
+| V1.0.3.0 | 09-30 | c11355b | 【新增】HTTP 协议转发（proto=4，工程目标 1 补齐）：串口数据攒批 POST + 响应体写回串口（下行）+ 空闲 1s GET 探询；手工报文短连接非阻塞状态机；fhttp_ 槽位键；端到端实测通过 |
 | V1.0.2.13 | 09-30 | 9eafc35 | 【优化】GPIO 页设备时钟本地走秒：轮询响应校准基准 + 前端 250ms 渲染，消除 2s 轮询造成的约 1s 显示滞后；切离页面停表 |
 | V1.0.2.12 | 09-30 | 386067c | 【新增】芯片绑定校验+沉默降级防克隆：app_bind 模块，HMAC-MD5(芯片ID) 绑定（bindid/bindfl 键），3 次宽容后禁 AP/门户/终端/转发/云 |
 | V1.0.2.11 | 09-29 | 6f9e573 | 【优化】配网页重启/清除配网按钮完整反馈闭环：轮询 /api/status 检测 uptime 归零判定重启完成，显示等待秒数，完成后自动刷新 |
@@ -402,5 +406,4 @@ python3.8 ~/.local/bin/pio run -t upload --upload-port /dev/ttyUSB0  # 烧录（
 
 ### 规划中（工程目标缺口）
 
-- **HTTP 转发**（proto=4）：POST 上行 + 响应/轮询下行
-- **腾讯云 / 华为云**：复用手工 MQTT 组包架构，新增鉴权算法（腾讯 HMAC-SHA1/SHA256、华为 HMAC-SHA256 密码推导）
+- **华为云 IoTDA**（最后一个云缺口）：MQTT 接入，鉴权=HMAC-SHA256 密码推导（实现前须 web_fetch 官方文档核实拼接格式）；云配置槽位扩 cloudhw_
