@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.1**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.2**（develop）
 
 
 
@@ -366,6 +366,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.2 | 10-10 | （本次提交） | 【修复】GPIO 页状态栏"设备时间"与前三行（FLASH键/板载LED/A0 模拟）不对齐：`.stat` 为 `auto 1fr` 两列网格，"设备时间"前缀的全角空格 U+3000 被网格包成**匿名网格项**独占第一列，标签被挤进值列、时间 span 掉行。去掉全角空格恢复"标签+值"成对两列；时钟未同步态也保留"设备时间"标签，四种状态首列均对齐 |
 | V1.0.5.1 | 10-10 | （本次提交） | 【修复】云平台凭据缺失时建链门控：空凭据+有互联网时（如选了华为云但未填三元组）`AppCloudTryConnect` 每个退避周期拿空域名发起 connect，DNS/TCP 同步阻塞主循环数秒——网页串口终端表现为 1~2s 周期性卡顿（数据停走后恢复，循环往复）。新增 `AppCloudCredOk()` 建链前置校验（巴法查 uid、阿里/OneNET/腾讯/华为查 pk/id/ps 三元组齐备），缺失直接挂起建链（零开销不碰网络），填好凭据点"应用"即恢复；与 V1.0.2.7 的无互联网 NTP 门控互补，DNS 卡主循环的两条路径都封死 |
 | V1.0.5.0 | 10-10 | （本次提交） | 【新增】华为云 IoTDA 平台接入（proto=5，工程目标 3 补齐第 5 家=五家全通）：密钥认证 MQTT 1883 明文（`{product_id}.iot-mqtts.cn-north-4.myhuaweicloud.com`，8883=MQTTS 需 CA），username=device_id，clientId=`{device_id}_0_0_{UTC YYYYMMDDHH}`（官方四段式，签名类型 0=不校验时间戳），password=hex(hmac_sha256(UTC时间戳,secret))——密钥=时间戳/内容=secret（官方 SDK EncryptWithHMac 源码+官方文档测试向量双核实，方向易反），BearSSL br_sha256_vtable 新增 HMAC-SHA256；timestamp 仿官方 SDK gmtime 取 UTC（无 RTC=1970010100 可用，NTP 后自动真实）；上行默认 `$oc/devices/{id}/sys/messages/up`（平台不校验格式=裸流透传），下行 sys/messages/down 靠平台 CONNACK 后自动订阅 QoS0 系统主题（免 SUBSCRIBE）；云配置槽位 5→6（cloudhw_ 前缀键），proto 上限 5；网页物联网平台标签新增华为云单选+字段标签/占位符/secret 必填校验；版本 V1.0.5.0（第三位+1：新功能大改） |
 | V1.0.4.0 | 10-01 | 49110f5 | 【新增】腾讯云 IoT 平台接入（proto=4，工程目标 3 补齐第 4 家）：密钥认证 MQTT 1883 明文（`{pid}.iotcloud.tencentdevices.com`，8883 仅证书认证用），username=`{pid}{dn};12010126;xcom1;4102444800`（sdkappid 官方固定值，expiry 固定 2100 免 RTC），password=hex(hmac_sha1(b64dec(PSK),username));hmacsha1，BearSSL br_sha1_vtable 新增 HMAC-SHA1 纯算法；默认主题 `{pid}/{dn}/data` 订阅+发布（官方默认权限双向通吃，无需控制台建主题）；clientId=`{pid}{dn}`；云配置槽位 4→5（cloudtx_ 前缀键），proto 上限 4；网页物联网平台标签新增腾讯云单选+PSK 必填校验；签名算法经官方 qcloud_iot_mqtt_sign C 工具对拍一致；版本 V1.0.4.0（第三位+1：新功能大改） |
