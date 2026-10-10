@@ -295,6 +295,15 @@ FLASH_PORT=/dev/ttyUSB1 FLASH_BAUD=115200 ./flash.sh   # 环境变量方式
 
 脚本能力：pio 三路径查找（PATH/~/.local/bin/~/.platformio/penv）；pyserial 缺失自动补 PYTHONPATH；CH340 tcflush 怪癖经 runpy 注入补丁；esptool.py→esptool CLI→pio upload 三级回退；烧录前自动停占口进程（如 serial_sim.py）并在出口自动原样恢复。2ec9d0b 实测一次跑通。
 
+**一键验证（烧录后回归）**：
+
+```bash
+./verify.sh                 # 自动连板子 AP → 9 组 13 项检查 → 自动切回原 WiFi
+./verify.sh 192.168.137.50  # PC 与设备同网段时直接指定 IP
+```
+
+覆盖：status 基线（JSON/heap/RSSI）、串口数据流（rx 增长=serial_sim 在跑）、WS :81 可达、门户页完整性（>40KB+no-store）、API 路由（scan 异步 202=正常）、GPIO 7 通道、ch3 写读复原（自动恢复原电平）、主循环 12 连采阻塞检测（>800ms 尖峰 FAIL）、云/转发状态快照。不碰 /api/reboot、/api/resetwifi。出口码 0=全过、1=有 FAIL。
+
 <details><summary>手动等价命令（脚本不可用时）</summary>
 
 ```bash
