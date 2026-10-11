@@ -3,7 +3,7 @@
 - **板卡**：AI-Thinker ESP32-CAM（SoC：ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / **实测板载 8MB PSRAM**——经典 ESP32 最多映射 4MB）
 - **传感器**：**OV3660**（实测 PID=0x3660，标称 OV2640 的板子实际装了 OV3660，驱动自动识别；UXGA 上限，QXGA 不启用）
 - **SDK**：ESP-IDF **v6.1**（本机激活脚本 `F:\00.Code\11ESP\idf-env.bat`）；摄像头驱动 **esp32-camera 2.1.8**（组件仓库自动拉取，`main/idf_component.yml` 声明）
-- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.1**（存储页多选删除）
+- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.2**（计数线改拖动时短暂预览）
 - **代码仓**：`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`（串口透传工程见 develop 分支）；架构/分层规范同 ESP-32 工程（APP→BSP→HAL→ESP-IDF，见仓库 `Project_Level_Skill.md`）
 - **网页端**：暗色单页四标签（配网/视频监控/GPIO 控制/存储），配网栈与网页谱系移植自 develop 分支（ESP8266-develop 参照）
 
