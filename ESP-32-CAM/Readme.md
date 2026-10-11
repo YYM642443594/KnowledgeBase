@@ -3,7 +3,7 @@
 - **板卡**：AI-Thinker ESP32-CAM（SoC：ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / **实测板载 8MB PSRAM**——经典 ESP32 最多映射 4MB）
 - **传感器**：**OV3660**（实测 PID=0x3660，标称 OV2640 的板子实际装了 OV3660，驱动自动识别；UXGA 上限，QXGA 不启用）
 - **SDK**：ESP-IDF **v6.1**（本机激活脚本 `F:\00.Code\11ESP\idf-env.bat`）；摄像头驱动 **esp32-camera 2.1.8**（组件仓库自动拉取，`main/idf_component.yml` 声明）
-- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.2.0.0**（SD 视频录像）
+- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.0**（人体检测+人流量）
 - **代码仓**：`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`（串口透传工程见 develop 分支）；架构/分层规范同 ESP-32 工程（APP→BSP→HAL→ESP-IDF，见仓库 `Project_Level_Skill.md`）
 - **网页端**：暗色单页四标签（配网/视频监控/GPIO 控制/存储），配网栈与网页谱系移植自 develop 分支（ESP8266-develop 参照）
 
@@ -64,7 +64,8 @@
 
 | 模块 | 关键点 |
 |------|--------|
-| app_net | 初始化链 bsp_wifi → store → gpio → sd(异步) → cam → web；联网后 SNTP 对时（录像/抓拍时间戳命名依赖）；状态 JSON：`ver/mode/ssid/ip/rssi/heap/psram/uptime/size/quality/fps/clients/sensor/sd/sdcap/sdfree`（录像状态另走 /api/rec：on/file/frames/secs/fps/free） |
+| app_net | 初始化链 bsp_wifi → store → gpio → sd(异步) → cam → **detect** → web；联网后 SNTP 对时（录像/抓拍时间戳命名依赖）；状态 JSON：`ver/mode/ssid/ip/rssi/heap/psram/uptime/size/quality/fps/clients/sensor/sd/sdcap/sdfree`（录像另走 /api/rec，检测另走 /api/detect） |
+| app_detect | **人体活动检测+人流量统计（V1.3.0.0，纯算法方案——经典 ESP32 无 NN 算力）**：JPEG 1/8 缩放解码（esp_jpeg 组件 RGB565→80x60 灰度重采样）→ 背景慢更新（τ≈16s）差分 → 洪泛连通域+面积/宽高比人形过滤 → 质心最近邻跟踪（20格半径，2帧确认/3帧丢失）→ 计数线左右状态翻转判进/出（NVS 持久，跨日自动清零）；2fps 分析任务；设置 on/sens/line 网页可调持久化；局限：静止目标≈15s 被背景吸收、与背景同色可能漏检 |
 | app_main | 主循环 10ms 槽（当前空槽，业务全事件/请求驱动） |
 
 ## 数据通路
@@ -101,6 +102,8 @@
 14. **开机 CAM 序号扫描禁用 stat 循环**：9999 次 stat 找最大序号在无 CAM_ 文件时要跑 30~60s，把 mounted 日志/自动录像全堵在后面（表象："启动后模块打印消失"）；改目录一次遍历解析 CAM_号（~100ms）
 15. **段式写入器的 memset 自伤**：开段函数入口 memset 段结构体，而调用方把段结构体内的 Name/Width/Height 预填后再传入（pName 就是 pAvi->Name 别名）→ 名字被清空 fopen("/sdcard/") 失败、尺寸归零致每段 1 帧无限换段；治法：名字/宽高改参数传入，结构体只存不预填
 16. **大文件下载必须流式**：为快照设计的 1MB 整读缓冲会拒掉录像文件（5MB+）→ 下载 404；定长响应头（Content-Length）+ 8KB 分块 socket 推送，内存占用与文件大小无关
+17. **esp_jpeg 组件可作检测解码器**：`esp_jpeg_decode` 支持 1/2/1/4/1/8 缩放（RGB565/888），VGA JPEG→80x60 仅约 10-15ms @240MHz；esp32-camera 自带该依赖（conversions），main 显式 PRIV_REQUIRES espressif__esp_jpeg 即可用
+18. **检测帧源与流/录像共享 fb 队列**：多消费者 fb_get 各自分到部分帧（2fps 检测+10fps 录像+流媒体 ≈13fps ≤ 传感器能力）；检测解码后自建固定 80x60 网格重采样，任意分辨率统一处理
 
 ## 构建与烧录
 
