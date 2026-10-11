@@ -3,7 +3,7 @@
 - **板卡**：AI-Thinker ESP32-CAM（SoC：ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / **实测板载 8MB PSRAM**——经典 ESP32 最多映射 4MB）
 - **传感器**：**OV3660**（实测 PID=0x3660，标称 OV2640 的板子实际装了 OV3660，驱动自动识别；UXGA 上限，QXGA 不启用）
 - **SDK**：ESP-IDF **v6.1**（本机激活脚本 `F:\00.Code\11ESP\idf-env.bat`）；摄像头驱动 **esp32-camera 2.1.8**（组件仓库自动拉取，`main/idf_component.yml` 声明）
-- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.1.1.0**（时间戳命名+SD 写卡异步化）
+- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.2.0.0**（SD 视频录像）
 - **代码仓**：`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`（串口透传工程见 develop 分支）；架构/分层规范同 ESP-32 工程（APP→BSP→HAL→ESP-IDF，见仓库 `Project_Level_Skill.md`）
 - **网页端**：暗色单页四标签（配网/视频监控/GPIO 控制/存储），配网栈与网页谱系移植自 develop 分支（ESP8266-develop 参照）
 
@@ -57,14 +57,14 @@
 | bsp_wifi | 同 ESP-32 工程（重连上限 20 次防死循环；扫描挂起重连） |
 | bsp_web | 主实例 16 条路由：`/`、`/api/status|scan|wifi|cam|flash|gpio|sd|sd/save|sd/del|reboot|resetwifi`、`/capture`、`/sd/*`（白名单校验防穿越：仅 `A-Za-z0-9_.`，须含 .jpg，禁 /，长度<16）；流实例 `/stream`。**SOI(FFD8) 校验丢弃损坏帧**（连续 20 帧损坏才断流，快照重试 3 帧） |
 | bsp_gpio | 引脚占用表集中定义（1/2/3/4/12/13/14/15/33 + 复用说明）；**SD 挂载期间 2/14/15 拒绝控制**（动态查询 BspSdMounted）；上电不动引脚（全输入态），影子状态记录已配置模式 |
-| bsp_sd | **挂载独立任务**（`sd_init`）：劣质卡驱动探测挂死不阻塞启动链；**写卡工作队列独立任务**（`sd_work`，HTTP 提交即应答，写卡超时 5s 后短路列表/下载/删除防挂死网页）；**命名：NTP 对时后 年月日-时分秒-张数.jpg（同秒张数递增），未对时降级 CAM_计数.jpg（开机扫描续编）**；文件列表/整读（≤1MB，PSRAM 优先）/删除 |
+| bsp_sd | **挂载独立任务**；**写卡工作队列任务**；**视频录像（V1.2.0.0）：AVI(MJPEG) 容器分段滚动（REC_年月日-时分秒_段号.avi，未对时 REC_NOSYNC_段号.avi；每段 3000 帧或分辨率变化即换段，收尾回填总帧数/索引可播放）；开机自动续录（NVS recsw/recfps）；满卡循环覆盖（空闲<200MB 自动删最旧 REC_*.avi）；单帧写超 8s 看门狗自停**；抓拍时间戳命名/降级；文件列表/整读/删除/**流式下载（8KB 分块回调，大文件不经内存整缓冲）**；FATFS 全访问经互斥锁串行化 |
 | bsp_store | 同 ESP-32 工程，命名空间 cam |
 
 ## APP 层功能记录
 
 | 模块 | 关键点 |
 |------|--------|
-| app_net | 初始化链 bsp_wifi → store → gpio → sd(异步) → cam → web；联网后启动 SNTP 对时（北京时区，阿里云/教育网/pool，SD 时间戳命名依赖）；状态 JSON：`ver/mode/ssid/ip/rssi/heap/psram/uptime/size/quality/fps/clients/sensor/sd/sdcap/sdfree` |
+| app_net | 初始化链 bsp_wifi → store → gpio → sd(异步) → cam → web；联网后 SNTP 对时（录像/抓拍时间戳命名依赖）；状态 JSON：`ver/mode/ssid/ip/rssi/heap/psram/uptime/size/quality/fps/clients/sensor/sd/sdcap/sdfree`（录像状态另走 /api/rec：on/file/frames/secs/fps/free） |
 | app_main | 主循环 10ms 槽（当前空槽，业务全事件/请求驱动） |
 
 ## 数据通路
@@ -98,6 +98,9 @@
 11. **路由器环境已变**：YYM_4G/YYM_5G → 现 **YYM55**（2.4G ch1）；PC 侧另有 ICS 热点 YYM_1339（192.168.137.0/24，极不稳且 DHCP 会换地址——2026-10-10 从 .199 变 .90，“设备失联”先查新 IP）
 12. PSRAM 实测 8MB 只映射 4MB（经典 ESP32 地址空间限制，日志 "map as much as we can" 属正常）
 13. **FreeRTOS 任务隔离是治卡顿的正解**：两次实践——SD 挂载后台任务化（驱动挂死不阻塞启动链）、SD 写卡工作队列化（HTTP 提交即应答+超时短路）；劣质卡最坏只拖死单个 sd_* 任务，摄像头/网页/GPIO 全不受影响
+14. **开机 CAM 序号扫描禁用 stat 循环**：9999 次 stat 找最大序号在无 CAM_ 文件时要跑 30~60s，把 mounted 日志/自动录像全堵在后面（表象："启动后模块打印消失"）；改目录一次遍历解析 CAM_号（~100ms）
+15. **段式写入器的 memset 自伤**：开段函数入口 memset 段结构体，而调用方把段结构体内的 Name/Width/Height 预填后再传入（pName 就是 pAvi->Name 别名）→ 名字被清空 fopen("/sdcard/") 失败、尺寸归零致每段 1 帧无限换段；治法：名字/宽高改参数传入，结构体只存不预填
+16. **大文件下载必须流式**：为快照设计的 1MB 整读缓冲会拒掉录像文件（5MB+）→ 下载 404；定长响应头（Content-Length）+ 8KB 分块 socket 推送，内存占用与文件大小无关
 
 ## 构建与烧录
 
