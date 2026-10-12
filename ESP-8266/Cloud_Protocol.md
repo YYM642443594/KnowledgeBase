@@ -49,11 +49,45 @@
 - **⚠️ 实测平台侧问题（待控制台核实）**：认证正常但**发任何 PUBLISH 即被服务器静默断链**（~3s EOF，无 DISCONNECT/错误码；任意主题——含 $sys 物模型主题与自定义主题，任意载荷——含合法 OneJSON）；只发 PINGREQ/PINGRESP 可长期存活。PC 与固件双端同现象 → 非固件 bug，疑产品接入模式/物模型强校验配置问题
 - 附：keepalive 内完全无任何报文时，服务端 ~1.5×keepalive 断链（60s→实测 90s）属标准 MQTT 行为，勿误判
 
+## 腾讯云 IoT Explorer（MQTT 1883 明文·密钥认证，固件已实现 V1.0.4.0）
+
+- 接入点：`{productKey}.iotcloud.tencentdevices.com:1883`（**密钥认证走 1883 明文**；8883 仅证书认证用——官方文档 634/32546 核实，与阿里/OneNET 全 TLS 不同）
+- username = `{pid}{dn};12010126;xcom1;4102444800`
+  - 格式 `{productId}{deviceName};{sdkappid};{connid};{expiry}`；sdkappid=12010126 为官方固定值；connid 自定义（固件固定 xcom1）；expiry 固定 4102444800（2100 年，免 RTC）
+- password = `hex( hmac_sha1( b64dec(PSK), username ) );hmacsha1`
+  - **PSK 先 base64 解码**再 HMAC-SHA1（同 OneNET"先解码"思路）；摘要 hex 小写；尾部拼 `;hmacsha1` 算法声明段
+  - 签名串就是整个 username，不含独立时间戳参数（时效在 expiry 里）
+- clientId = `{pid}{dn}`
+- 默认主题 `{pid}/{dn}/data`：官方默认权限**发布+订阅双向通吃**，无需控制台建主题（与阿里不同）
+- 固件：BearSSL `br_sha1_vtable` HMAC-SHA1 纯算法（AppCloudHmacSha1）；签名经官方 `qcloud_iot_mqtt_sign` C 工具对拍一致；CONNECT flags 0xC2 照旧
+- 三元组 = 产品ID / 设备名 / 设备密钥(PSK)
+- 板端验证：CONNECT 被 broker 接受（cloudtag=3/cloudon=1）；平台控制台收发实测待真实设备凭据
+
+## 华为云 IoTDA（MQTT 1883 明文·密钥认证，固件已实现 V1.0.5.0）
+
+- 接入点：`{product_id}.iot-mqtts.cn-north-4.myhuaweicloud.com:1883`（明文 MQTT；8883=MQTTS 需平台 CA 证书；域名格式经官方 SDK 0.8.0 更新日志核实）
+- username = device_id（设备注册后平台返回的 24 位十六进制 ID，不是设备名）
+- clientId = `{device_id}_0_0_{timestamp}`（官方四段式，下划线分隔）：
+  - 段 2 身份标识类型固定 0=设备 ID 直连；段 3 密码签名类型：0=HMACSHA256 **不校验时间戳**、1=校验（固件用 0）
+  - timestamp 格式 UTC `YYYYMMDDHH`（10 位，官方 SDK GetClientTimesStamp：gmtime 取年月日时）；不校验时间也必须带（官方 3009 明文规定）
+- password = `hex( hmac_sha256( timestamp, secret ) )`（64 位小写 hex）
+  - **方向铁律：HMAC 密钥=时间戳字符串，内容=secret**（官方 SDK EncryptWithHMac 源码 `HMAC(EVP_sha256(), key=timestamp, msg=secret)`；官方文档测试向量 secret=12345678/ts=2025041401 → `c75150e6...c820a` 对拍一致）——与"内容=时间戳"的直觉相反，记反必被拒（0x04 用户名或密码错误）
+  - 密钥认证 secret 用原文，**不做 base64 解码**（OneNET access_key/腾讯 PSK 才需要）
+  - 无 RTC 时 timestamp=1970010100 也能过（签名类型 0 不校验时间），NTP 同步后自动变真实时间
+- 默认主题（`$oc` 系统主题族，官方 3004）：
+  - 上行 `$oc/devices/{device_id}/sys/messages/up`：**平台不校验消息格式**，可发裸串（透传保真）或 `{"content":...}` 系统格式
+  - 下行 `$oc/devices/{device_id}/sys/messages/down`：**CONNACK 后平台自动订阅全部 QoS0 系统主题**，设备端无需发 SUBSCRIBE（华为特性，与腾讯/阿里不同）
+  - 自定义主题 `$oc/devices/{device_id}/user/{xxx}` 需显式订阅
+- 属性上报走 `$oc/devices/{device_id}/sys/properties/report`（需产品模型，固件未用）；命令下发 `sys/commands/request_id=` 固件统一当下行数据处理
+- 固件：BearSSL `br_sha256_vtable` HMAC-SHA256 纯算法（AppCloudHmacSha256，32B 摘要）；槽位 5（cloudhw_ 前缀）；云端需先建产品+设备，注册方式选"密钥"并自行填写 secret
+- 三元组 = 产品ID（组域名）/ 设备ID / 设备密钥(secret)
+- 验证状态：签名算法经官方 SDK 源码+官方测试向量双核实；控制台收发实测待真实凭据
+
 ## 通用 MQTT 底层备忘（手工组包）
 
 - CONNECT 可变头：`MQTT`+\x04（3.1.1），flags **0xC2** = clean session + username + password 三位必须随 payload 声明，keepalive 60s
 - 订阅/发布走 QoS0 最简路径；解析用显式状态机（HDR→LEN→TOPIC→PAYLOAD），每字节 `available()` 门控防 TCP 分段撕裂
-- ESP8266 上 BearSSL：`br_hmac_key_init(&kc,&br_md5_vtable,key,len)` → `br_hmac_update` → `br_hmac_out`（16B）
+- ESP8266 上 BearSSL：`br_hmac_key_init(&kc,&br_md5_vtable,key,len)` → `br_hmac_update` → `br_hmac_out`（16B）；SHA1 版换 `br_sha1_vtable`（20B，腾讯云用）；SHA256 版换 `br_sha256_vtable`（32B，华为云用）
 
 ## 实测踩坑补充（2026-09-23）
 
