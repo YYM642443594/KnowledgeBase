@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.2**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.3**（develop）
 
 
 
@@ -49,7 +49,7 @@
 | :------: | ------------------------------------------------------------ | ---------- | -------- | -------- |
 | V1.0.3.0 | UDP端发送给串口的数据在模块的网页串口中断无显示，且串口端也没有收到，UDP端可以收到转发过去的数据； | 2026.09.30 | 已修复   |          |
 | V1.0.3.0 | GPIO控制页的设备时间应该i同A0模拟对齐，时间应该同释放对齐    | 2026.09.30 | 已修复   |          |
-| V1.0.5.2 | 设备在连接网络后因意外情况断联后无法自动重连必须要手动复位设备才会重连上 | 2026.10.12 |          |          |
+| V1.0.5.2 | 设备在连接网络后因意外情况断联后无法自动重连必须要手动复位设备才会重连上 | 2026.10.12 | 已修复   | 2026.10.12 |
 
 
 
@@ -80,7 +80,7 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 |------|-----------|------|----------|
 | UART0 | GPIO1(TX)/GPIO3(RX)，默认 115200-8N1（网页在线改，存 LittleFS） | 数据口：透传通道，**挂生产业务，禁止打印** | bsp_uart / app_terminal |
 | GPIO2 | 板载 LED，低电平点亮 | 状态指示（灯语三态，由系统统一控制） | bsp_led |
-| WiFi | 射频；AP `ESP8266-XCOM-xxxx` @192.168.4.1 常开 + STA | AP 供配网/内网访问，STA 连路由（凭据持久化，断线自动重连） | main.cpp / web_page.h |
+| WiFi | 射频；AP `ESP8266-XCOM-xxxx` @192.168.4.1 常开 + STA | AP 供配网/内网访问，STA 连路由（凭据持久化，断线自动重连：5s 节拍退避 15/30/60s，门户使用中暂停但封顶 5min 强制试连，V1.0.5.3） | drv_wifi / bsp_wifi / app_main |
 | HTTP | 80 端口 ESP8266WebServer | 单页门户 + 13 条 API 路由；**首页必须发 `Cache-Control: no-store`** | bsp_web / app_web |
 | WebSocket | 81 端口 WebSocketsServer | 网页串口终端二进制通道（串口数据广播 / 网页下发） | app_terminal |
 | LittleFS | `/config.txt`（key=value 全部配置） | 配网/串口/转发/云平台/GPIO电平/PWM/闹钟/芯片绑定持久化，事务式原子保存（临时文件+rename） | drv_storage / app_config |
@@ -364,6 +364,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 | 绑定校验双缓冲混用（V1.0.2.12 自查） | 参考值与本次计算值共用一个缓冲区，`AppBindGet` 一执行就把算好的绑定值覆盖掉；修复=拆 `Id`/`RefId` 两缓冲；教训：**成对出现的输入/参考值各自独立缓冲，命名先区分再写码** |
 | OneNET "连上就断"（V1.0.2.12 时期排查） | 现象=一有串口数据就被踢（cloudtag=6，无数据则稳在线）。PC 同 token 复现分组实验：只连/只 PINGREQ→存活 100s+；**发任何 PUBLISH（任意主题/载荷含合法 OneJSON）→~3s 静默 EOF**（无 DISCONNECT 无错误码）→ 踢线条件与固件报文内容无关，疑平台产品配置（接入模式/强校验），待控制台核实；教训：**服务器裸断≠固件 bug，先 PC 复现分离变量（只连/只 ping/发包），别急着改代码**；另外 keepalive=60 完全无流量 ~90s（1.5×）被断属标准 MQTT 超时，非异常 |
 | 设备时钟显示慢约 1s（V1.0.2.13） | 秒级时间在 2s 轮询回调里渲染，只能 2s 跳格且平均滞后 1s；修复=轮询校准基准+前端 250ms 本地走秒（todSet/todFmt）；教训：**秒级显示用"轮询校准+本地走秒"模式，别把显示频率绑死在轮询频率上** |
+| WiFi 断联后永不自动重连须手动复位（V1.0.5.2） | “门户使用中暂停重连”门控被永久占死：WS 服务端无心跳→终端页非正常关闭后客户端计数永不归零；AP 挂站点+持续 HTTP 轮询→2min 门户窗口无限续期，DrvWifiStaMaintain 永久跳过重连；**修复=WS enableHeartbeat(15s/3s×2) 剔僵尸 + 暂停封顶 5min 强制试连（V1.0.5.3）**；教训：**暂停/门控类机制必须有上限**，否则保护机制反杀核心功能；占用状态计数必须配心跳/超时自愈，否则一次异常状态就是永久状态 |
 
 
 
@@ -375,6 +376,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.3 | 10-12 | 5289989 | 【修复】WiFi 断联后永不自动重连须手动复位：门户暂停门控被永久占死——(a) WS 服务端未开心跳，终端页非正常关闭（掉电/睡眠/刷新丢 Close 帧）后 connectedClients 永不归零；(b) AP 挂站点+持续 HTTP 轮询使 2min 门户窗口无限续期，DrvWifiStaMaintain 的“门户使用中暂停重连”条件永久为真。修复=WS 服务端 enableHeartbeat(15s ping/3s pong 超时×2) 约 35s 剔除僵尸连接（正常浏览器自动 pong 不受影响）+ 暂停封顶 5min 强制试连一次 + /api/status 新增 wfail（重连连续失败计数）便于观察；实测：手搓不回 pong 僵尸客户端 30s 内被踢、活连接挺过 6 轮心跳不误踢、期间 HTTP 0.02~0.14s 秒回；RAM 60.8%/Flash 53.0% |
 | V1.0.5.2 | 10-10 | （本次提交） | 【修复】GPIO 页状态栏"设备时间"与前三行（FLASH键/板载LED/A0 模拟）不对齐：`.stat` 为 `auto 1fr` 两列网格，"设备时间"前缀的全角空格 U+3000 被网格包成**匿名网格项**独占第一列，标签被挤进值列、时间 span 掉行。去掉全角空格恢复"标签+值"成对两列；时钟未同步态也保留"设备时间"标签，四种状态首列均对齐 |
 | V1.0.5.1 | 10-10 | （本次提交） | 【修复】云平台凭据缺失时建链门控：空凭据+有互联网时（如选了华为云但未填三元组）`AppCloudTryConnect` 每个退避周期拿空域名发起 connect，DNS/TCP 同步阻塞主循环数秒——网页串口终端表现为 1~2s 周期性卡顿（数据停走后恢复，循环往复）。新增 `AppCloudCredOk()` 建链前置校验（巴法查 uid、阿里/OneNET/腾讯/华为查 pk/id/ps 三元组齐备），缺失直接挂起建链（零开销不碰网络），填好凭据点"应用"即恢复；与 V1.0.2.7 的无互联网 NTP 门控互补，DNS 卡主循环的两条路径都封死 |
 | V1.0.5.0 | 10-10 | （本次提交） | 【新增】华为云 IoTDA 平台接入（proto=5，工程目标 3 补齐第 5 家=五家全通）：密钥认证 MQTT 1883 明文（`{product_id}.iot-mqtts.cn-north-4.myhuaweicloud.com`，8883=MQTTS 需 CA），username=device_id，clientId=`{device_id}_0_0_{UTC YYYYMMDDHH}`（官方四段式，签名类型 0=不校验时间戳），password=hex(hmac_sha256(UTC时间戳,secret))——密钥=时间戳/内容=secret（官方 SDK EncryptWithHMac 源码+官方文档测试向量双核实，方向易反），BearSSL br_sha256_vtable 新增 HMAC-SHA256；timestamp 仿官方 SDK gmtime 取 UTC（无 RTC=1970010100 可用，NTP 后自动真实）；上行默认 `$oc/devices/{id}/sys/messages/up`（平台不校验格式=裸流透传），下行 sys/messages/down 靠平台 CONNACK 后自动订阅 QoS0 系统主题（免 SUBSCRIBE）；云配置槽位 5→6（cloudhw_ 前缀键），proto 上限 5；网页物联网平台标签新增华为云单选+字段标签/占位符/secret 必填校验；版本 V1.0.5.0（第三位+1：新功能大改） |
