@@ -3,7 +3,7 @@
 - **板卡**：AI-Thinker ESP32-CAM（SoC：ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / **实测板载 8MB PSRAM**——经典 ESP32 最多映射 4MB）
 - **传感器**：**OV3660**（实测 PID=0x3660，标称 OV2640 的板子实际装了 OV3660，驱动自动识别；UXGA 上限，QXGA 不启用）
 - **SDK**：ESP-IDF **v6.1**（本机激活脚本 `F:\00.Code\11ESP\idf-env.bat`）；摄像头驱动 **esp32-camera 2.1.8**（组件仓库自动拉取，`main/idf_component.yml` 声明）
-- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.2**（计数线改拖动时短暂预览）
+- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.3**（断网无限退避自愈重连）
 - **代码仓**：`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`（串口透传工程见 develop 分支）；架构/分层规范同 ESP-32 工程（APP→BSP→HAL→ESP-IDF，见仓库 `Project_Level_Skill.md`）
 - **网页端**：暗色单页四标签（配网/视频监控/GPIO 控制/存储），配网栈与网页谱系移植自 develop 分支（ESP8266-develop 参照）
 
@@ -104,6 +104,8 @@
 16. **大文件下载必须流式**：为快照设计的 1MB 整读缓冲会拒掉录像文件（5MB+）→ 下载 404；定长响应头（Content-Length）+ 8KB 分块 socket 推送，内存占用与文件大小无关
 17. **esp_jpeg 组件可作检测解码器**：`esp_jpeg_decode` 支持 1/2/1/4/1/8 缩放（RGB565/888），VGA JPEG→80x60 仅约 10-15ms @240MHz；esp32-camera 自带该依赖（conversions），main 显式 PRIV_REQUIRES espressif__esp_jpeg 即可用
 18. **检测帧源与流/录像共享 fb 队列**：多消费者 fb_get 各自分到部分帧（2fps 检测+10fps 录像+流媒体 ≈13fps ≤ 传感器能力）；检测解码后自建固定 80x60 网格重采样，任意分辨率统一处理
+19. **断网重连策略（V1.3.0.3）**：断开必须按原因分类——认证类（密码错：reason 15/202/204）限次防死循环；瞬时类（NO_AP_FOUND/BEACON_TIMEOUT 等，如路由器重启、热点还没开）**无限退避重连**（前 3 次立即，后 5s→30s 循环）。旧版 20 次总限会在 PC 重启期间 ICS 热点关闭几分钟的场景下永久掉线（实测：设备开机永远连不上）
+20. **PC 重启会换 COM 口**：USB 重新枚举导致 CH340 从 COM9 变 COM4（2026-10-12 实测）；烧录前先 `Get-CimInstance Win32_PnPEntity | ? Name -match CH340` 枚举当前口；Windows ICS 热点（YYM_1339）重启后可能自动关闭且极不稳，长期部署应改连主路由
 
 ## 构建与烧录
 
