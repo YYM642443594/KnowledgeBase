@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.3**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.6**（develop）
 
 
 
@@ -49,6 +49,7 @@
 | :------: | ------------------------------------------------------------ | ---------- | -------- | -------- |
 | V1.0.3.0 | UDP端发送给串口的数据在模块的网页串口中断无显示，且串口端也没有收到，UDP端可以收到转发过去的数据； | 2026.09.30 | 已修复   |          |
 | V1.0.3.0 | GPIO控制页的设备时间应该i同A0模拟对齐，时间应该同释放对齐    | 2026.09.30 | 已修复   |          |
+| V1.0.5.6 | 手机等 STA 侧客户端访问设备 IP 时门户页只剩骨架：无版本信息、标签无法切换（PC 走 AP 侧偶发同样现象） | 2026.10.13 | 已修复   | 2026.10.13 |
 | V1.0.5.2 | 设备在连接网络后因意外情况断联后无法自动重连必须要手动复位设备才会重连上 | 2026.10.12 | 已修复   | 2026.10.12 |
 
 
@@ -95,7 +96,7 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 
 | 方法 | 路由 | 参数 | 说明 |
 |------|------|------|------|
-| GET | `/` | — | 内置单页门户（no-store 头，防升级后浏览器旧缓存瘫页） |
+| GET | `/` | — | 内置单页门户（gzip 压缩 PROGMEM+`Content-Encoding: gzip`，明文源码经 scripts/build_web_gz.py 预构建生成；no-store 头防升级后浏览器旧缓存瘫页） |
 | GET | `/api/status` | — | 全量状态 JSON（ver/wifi/ip/led/baud/fw*/cloud*/cloudtag/clouderr/cloudrc/tx/rx/heap） |
 | GET | `/api/scan` | — | 异步扫描周边热点（首次 202+空表，再次取结果；不阻塞 AP 信标） |
 | POST | `/api/wifi` | ssid&pass | 连接并持久化 |
@@ -302,7 +303,7 @@ FLASH_PORT=/dev/ttyUSB1 FLASH_BAUD=115200 ./flash.sh   # 环境变量方式
 ./verify.sh 192.168.137.50  # PC 与设备同网段时直接指定 IP
 ```
 
-覆盖：status 基线（JSON/heap/RSSI）、串口数据流（rx 增长=serial_sim 在跑）、WS :81 可达、门户页完整性（>40KB+no-store）、API 路由（scan 异步 202=正常）、GPIO 7 通道、ch3 写读复原（自动恢复原电平）、主循环 12 连采阻塞检测（>800ms 尖峰 FAIL）、云/转发状态快照。不碰 /api/reboot、/api/resetwifi。出口码 0=全过、1=有 FAIL。
+覆盖：status 基线（JSON/heap/RSSI）、串口数据流（rx 增长=serial_sim 在跑）、WS :81 可达、门户页完整性（V1.0.5.6 起=拉取 gzip 体裁剪解压并与本地 app_web_page.h 逐字节比对+no-store 检查）、API 路由（scan 异步 202=正常）、GPIO 7 通道、ch3 写读复原（自动恢复原电平）、主循环 12 连采阻塞检测（>800ms 尖峰 FAIL）、云/转发状态快照（公网目标 fwup=0 且 uptime<400s 视为 NTP 门控/退避窗口内属设计行为）。不碰 /api/reboot、/api/resetwifi。出口码 0=全过、1=有 FAIL。
 
 <details><summary>手动等价命令（脚本不可用时）</summary>
 
@@ -364,6 +365,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 | 绑定校验双缓冲混用（V1.0.2.12 自查） | 参考值与本次计算值共用一个缓冲区，`AppBindGet` 一执行就把算好的绑定值覆盖掉；修复=拆 `Id`/`RefId` 两缓冲；教训：**成对出现的输入/参考值各自独立缓冲，命名先区分再写码** |
 | OneNET "连上就断"（V1.0.2.12 时期排查） | 现象=一有串口数据就被踢（cloudtag=6，无数据则稳在线）。PC 同 token 复现分组实验：只连/只 PINGREQ→存活 100s+；**发任何 PUBLISH（任意主题/载荷含合法 OneJSON）→~3s 静默 EOF**（无 DISCONNECT 无错误码）→ 踢线条件与固件报文内容无关，疑平台产品配置（接入模式/强校验），待控制台核实；教训：**服务器裸断≠固件 bug，先 PC 复现分离变量（只连/只 ping/发包），别急着改代码**；另外 keepalive=60 完全无流量 ~90s（1.5×）被断属标准 MQTT 超时，非异常 |
 | 设备时钟显示慢约 1s（V1.0.2.13） | 秒级时间在 2s 轮询回调里渲染，只能 2s 跳格且平均滞后 1s；修复=轮询校准基准+前端 250ms 本地走秒（todSet/todFmt）；教训：**秒级显示用"轮询校准+本地走秒"模式，别把显示频率绑死在轮询频率上** |
+| 门户大页随机截断只剩骨架（V1.0.5.6） | 三层叠加：①41KB 明文单次 send_P 让 LWIP 一次性铺发送缓冲，heap≈10KB（STA+双云挂载）时 pbuf 失败半路放弃——**大页面必须压缩后存储发送**（gzip 1/3.1，浏览器 Content-Encoding: gzip 全兼容，源码可继续保留明文 rawliteral 由预构建脚本生成）；②sendContent_P 库内忽略 write 返回值，**短写静默丢尾不报错**（实测 19/20 仍截一次）——大体裁剪必须直写 socket 并检查 write 返回值重试；③诊断特征：页面"有骨架无版本号、标签切不动"=HTML 尾部被截（版本号/切标签 JS 都在页面尾部），先 curl 全页与 Content-Length 比对再怀疑前端 |
 | WiFi 断联后永不自动重连须手动复位（V1.0.5.2） | “门户使用中暂停重连”门控被永久占死：WS 服务端无心跳→终端页非正常关闭后客户端计数永不归零；AP 挂站点+持续 HTTP 轮询→2min 门户窗口无限续期，DrvWifiStaMaintain 永久跳过重连；**修复=WS enableHeartbeat(15s/3s×2) 剔僵尸 + 暂停封顶 5min 强制试连（V1.0.5.3）**；教训：**暂停/门控类机制必须有上限**，否则保护机制反杀核心功能；占用状态计数必须配心跳/超时自愈，否则一次异常状态就是永久状态 |
 
 

@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.6 | 10-13 | （本次提交） | 【修复】门户大页低 heap 随机截断（手机经热点 NAT 回访 STA IP 时页面只剩骨架：无版本号、标签切不动；PC 走 AP 直连 10 连拉 3 次截断）——41KB 明文单次 send 让 LWIP 一次性铺发送缓冲，heap≈10KB 时 pbuf 分配失败半路放弃。三层修复：①门户页 gzip 预构建（scripts/build_web_gz.py 挂 extra_scripts=pre，明文 app_web_page.h 仍是唯一编辑源，生成 app_web_page_gz.h 内嵌 13085B 压缩体=1/3.1，Flash 53.0%→50.3%，脚本内 gzip round-trip 逐字节校验；网页仅需 Content-Encoding: gzip 头，浏览器全兼容页面 JS 零改动）②DrvWebSendRawBin 二进制发送通道（drv/bsp 三层透传）③1KB 分块 write_P 直写 socket+短写重试+4s 超时放弃（sendContent_P 库内忽略 write 返回值短写静默丢尾，实测 19/20 仍截一次；改直写后 25/25 全完整）；服务端实测：AP 侧 25 连拉零截断，Content-Encoding: gzip+no-store 在位；verify.sh 门户页判定升级为"gzip 解压与本地源码逐字节比对"；RAM 60.9%/Flash 50.3% |
 | V1.0.5.3 | 10-12 | 5289989 | 【修复】WiFi 断联后永不自动重连须手动复位：门户暂停门控被永久占死——(a) WS 服务端未开心跳，终端页非正常关闭（掉电/睡眠/刷新丢 Close 帧）后 connectedClients 永不归零；(b) AP 挂站点+持续 HTTP 轮询使 2min 门户窗口无限续期，DrvWifiStaMaintain 的“门户使用中暂停重连”条件永久为真。修复=WS 服务端 enableHeartbeat(15s ping/3s pong 超时×2) 约 35s 剔除僵尸连接（正常浏览器自动 pong 不受影响）+ 暂停封顶 5min 强制试连一次 + /api/status 新增 wfail（重连连续失败计数）便于观察；实测：手搓不回 pong 僵尸客户端 30s 内被踢、活连接挺过 6 轮心跳不误踢、期间 HTTP 0.02~0.14s 秒回；RAM 60.8%/Flash 53.0% |
 | V1.0.5.2 | 10-10 | （本次提交） | 【工具】新增 verify.sh 上板自动验证脚本：9 组 13 项回归一键化（基线/串口流/WS/门户页/API/GPIO 写读复原/阻塞检测/云转发快照），自动连断 AP、防御半截响应、不碰破坏性接口 |
 | V1.0.5.2 | 10-10 | （本次提交） | 【修复】GPIO 页状态栏"设备时间"错位：全角空格前缀在 grid 容器里成为匿名网格项独占第一列致标签/值错行；去掉前缀恢复成对两列，未同步态保留标签对齐 |
