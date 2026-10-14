@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.19**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.20**（develop）
 
 
 
@@ -50,7 +50,7 @@
 | V1.0.3.0  | UDP端发送给串口的数据在模块的网页串口中断无显示，且串口端也没有收到，UDP端可以收到转发过去的数据； | 2026.09.30 | 已修复   |          |
 | V1.0.3.0  | GPIO控制页的设备时间应该i同A0模拟对齐，时间应该同释放对齐    | 2026.09.30 | 已修复   |          |
 | V1.0.5.2  | 设备在连接网络后因意外情况断联后无法自动重连必须要手动复位设备才会重连上 | 2026.10.12 | 已修复   |          |
-| V1.0.5.19 | 循环发送的间隔不能设置小100的值,设置小于100的值时会被还原为1000 |            |          |          |
+| V1.0.5.19 | 循环发送的间隔不能设置小100的值,设置小于100的值时会被还原为1000 | 2026.10.14 | 已修复 (V1.0.5.20) | 2026.10.14 |
 
 
 
@@ -380,6 +380,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.20 | 10-14 | e590292 | 【修复】KB 遗留 bug#4：循环发送间隔设 <100 的值被静默还原成 1000——根因=mulStart 钳位逻辑 `if(!(gap>=50)){gap=1000;回填1000}`：合法意图是防 0/负数/非数字，但 50~99 的合法小间隔也被一刀切回 1000，且回填输入框让用户以为设置失败。修复=统一下限 50ms（gap=50 并回填 50），页面间隔说明注明「下限 50」；门户 gz 再生（13383B）。纯前端一处钳位逻辑；RAM 61.3%/Flash 50.6% |
 | V1.0.5.19 | 10-14 | 5a7eacd | 【修复】网页终端「看不到数据/AT 无应答」根治：WS 连接被库心跳机制毫秒级误杀（CLOSE 1002）。根因链条=慢客户端 TCP 窗口堵死 → sendPing 写超时失败且 lastPing 不刷新 → handleHBTimeout 的 pi=millis()-lastPing 持续增大恒超 pongTimeout → 每 loop 圈 pongTimeoutCount++ → 2 次即踢**全部**客户端（含健康者）；叠加读路径同用 100ms TCP 超时，主循环忙时读半帧即 1002。修复=库补丁三处（patches/ 目录：①pingSendOk 记录 ping 是否真发出，未发出只顺延不计数；②读超时半帧保留断点续传不杀连接；③payload 缺失续读）+ app 层（devws 统计改 connectedClients(false) 纯计数不发 ping；广播弃 broadcastBIN 改逐客户端 sendBIN+availableForWrite 跳过堵住客户端；库加 getClientUnsafe）。**libdeps 重装后须把 patches/ 4 文件覆盖回 WebSockets/src/**。serial_sim.py 升 V3 粗暴版（固定 50ms/包+统计行），flash.sh sim 日志落盘 serial_sim.log（原 /dev/null 黑洞导致 AT 应答无法取证）。验证：90s HTTP 轮询+WS 收 744KB+AT×4+洪泛全程存活，收 OK 641 帧，heap 稳定 16.6KB；RAM 61.3%/Flash 50.6% |
 | V1.0.5.18 | 10-14 | 46c94f5 | 【优化】连接设备数可观测：/api/status 新增 devap（AP 侧连接站点数，复用 DrvWifiApStationCount）+ devws（网页终端 WS 在线数，复用 DrvWebWsClientCount），门户状态页新增「连接设备」行显示总数及明细（热点 N + 网页 N）。初版曾拼成 dev:"1+0" 非法 JSON（手滑拼字符串到数字字段），立即改为两个规范数字字段。纯只读展示零风险；RAM 61.3%/Flash 50.6% |
 | V1.0.5.17 | 10-14 | a62d0dc | 【修复】串口终端循环发送两个交互缺陷（用户实测反馈）：① 运行中修改发送间隔会**误清循环勾选框**——旧逻辑 mulint change 事件无条件 mulStop() 且 mulStop 内强制 mulloop.checked=false（"改间隔需重新勾选"的过度防呆）；现改间隔不清勾选，循环在跑则以新间隔无缝重启并提示「间隔已更新」② 循环发送对多条条目「感觉不起作用」——实际循环逻辑正常，但勾选循环时若无勾选的有效条目只静默不启动（用户无从分辨在跑还是没跑）；现 mulStart() 启动前预检勾选条目，无效则明确提示「循环发送未启动: 无勾选的有效条目」，运行中清空条目停止时提示具体原因。纯前端逻辑，不碰固件数据通路；RAM 61.3%/Flash 50.6% |
