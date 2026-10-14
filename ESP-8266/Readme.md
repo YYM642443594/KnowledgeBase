@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.6**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.16**（develop）
 
 
 
@@ -98,7 +98,7 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | 方法 | 路由 | 参数 | 说明 |
 |------|------|------|------|
 | GET | `/` | — | 内置单页门户（gzip 压缩 PROGMEM+`Content-Encoding: gzip`，明文源码经 scripts/build_web_gz.py 预构建生成；no-store 头防升级后浏览器旧缓存瘫页） |
-| GET | `/api/status` | — | 全量状态 JSON（ver/wifi/ip/led/baud/fw*/cloud*/cloudtag/clouderr/cloudrc/tx/rx/heap） |
+| GET | `/api/status` | — | 全量状态 JSON（ver/ssid/cfgssid/wifi/ip/led/baud/fw*/cloud*/cloudtag/clouderr/cloudrc/tx/rx/heap/wfail/rst/lp*/slow）；cfgssid=配置保存的 ssid，与 ssid（当前连接，未连上时=AP 名）分开，页面可区分「没保存」与「没连上」（V1.0.5.16） |
 | GET | `/api/scan` | — | 异步扫描周边热点（首次 202+空表，再次取结果；不阻塞 AP 信标） |
 | POST | `/api/wifi` | ssid&pass | 连接并持久化 |
 | POST | `/api/serial` | baud | 在线改波特率并持久化 |
@@ -379,6 +379,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.16 | 10-14 | cb42954 | 【优化】配网状态可观测性：/api/status 新增 cfgssid（配置保存的 ssid）+ 门户状态页条件行「已存配置 …(未连上)」——此前 ssid 字段在 STA 未连上时显示 AP 热点名（ESP8266-XCOM-XXXX），用户误判「配网信息没保存」（实际 flash 里 9 代配置全在，FS dump 取证证实），需整片读 flash 才能自证；现 cfgssid 非空+ssid≠cfgssid 即一眼区分「没连上」（网络问题）与「没保存」（配网问题）。纯只读展示，不碰存储/连接逻辑；RAM 61.3%/Flash 50.6% |
 | V1.0.5.3 | 10-12 | 5289989 | 【修复】WiFi 断联后永不自动重连须手动复位：门户暂停门控被永久占死——(a) WS 服务端未开心跳，终端页非正常关闭（掉电/睡眠/刷新丢 Close 帧）后 connectedClients 永不归零；(b) AP 挂站点+持续 HTTP 轮询使 2min 门户窗口无限续期，DrvWifiStaMaintain 的“门户使用中暂停重连”条件永久为真。修复=WS 服务端 enableHeartbeat(15s ping/3s pong 超时×2) 约 35s 剔除僵尸连接（正常浏览器自动 pong 不受影响）+ 暂停封顶 5min 强制试连一次 + /api/status 新增 wfail（重连连续失败计数）便于观察；实测：手搓不回 pong 僵尸客户端 30s 内被踢、活连接挺过 6 轮心跳不误踢、期间 HTTP 0.02~0.14s 秒回；RAM 60.8%/Flash 53.0% |
 | V1.0.5.2 | 10-10 | （本次提交） | 【修复】GPIO 页状态栏"设备时间"与前三行（FLASH键/板载LED/A0 模拟）不对齐：`.stat` 为 `auto 1fr` 两列网格，"设备时间"前缀的全角空格 U+3000 被网格包成**匿名网格项**独占第一列，标签被挤进值列、时间 span 掉行。去掉全角空格恢复"标签+值"成对两列；时钟未同步态也保留"设备时间"标签，四种状态首列均对齐 |
 | V1.0.5.1 | 10-10 | （本次提交） | 【修复】云平台凭据缺失时建链门控：空凭据+有互联网时（如选了华为云但未填三元组）`AppCloudTryConnect` 每个退避周期拿空域名发起 connect，DNS/TCP 同步阻塞主循环数秒——网页串口终端表现为 1~2s 周期性卡顿（数据停走后恢复，循环往复）。新增 `AppCloudCredOk()` 建链前置校验（巴法查 uid、阿里/OneNET/腾讯/华为查 pk/id/ps 三元组齐备），缺失直接挂起建链（零开销不碰网络），填好凭据点"应用"即恢复；与 V1.0.2.7 的无互联网 NTP 门控互补，DNS 卡主循环的两条路径都封死 |
