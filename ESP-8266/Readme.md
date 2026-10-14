@@ -295,7 +295,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages ~/.local/bin/pio run   #
 FLASH_PORT=/dev/ttyUSB1 FLASH_BAUD=115200 ./flash.sh   # 环境变量方式
 ```
 
-脚本能力：pio 三路径查找（PATH/~/.local/bin/~/.platformio/penv）；pyserial 缺失自动补 PYTHONPATH；CH340 tcflush 怪癖经 runpy 注入补丁；esptool.py→esptool CLI→pio upload 三级回退；烧录前自动停占口进程（如 serial_sim.py）并在出口自动原样恢复。2ec9d0b 实测一次跑通。
+脚本能力：pio 三路径查找（PATH/~/.local/bin/~/.platformio/penv）；pyserial 缺失自动补 PYTHONPATH；CH340 tcflush 怪癖经 runpy 注入补丁；esptool.py→esptool CLI→pio upload 三级回退；烧录前自动停占口进程（如 serial_sim.py）并在出口自动恢复；**烧录前 serial_sim 未在跑的，烧完自动拉起**（默认找 /mnt/sda1/test/serial_sim.py，可用 SERIAL_SIM_PATH 覆盖；串口=当前烧录口、波特率=FLASH_BAUD；f576978，2026-10-14 实测：清场烧录后 sim 自动启动、板端 rx 持续增长）。2ec9d0b 初版一次跑通。
 
 **一键验证（烧录后回归）**：
 
