@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.2**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.18**（develop）
 
 
 
@@ -81,7 +81,7 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 |------|-----------|------|----------|
 | UART0 | GPIO1(TX)/GPIO3(RX)，默认 115200-8N1（网页在线改，存 LittleFS） | 数据口：透传通道，**挂生产业务，禁止打印** | bsp_uart / app_terminal |
 | GPIO2 | 板载 LED，低电平点亮 | 状态指示（灯语三态，由系统统一控制） | bsp_led |
-| WiFi | 射频；AP `ESP8266-XCOM-xxxx` @192.168.4.1 常开 + STA | AP 供配网/内网访问，STA 连路由（凭据持久化，断线自动重连） | main.cpp / web_page.h |
+| WiFi | 射频；AP `ESP8266-XCOM-xxxx` @192.168.4.1 常开 + STA | AP 供配网/内网访问，STA 连路由（凭据持久化，断线自动重连：5s 节拍退避 15/30/60s，门户使用中暂停但封顶 5min 强制试连，V1.0.5.3） | drv_wifi / bsp_wifi / app_main |
 | HTTP | 80 端口 ESP8266WebServer | 单页门户 + 13 条 API 路由；**首页必须发 `Cache-Control: no-store`** | bsp_web / app_web |
 | WebSocket | 81 端口 WebSocketsServer | 网页串口终端二进制通道（串口数据广播 / 网页下发） | app_terminal |
 | LittleFS | `/config.txt`（key=value 全部配置） | 配网/串口/转发/云平台/GPIO电平/PWM/闹钟/芯片绑定持久化，事务式原子保存（临时文件+rename） | drv_storage / app_config |
@@ -96,8 +96,8 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 
 | 方法 | 路由 | 参数 | 说明 |
 |------|------|------|------|
-| GET | `/` | — | 内置单页门户（no-store 头，防升级后浏览器旧缓存瘫页） |
-| GET | `/api/status` | — | 全量状态 JSON（ver/wifi/ip/led/baud/fw*/cloud*/cloudtag/clouderr/cloudrc/tx/rx/heap） |
+| GET | `/` | — | 内置单页门户（gzip 压缩 PROGMEM+`Content-Encoding: gzip`，明文源码经 scripts/build_web_gz.py 预构建生成；no-store 头防升级后浏览器旧缓存瘫页） |
+| GET | `/api/status` | — | 全量状态 JSON（ver/ssid/cfgssid/wifi/ip/led/baud/fw*/cloud*/cloudtag/clouderr/cloudrc/tx/rx/heap/wfail/rst/lp*/slow/devap/devws）；cfgssid=配置保存的 ssid，与 ssid（当前连接，未连上时=AP 名）分开，页面可区分「没保存」与「没连上」（V1.0.5.16） |
 | GET | `/api/scan` | — | 异步扫描周边热点（首次 202+空表，再次取结果；不阻塞 AP 信标） |
 | POST | `/api/wifi` | ssid&pass | 连接并持久化 |
 | POST | `/api/serial` | baud | 在线改波特率并持久化 |
@@ -294,7 +294,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages ~/.local/bin/pio run   #
 FLASH_PORT=/dev/ttyUSB1 FLASH_BAUD=115200 ./flash.sh   # 环境变量方式
 ```
 
-脚本能力：pio 三路径查找（PATH/~/.local/bin/~/.platformio/penv）；pyserial 缺失自动补 PYTHONPATH；CH340 tcflush 怪癖经 runpy 注入补丁；esptool.py→esptool CLI→pio upload 三级回退；烧录前自动停占口进程（如 serial_sim.py）并在出口自动原样恢复。2ec9d0b 实测一次跑通。
+脚本能力：pio 三路径查找（PATH/~/.local/bin/~/.platformio/penv）；pyserial 缺失自动补 PYTHONPATH；CH340 tcflush 怪癖经 runpy 注入补丁；esptool.py→esptool CLI→pio upload 三级回退；烧录前自动停占口进程（如 serial_sim.py）并在出口自动恢复；**烧录前 serial_sim 未在跑的，烧完自动拉起**（默认找 /mnt/sda1/test/serial_sim.py，可用 SERIAL_SIM_PATH 覆盖；串口=当前烧录口、波特率=FLASH_BAUD；f576978，2026-10-14 实测：清场烧录后 sim 自动启动、板端 rx 持续增长）。2ec9d0b 初版一次跑通。
 
 **一键验证（烧录后回归）**：
 
@@ -303,7 +303,7 @@ FLASH_PORT=/dev/ttyUSB1 FLASH_BAUD=115200 ./flash.sh   # 环境变量方式
 ./verify.sh 192.168.137.50  # PC 与设备同网段时直接指定 IP
 ```
 
-覆盖：status 基线（JSON/heap/RSSI）、串口数据流（rx 增长=serial_sim 在跑）、WS :81 可达、门户页完整性（>40KB+no-store）、API 路由（scan 异步 202=正常）、GPIO 7 通道、ch3 写读复原（自动恢复原电平）、主循环 12 连采阻塞检测（>800ms 尖峰 FAIL）、云/转发状态快照。不碰 /api/reboot、/api/resetwifi。出口码 0=全过、1=有 FAIL。
+覆盖：status 基线（JSON/heap/RSSI）、串口数据流（rx 增长=serial_sim 在跑）、WS :81 可达、门户页完整性（V1.0.5.6 起=拉取 gzip 体裁剪解压并与本地 app_web_page.h 逐字节比对+no-store 检查）、API 路由（scan 异步 202=正常）、GPIO 7 通道、ch3 写读复原（自动恢复原电平）、主循环 12 连采阻塞检测（>800ms 尖峰 FAIL）、云/转发状态快照（公网目标 fwup=0 且 uptime<400s 视为 NTP 门控/退避窗口内属设计行为）。不碰 /api/reboot、/api/resetwifi。出口码 0=全过、1=有 FAIL。
 
 <details><summary>手动等价命令（脚本不可用时）</summary>
 
@@ -365,6 +365,8 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 | 绑定校验双缓冲混用（V1.0.2.12 自查） | 参考值与本次计算值共用一个缓冲区，`AppBindGet` 一执行就把算好的绑定值覆盖掉；修复=拆 `Id`/`RefId` 两缓冲；教训：**成对出现的输入/参考值各自独立缓冲，命名先区分再写码** |
 | OneNET "连上就断"（V1.0.2.12 时期排查） | 现象=一有串口数据就被踢（cloudtag=6，无数据则稳在线）。PC 同 token 复现分组实验：只连/只 PINGREQ→存活 100s+；**发任何 PUBLISH（任意主题/载荷含合法 OneJSON）→~3s 静默 EOF**（无 DISCONNECT 无错误码）→ 踢线条件与固件报文内容无关，疑平台产品配置（接入模式/强校验），待控制台核实；教训：**服务器裸断≠固件 bug，先 PC 复现分离变量（只连/只 ping/发包），别急着改代码**；另外 keepalive=60 完全无流量 ~90s（1.5×）被断属标准 MQTT 超时，非异常 |
 | 设备时钟显示慢约 1s（V1.0.2.13） | 秒级时间在 2s 轮询回调里渲染，只能 2s 跳格且平均滞后 1s；修复=轮询校准基准+前端 250ms 本地走秒（todSet/todFmt）；教训：**秒级显示用"轮询校准+本地走秒"模式，别把显示频率绑死在轮询频率上** |
+| 门户大页随机截断只剩骨架（V1.0.5.6） | 三层叠加：①41KB 明文单次 send_P 让 LWIP 一次性铺发送缓冲，heap≈10KB（STA+双云挂载）时 pbuf 失败半路放弃——**大页面必须压缩后存储发送**（gzip 1/3.1，浏览器 Content-Encoding: gzip 全兼容，源码可继续保留明文 rawliteral 由预构建脚本生成）；②sendContent_P 库内忽略 write 返回值，**短写静默丢尾不报错**（实测 19/20 仍截一次）——大体裁剪必须直写 socket 并检查 write 返回值重试；③诊断特征：页面"有骨架无版本号、标签切不动"=HTML 尾部被截（版本号/切标签 JS 都在页面尾部），先 curl 全页与 Content-Length 比对再怀疑前端 |
+| WiFi 断联后永不自动重连须手动复位（V1.0.5.2） | “门户使用中暂停重连”门控被永久占死：WS 服务端无心跳→终端页非正常关闭后客户端计数永不归零；AP 挂站点+持续 HTTP 轮询→2min 门户窗口无限续期，DrvWifiStaMaintain 永久跳过重连；**修复=WS enableHeartbeat(15s/3s×2) 剔僵尸 + 暂停封顶 5min 强制试连（V1.0.5.3）**；教训：**暂停/门控类机制必须有上限**，否则保护机制反杀核心功能；占用状态计数必须配心跳/超时自愈，否则一次异常状态就是永久状态 |
 
 
 
@@ -376,6 +378,10 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.18 | 10-14 | 46c94f5 | 【优化】连接设备数可观测：/api/status 新增 devap（AP 侧连接站点数，复用 DrvWifiApStationCount）+ devws（网页终端 WS 在线数，复用 DrvWebWsClientCount），门户状态页新增「连接设备」行显示总数及明细（热点 N + 网页 N）。初版曾拼成 dev:"1+0" 非法 JSON（手滑拼字符串到数字字段），立即改为两个规范数字字段。纯只读展示零风险；RAM 61.3%/Flash 50.6% |
+| V1.0.5.17 | 10-14 | a62d0dc | 【修复】串口终端循环发送两个交互缺陷（用户实测反馈）：① 运行中修改发送间隔会**误清循环勾选框**——旧逻辑 mulint change 事件无条件 mulStop() 且 mulStop 内强制 mulloop.checked=false（"改间隔需重新勾选"的过度防呆）；现改间隔不清勾选，循环在跑则以新间隔无缝重启并提示「间隔已更新」② 循环发送对多条条目「感觉不起作用」——实际循环逻辑正常，但勾选循环时若无勾选的有效条目只静默不启动（用户无从分辨在跑还是没跑）；现 mulStart() 启动前预检勾选条目，无效则明确提示「循环发送未启动: 无勾选的有效条目」，运行中清空条目停止时提示具体原因。纯前端逻辑，不碰固件数据通路；RAM 61.3%/Flash 50.6% |
+| V1.0.5.16 | 10-14 | cb42954 | 【优化】配网状态可观测性：/api/status 新增 cfgssid（配置保存的 ssid）+ 门户状态页条件行「已存配置 …(未连上)」——此前 ssid 字段在 STA 未连上时显示 AP 热点名（ESP8266-XCOM-XXXX），用户误判「配网信息没保存」（实际 flash 里 9 代配置全在，FS dump 取证证实），需整片读 flash 才能自证；现 cfgssid 非空+ssid≠cfgssid 即一眼区分「没连上」（网络问题）与「没保存」（配网问题）。纯只读展示，不碰存储/连接逻辑；RAM 61.3%/Flash 50.6% |
+| V1.0.5.3 | 10-12 | 5289989 | 【修复】WiFi 断联后永不自动重连须手动复位：门户暂停门控被永久占死——(a) WS 服务端未开心跳，终端页非正常关闭（掉电/睡眠/刷新丢 Close 帧）后 connectedClients 永不归零；(b) AP 挂站点+持续 HTTP 轮询使 2min 门户窗口无限续期，DrvWifiStaMaintain 的“门户使用中暂停重连”条件永久为真。修复=WS 服务端 enableHeartbeat(15s ping/3s pong 超时×2) 约 35s 剔除僵尸连接（正常浏览器自动 pong 不受影响）+ 暂停封顶 5min 强制试连一次 + /api/status 新增 wfail（重连连续失败计数）便于观察；实测：手搓不回 pong 僵尸客户端 30s 内被踢、活连接挺过 6 轮心跳不误踢、期间 HTTP 0.02~0.14s 秒回；RAM 60.8%/Flash 53.0% |
 | V1.0.5.2 | 10-10 | （本次提交） | 【修复】GPIO 页状态栏"设备时间"与前三行（FLASH键/板载LED/A0 模拟）不对齐：`.stat` 为 `auto 1fr` 两列网格，"设备时间"前缀的全角空格 U+3000 被网格包成**匿名网格项**独占第一列，标签被挤进值列、时间 span 掉行。去掉全角空格恢复"标签+值"成对两列；时钟未同步态也保留"设备时间"标签，四种状态首列均对齐 |
 | V1.0.5.1 | 10-10 | （本次提交） | 【修复】云平台凭据缺失时建链门控：空凭据+有互联网时（如选了华为云但未填三元组）`AppCloudTryConnect` 每个退避周期拿空域名发起 connect，DNS/TCP 同步阻塞主循环数秒——网页串口终端表现为 1~2s 周期性卡顿（数据停走后恢复，循环往复）。新增 `AppCloudCredOk()` 建链前置校验（巴法查 uid、阿里/OneNET/腾讯/华为查 pk/id/ps 三元组齐备），缺失直接挂起建链（零开销不碰网络），填好凭据点"应用"即恢复；与 V1.0.2.7 的无互联网 NTP 门控互补，DNS 卡主循环的两条路径都封死 |
 | V1.0.5.0 | 10-10 | （本次提交） | 【新增】华为云 IoTDA 平台接入（proto=5，工程目标 3 补齐第 5 家=五家全通）：密钥认证 MQTT 1883 明文（`{product_id}.iot-mqtts.cn-north-4.myhuaweicloud.com`，8883=MQTTS 需 CA），username=device_id，clientId=`{device_id}_0_0_{UTC YYYYMMDDHH}`（官方四段式，签名类型 0=不校验时间戳），password=hex(hmac_sha256(UTC时间戳,secret))——密钥=时间戳/内容=secret（官方 SDK EncryptWithHMac 源码+官方文档测试向量双核实，方向易反），BearSSL br_sha256_vtable 新增 HMAC-SHA256；timestamp 仿官方 SDK gmtime 取 UTC（无 RTC=1970010100 可用，NTP 后自动真实）；上行默认 `$oc/devices/{id}/sys/messages/up`（平台不校验格式=裸流透传），下行 sys/messages/down 靠平台 CONNACK 后自动订阅 QoS0 系统主题（免 SUBSCRIBE）；云配置槽位 5→6（cloudhw_ 前缀键），proto 上限 5；网页物联网平台标签新增华为云单选+字段标签/占位符/secret 必填校验；版本 V1.0.5.0（第三位+1：新功能大改） |
