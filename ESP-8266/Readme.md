@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.17**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.18**（develop）
 
 
 
@@ -98,7 +98,7 @@ Project_Level_Skill.md   ← 工程架构规范（层级命名/注释/提交约�
 | 方法 | 路由 | 参数 | 说明 |
 |------|------|------|------|
 | GET | `/` | — | 内置单页门户（gzip 压缩 PROGMEM+`Content-Encoding: gzip`，明文源码经 scripts/build_web_gz.py 预构建生成；no-store 头防升级后浏览器旧缓存瘫页） |
-| GET | `/api/status` | — | 全量状态 JSON（ver/ssid/cfgssid/wifi/ip/led/baud/fw*/cloud*/cloudtag/clouderr/cloudrc/tx/rx/heap/wfail/rst/lp*/slow）；cfgssid=配置保存的 ssid，与 ssid（当前连接，未连上时=AP 名）分开，页面可区分「没保存」与「没连上」（V1.0.5.16） |
+| GET | `/api/status` | — | 全量状态 JSON（ver/ssid/cfgssid/wifi/ip/led/baud/fw*/cloud*/cloudtag/clouderr/cloudrc/tx/rx/heap/wfail/rst/lp*/slow/devap/devws）；cfgssid=配置保存的 ssid，与 ssid（当前连接，未连上时=AP 名）分开，页面可区分「没保存」与「没连上」（V1.0.5.16） |
 | GET | `/api/scan` | — | 异步扫描周边热点（首次 202+空表，再次取结果；不阻塞 AP 信标） |
 | POST | `/api/wifi` | ssid&pass | 连接并持久化 |
 | POST | `/api/serial` | baud | 在线改波特率并持久化 |
@@ -379,6 +379,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
+| V1.0.5.18 | 10-14 | 46c94f5 | 【优化】连接设备数可观测：/api/status 新增 devap（AP 侧连接站点数，复用 DrvWifiApStationCount）+ devws（网页终端 WS 在线数，复用 DrvWebWsClientCount），门户状态页新增「连接设备」行显示总数及明细（热点 N + 网页 N）。初版曾拼成 dev:"1+0" 非法 JSON（手滑拼字符串到数字字段），立即改为两个规范数字字段。纯只读展示零风险；RAM 61.3%/Flash 50.6% |
 | V1.0.5.17 | 10-14 | a62d0dc | 【修复】串口终端循环发送两个交互缺陷（用户实测反馈）：① 运行中修改发送间隔会**误清循环勾选框**——旧逻辑 mulint change 事件无条件 mulStop() 且 mulStop 内强制 mulloop.checked=false（"改间隔需重新勾选"的过度防呆）；现改间隔不清勾选，循环在跑则以新间隔无缝重启并提示「间隔已更新」② 循环发送对多条条目「感觉不起作用」——实际循环逻辑正常，但勾选循环时若无勾选的有效条目只静默不启动（用户无从分辨在跑还是没跑）；现 mulStart() 启动前预检勾选条目，无效则明确提示「循环发送未启动: 无勾选的有效条目」，运行中清空条目停止时提示具体原因。纯前端逻辑，不碰固件数据通路；RAM 61.3%/Flash 50.6% |
 | V1.0.5.16 | 10-14 | cb42954 | 【优化】配网状态可观测性：/api/status 新增 cfgssid（配置保存的 ssid）+ 门户状态页条件行「已存配置 …(未连上)」——此前 ssid 字段在 STA 未连上时显示 AP 热点名（ESP8266-XCOM-XXXX），用户误判「配网信息没保存」（实际 flash 里 9 代配置全在，FS dump 取证证实），需整片读 flash 才能自证；现 cfgssid 非空+ssid≠cfgssid 即一眼区分「没连上」（网络问题）与「没保存」（配网问题）。纯只读展示，不碰存储/连接逻辑；RAM 61.3%/Flash 50.6% |
 | V1.0.5.3 | 10-12 | 5289989 | 【修复】WiFi 断联后永不自动重连须手动复位：门户暂停门控被永久占死——(a) WS 服务端未开心跳，终端页非正常关闭（掉电/睡眠/刷新丢 Close 帧）后 connectedClients 永不归零；(b) AP 挂站点+持续 HTTP 轮询使 2min 门户窗口无限续期，DrvWifiStaMaintain 的“门户使用中暂停重连”条件永久为真。修复=WS 服务端 enableHeartbeat(15s ping/3s pong 超时×2) 约 35s 剔除僵尸连接（正常浏览器自动 pong 不受影响）+ 暂停封顶 5min 强制试连一次 + /api/status 新增 wfail（重连连续失败计数）便于观察；实测：手搓不回 pong 僵尸客户端 30s 内被踢、活连接挺过 6 轮心跳不误踢、期间 HTTP 0.02~0.14s 秒回；RAM 60.8%/Flash 53.0% |
