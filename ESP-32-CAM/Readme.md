@@ -2,9 +2,9 @@
 
 - **板卡**：AI-Thinker ESP32-CAM（SoC：ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / **实测板载 8MB PSRAM**——经典 ESP32 最多映射 4MB）
 - **传感器**：**OV3660**（实测 PID=0x3660，标称 OV2640 的板子实际装了 OV3660，驱动自动识别；UXGA 上限，QXGA 不启用）
-- **SDK**：ESP-IDF **v6.1**（本机激活脚本 `F:\00.Code\11ESP\idf-env.bat`）；摄像头驱动 **esp32-camera 2.1.8**（组件仓库自动拉取，`main/idf_component.yml` 声明）
+- **SDK**：ESP-IDF **v6.1**（Windows 激活脚本 `F:\00.Code\11ESP\idf-env.bat`；**Linux YYM 机**：IDF 仓库 `/mnt/sda1/esp-idf`（v6.1 tag，SSH 22 直连克隆）、工具链 `IDF_TOOLS_PATH=/mnt/sda1/espressif`（install.sh 须加 `IDF_GITHUB_ASSETS=dl.espressif.com/github_assets` 走乐鑫镜像，github 直下被拒）；构建 `export IDF_TOOLS_PATH=/mnt/sda1/espressif && source /mnt/sda1/esp-idf/export.sh && idf.py build`）；摄像头驱动 **esp32-camera 2.1.8**（组件仓库自动拉取，`main/idf_component.yml` 声明）
 - **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.3**（断网无限退避自愈重连）
-- **代码仓**：`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`（串口透传工程见 develop 分支）；架构/分层规范同 ESP-32 工程（APP→BSP→HAL→ESP-IDF，见仓库 `Project_Level_Skill.md`）
+- **代码仓**：`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`（串口透传工程见 develop 分支；Linux YYM 机本地副本 `/home/yym/sda1/ESP`，构建产物 `build/esp32_cam.bin`）；架构/分层规范同 ESP-32 工程（APP→BSP→HAL→ESP-IDF，见仓库 `Project_Level_Skill.md`）
 - **网页端**：暗色单页四标签（配网/视频监控/GPIO 控制/存储），配网栈与网页谱系移植自 develop 分支（ESP8266-develop 参照）
 
 ## 硬件资源占用表
@@ -18,7 +18,7 @@
 | 剩余可控 GPIO | 1/3（UART0 日志口，控制后串口失联）、2/4/12/13/14/15/33 | 网页 GPIO 控制页 | bsp_gpio |
 | 不可用 | GPIO0=摄像头 XCLK；GPIO16/17=PSRAM；GPIO6~11=Flash；GPIO34~39 仅输入且被摄像头占用 | — | — |
 | WiFi | SoftAP `ESP32_Config`/192.168.4.1 + STA；NAPT 借道上网 | 配网/监控/NAT 中继 | hal_wifi/bsp_wifi |
-| 下载口 | **COM9**（CH340，**必须 115200**——460800 连接后失联） | 烧录/日志 | — |
+| 下载口 | Windows=**COM9**，Linux YYM 机=**/dev/ttyUSB1**（CH340，**必须 115200**——460800 连接后失联；ESP8266 同机占 /dev/ttyUSB0，勿混淆） | 烧录/日志 | — |
 
 ## HAL 层功能记录
 
@@ -106,6 +106,9 @@
 18. **检测帧源与流/录像共享 fb 队列**：多消费者 fb_get 各自分到部分帧（2fps 检测+10fps 录像+流媒体 ≈13fps ≤ 传感器能力）；检测解码后自建固定 80x60 网格重采样，任意分辨率统一处理
 19. **断网重连策略（V1.3.0.3）**：断开必须按原因分类——认证类（密码错：reason 15/202/204）限次防死循环；瞬时类（NO_AP_FOUND/BEACON_TIMEOUT 等，如路由器重启、热点还没开）**无限退避重连**（前 3 次立即，后 5s→30s 循环）。旧版 20 次总限会在 PC 重启期间 ICS 热点关闭几分钟的场景下永久掉线（实测：设备开机永远连不上）
 20. **PC 重启会换 COM 口**：USB 重新枚举导致 CH340 从 COM9 变 COM4（2026-10-12 实测）；烧录前先 `Get-CimInstance Win32_PnPEntity | ? Name -match CH340` 枚举当前口；Windows ICS 热点（YYM_1339）重启后可能自动关闭且极不稳，长期部署应改连主路由
+21. **Linux YYM 机首次构建环境（2026-10-15）**：IDF 克隆须走 `git@github.com:22` 直连（HTTPS 被墙、`ssh.github.com:443` 被热点 captive DNS 劫持到 192.168.4.1）；ssh config 里 `Host github.com → ssh.github.com:443` 会让 `--recursive` 子模块克隆 rc=128，绕法 `GIT_SSH_COMMAND='ssh -F /dev/null -i ~/.ssh/id_ed25519_esp8266'`；工具链 install.sh 必加 `IDF_GITHUB_ASSETS=dl.espressif.com/github_assets` 镜像；export 前必须 `export IDF_TOOLS_PATH=/mnt/sda1/espressif`（否则默认找 ~/.espressif 报 python_env 不存在）；烧录 `idf.py -p /dev/ttyUSB1 -b 115200 flash`
+22. **ESP32 板插入 Linux 不出串口=USB 枚举失败（error -71）**：dmesg 表现 `device descriptor read/64, error -71` 反复重试后 `unable to enumerate`（线材/接触/供电问题，与 CH340 驱动无关）；换插拔/换口后恢复；同机 ESP8266 的 serial_sim.py 会因同类 USB 抖动写失败 -71 退出，烧录前后记得 `ps | grep serial_sim` 补拉起
+23. **idf.py monitor 非 TTY 也能用**：stdin 非 TTY 时自动进非交互模式（支持 expect/sleep 子命令），重定向日志后 grep 关键启动行（`hal_cam ready/bsp_web ready/app_net ready`）即可无头验证；首帧 NO-SOI 是 OV3660 上电初始化现象，第三帧起正常，固件 SOI 校验兜底
 
 ## 构建与烧录
 
@@ -114,5 +117,6 @@ cmd /c "call F:\00.Code\11ESP\idf-env.bat && cd /d F:\00.Code\11ESP\ESP && idf.p
 cmd /c "call F:\00.Code\11ESP\idf-env.bat && cd /d F:\00.Code\11ESP\ESP && idf.py -p COM9 -b 115200 flash"
 ```
 
+- **Linux YYM 机**：`export IDF_TOOLS_PATH=/mnt/sda1/espressif && source /mnt/sda1/esp-idf/export.sh && cd /home/yym/sda1/ESP && idf.py build`；烧录 `idf.py -p /dev/ttyUSB1 -b 115200 flash`
 - `flash` 保留 NVS（配网/摄像头设置不丢）；改 `sdkconfig.defaults` 后须删 `sdkconfig` 重新生成（坑同 ESP-32 工程）
 - 验证：串口 115200 看 `app start → ap ready → hal_cam ready → bsp_web ready → app_net ready`；`/api/status` 最省事的端到端探针
