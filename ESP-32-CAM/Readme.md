@@ -3,7 +3,7 @@
 - **板卡**：AI-Thinker ESP32-CAM（SoC：ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / **实测板载 8MB PSRAM**——经典 ESP32 最多映射 4MB）
 - **传感器**：**OV3660**（实测 PID=0x3660，标称 OV2640 的板子实际装了 OV3660，驱动自动识别；UXGA 上限，QXGA 不启用）
 - **SDK**：ESP-IDF **v6.1**（Windows 激活脚本 `F:\00.Code\11ESP\idf-env.bat`；**Linux YYM 机**：IDF 仓库 `/mnt/sda1/esp-idf`（v6.1 tag，SSH 22 直连克隆）、工具链 `IDF_TOOLS_PATH=/mnt/sda1/espressif`（install.sh 须加 `IDF_GITHUB_ASSETS=dl.espressif.com/github_assets` 走乐鑫镜像，github 直下被拒）；构建 `export IDF_TOOLS_PATH=/mnt/sda1/espressif && source /mnt/sda1/esp-idf/export.sh && idf.py build`）；摄像头驱动 **esp32-camera 2.1.8**（组件仓库自动拉取，`main/idf_component.yml` 声明）
-- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.3**（断网无限退避自愈重连）
+- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.4**（修配网页 JS 括号缺失致按钮全无反应）
 - **代码仓**：`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`（串口透传工程见 develop 分支；Linux YYM 机本地副本 `/home/yym/sda1/ESP`，构建产物 `build/esp32_cam.bin`）；架构/分层规范同 ESP-32 工程（APP→BSP→HAL→ESP-IDF，见仓库 `Project_Level_Skill.md`）
 - **网页端**：暗色单页四标签（配网/视频监控/GPIO 控制/存储），配网栈与网页谱系移植自 develop 分支（ESP8266-develop 参照）
 
@@ -109,6 +109,7 @@
 21. **Linux YYM 机首次构建环境（2026-10-15）**：IDF 克隆须走 `git@github.com:22` 直连（HTTPS 被墙、`ssh.github.com:443` 被热点 captive DNS 劫持到 192.168.4.1）；ssh config 里 `Host github.com → ssh.github.com:443` 会让 `--recursive` 子模块克隆 rc=128，绕法 `GIT_SSH_COMMAND='ssh -F /dev/null -i ~/.ssh/id_ed25519_esp8266'`；工具链 install.sh 必加 `IDF_GITHUB_ASSETS=dl.espressif.com/github_assets` 镜像；export 前必须 `export IDF_TOOLS_PATH=/mnt/sda1/espressif`（否则默认找 ~/.espressif 报 python_env 不存在）；烧录 `idf.py -p /dev/ttyUSB1 -b 115200 flash`
 22. **ESP32 板插入 Linux 不出串口=USB 枚举失败（error -71）**：dmesg 表现 `device descriptor read/64, error -71` 反复重试后 `unable to enumerate`（线材/接触/供电问题，与 CH340 驱动无关）；换插拔/换口后恢复；同机 ESP8266 的 serial_sim.py 会因同类 USB 抖动写失败 -71 退出，烧录前后记得 `ps | grep serial_sim` 补拉起
 23. **idf.py monitor 非 TTY 也能用**：stdin 非 TTY 时自动进非交互模式（支持 expect/sleep 子命令），重定向日志后 grep 关键启动行（`hal_cam ready/bsp_web ready/app_net ready`）即可无头验证；首帧 NO-SOI 是 OV3660 上电初始化现象，第三帧起正常，固件 SOI 校验兜底
+24. **页面"加载后卡死/按钮全无反应"=JS 语法错误被浏览器静默丢弃（V1.3.0.4）**：detRender 检测线同步 if 块少一个闭合 `}`，整个 `<script>` 解析失败，所有 onclick 不绑定（页面骨架/文字照常显示，纯 curl 和 /api/status 探测发现不了）；排查法：把下发 HTML 的 script 段抽出来 `node --check`；预防法：页面改动后构建前先做该校验
 
 ## 构建与烧录
 
