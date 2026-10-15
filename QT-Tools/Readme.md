@@ -44,4 +44,5 @@ CMake -G Ninja -B build\cli-Debug，全量 70 步约 1 分钟。
 - 2026-10-10 [XCOM 功能对照报告](Doc/XCOM功能对照报告.md) — DebugPage vs ATK-XCOM
 - 2026-10-10 [波形页优化报告](Doc/波形页优化报告.md) — 卡顿三根因、Y轴自适应、鼠标缩放/平移查看（X轴§11 / Y轴§13）、**滚轮无效根因§14（qmlcachegen 编译下 MouseArea.onWheel 失效，改用 WheelHandler）**、数据入口过滤根因(§12)、自测钩子与实测数据
 - 2026-10-10 [蓝牙功能实现](Doc/蓝牙功能实现.md) — Windows 原生双栈(WinRT AEP 扫描+Winsock SPP 免配对直连，Qt Bluetooth 缺失且 Windows 不支持经典 SPP)、cppwinrt 踩坑(/permissive-/experimental-coroutine/runtimeobject)、--btscan 实测 20s 扫到 12 台
+- 2026-10-15 [页面切换卡顿优化报告](Doc/页面切换卡顿优化报告.md) — P0 三连修：①13 通道波形属性 QVariantList→QList<double>（消除每 tick 16 绑定×1500 点 QVariant 装箱转换）②调试页日志改后端 seq 增量拉取 rxLogsSince/lastLogSeq（替代每次全量拷贝 5000 条）③perfLog 默认关闭（COMMTOOLS_PERF_LOG 开启）；新增 RelWithDebInfo 构建目录（jom 须 -DCMAKE_MAKE_PROGRAM 全路径）；--simulate 像素计数 + --btscan 日志链路 0 错误验证
 - 2026-10-10 [协议开发规范](Doc/协议开发规范.md)（项目内 `指令解析方案.md` 修复后快照）
