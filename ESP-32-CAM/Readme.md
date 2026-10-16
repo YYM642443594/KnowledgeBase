@@ -3,7 +3,7 @@
 - **板卡**：AI-Thinker ESP32-CAM（SoC：ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / **实测板载 8MB PSRAM**——经典 ESP32 最多映射 4MB）
 - **传感器**：**OV3660**（实测 PID=0x3660，标称 OV2640 的板子实际装了 OV3660，驱动自动识别；UXGA 上限，QXGA 不启用）
 - **SDK**：ESP-IDF **v6.1**（Windows 激活脚本 `F:\00.Code\11ESP\idf-env.bat`；**Linux YYM 机**：IDF 仓库 `/mnt/sda1/esp-idf`（v6.1 tag，SSH 22 直连克隆）、工具链 `IDF_TOOLS_PATH=/mnt/sda1/espressif`（install.sh 须加 `IDF_GITHUB_ASSETS=dl.espressif.com/github_assets` 走乐鑫镜像，github 直下被拒）；构建 `export IDF_TOOLS_PATH=/mnt/sda1/espressif && source /mnt/sda1/esp-idf/export.sh && idf.py build`）；摄像头驱动 **esp32-camera 2.1.8**（组件仓库自动拉取，`main/idf_component.yml` 声明）
-- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.6**（修 Mesh 多 AP 环境 AP "消失"：STA 钉住 BSSID+信道，重连免扫描）
+- **版本号规则**：同 ESP-32 工程（V主.次.大功能.小功能）；当前 **V1.3.0.7**（加固 JPEG 帧校验补 EOI 尾标记；前版 1.3.0.6 修 Mesh 多 AP 环境 AP "消失"：STA 钉住 BSSID+信道，重连免扫描）
 - **代码仓**：`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`（串口透传工程见 develop 分支；Linux YYM 机本地副本 `/home/yym/sda1/ESP`，构建产物 `build/esp32_cam.bin`）；架构/分层规范同 ESP-32 工程（APP→BSP→HAL→ESP-IDF，见仓库 `Project_Level_Skill.md`）
 - **网页端**：暗色单页四标签（配网/视频监控/GPIO 控制/存储），配网栈与网页谱系移植自 develop 分支（ESP8266-develop 参照）
 
@@ -114,10 +114,13 @@
 
 26. **Mesh/多 AP 同名环境 SoftAP "消失"（V1.3.0.6）**：环境里同名 SSID 有 3 个 BSSID（信道 1/6/11），ESP32 STA 按信号选节点，位置差时摇摆关联到 -80dBm 弱节点→beacon 丢失（`state: run -> init (0x2c0/0x9c0)`）循环断连；**每次断连重连都要全信道扫描 2~3s，单射频 APSTA 下扫描期间 SoftAP 停发信标且 AP 信道跟随 STA 跳变（日志 `ap channel adjust o:6,1 n:11,2`）→外部看 AP 忽隐忽现/彻底搜不到，已连客户端被踢**——表象是"WiFi 搜不到"，实际 STA 在疯狂重连。治法：GOT_IP 时记忆节点 BSSID+信道，断线重连 `bssid_set=true`+`channel` 单信道直连（无扫描，SoftAP 几乎不断）；连续 8 次直连失败自动解除钉住恢复全信道扫（适应节点下线/挪位，连上后重新钉）。诊断抓手：`nmcli -f SSID,BSSID,CHAN,SIGNAL dev wifi list` 看同名多 BSSID；串口 grep `connected with` 对比历次 bssid
 
+27. **JPEG 残影排查与 EOI 校验加固（V1.3.0.7）**：用户实测"物体快速移动时画面偶发小残影"。排查：软件链路无截断/错位可能（fb 960KB 远大于 VGA 帧；HalHttpStreamSend 循环补发保 Content-Length 对位），残影主体是**物理特性**——OV3660 逐行曝光（一帧上下行曝光时刻不同→快移物体形变）+ 室内曝光时间 20~40ms（运动模糊）+ VGA q12 高压缩块效应（运动边缘高频细节被丢成细碎"蚊子噪声"块，运动一停下帧即干净）；**防御性加固**：原 BspWebJpegOk/BspSdJpegOk 仅查 SOI 头（FFD8），半截截断帧静默过检——流端浏览器解码半截 JPEG 会**保留上一帧局部内容**（真"残影"式软件成因）、录像端坏帧进 AVI 花屏；补查 EOI 尾（FFD9）后流/抓拍/录像全部入口拦截首尾损坏帧。教训：**"看起来像软件问题的现象先量化物理成因再动代码"，帧完整性校验头尾都要查（单查 SOI 拦不住尾部截断）**
+
 ## 版本历史
 
 | 版本 | 日期 | 提交 | 说明 |
 |------|------|------|------|
+| V1.3.0.7 | 10-16 | f916f52 | 【加固】JPEG 帧完整性校验补 EOI 尾标记(FFD9)——原仅查 SOI，截断帧静默过检（流端浏览器解码半截 JPEG 保留上一帧局部内容=残影式缺陷，录像端坏帧花屏）；流/抓拍/录像全入口生效。快移残影主体为物理特性（逐行曝光+运动模糊+高压缩块效应），详见踩坑 27 |
 | V1.3.0.6 | 10-15 | 585c251 | 【修复】Mesh 多 AP 环境 AP "消失"：STA 钉住 BSSID+信道免扫描重连；8 次失败自动解锁重扫。含 SD 劣质卡 write stall 观测记录（8s 看门狗自停正常兜底） |
 | V1.3.0.5 | 10-15 | 5ad2ca6 | 【修复】SD 统计/回收四处：网页列表 40→128 条(缓冲 8192)；满卡清理每段收尾+开段失败都执行；清理上限 200→1024；段序号开机续接防 NOSYNC 同名覆盖。实测 free 124→266MB 自动回收 |
 | V1.3.0.4 | 10-15 | 9ebe5c0 | 【修复】配网页所有按钮无反应：detRender 少闭合大括号致整个 script 被浏览器丢弃（V1.3.0.x 检测 UI 引入的 JS 回归） |
