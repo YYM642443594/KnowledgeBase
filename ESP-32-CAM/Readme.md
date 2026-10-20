@@ -82,6 +82,7 @@
 | 模块 | 关键点 |
 |------|--------|
 | app_net | 初始化链 bsp_wifi → store → gpio → sd(异步) → cam → **detect** → web;联网后 SNTP 对时(录像/抓拍时间戳命名依赖);状态 JSON:`ver/mode/ssid/ip/rssi/heap/psram/uptime/size/quality/fps/clients/sensor/sd/sdcap/sdfree`(录像另走 /api/rec,检测另走 /api/detect) |
+| vision-server(PC) | **PC 端检测服务(V1.4.2.5 配套)**:Ubuntu 主机 /home/yym/vision-server;OpenCV 4.10 HOG 行人检测(~200ms/帧,CPU 4核);ThreadingHTTPServer 并发+短读容错;systemd --user 自启(linger 已开);协议同 app_vision(POST base64→{boxes 千分比});注意:JSON 必须紧凑分隔符(设备端按"boxes":[精确匹配,Python 默认带空格会解析失败) |
 | app_vision | **外部视觉检测(V1.4.2.5 新增,API优先+本地回退)**:HTTP 端点 POST base64<JPEG>→{boxes:[[x,y,w,h,conf,cls]千分比]};三态模式(0仅本地/1仅API/2API优先);连续3次失败自动回退本地算法,恢复切回;URL/间隔网页可配NVS持久;SPIRAM 48KB base64缓冲;检出目标走本地同套联动(0→1录像+邮件);实测假端点回退/真端点在线/断电保存全通过;适合 CodeProject.AI/YOLO网关/百度云经网关转换 |
 | app_detect | **人体活动检测+人流量统计(V1.3.0.0 起,纯算法方案--经典 ESP32 无 NN 算力)**:JPEG 1/8 缩放解码(esp_jpeg 组件 RGB565→80x60 灰度重采样)→ 背景慢更新(τ≈16s)差分 → **全局光照突变占比判据(>45% 丢帧,V1.4.2.3)** → **差分膨胀 1 轮(V1.4.2.3)** → 洪泛连通域+面积/宽高比人形过滤(无面积上限) → 质心最近邻跟踪(20格半径,2帧确认/3帧丢失)→ 计数线左右状态翻转判进/出(NVS 持久,跨日自动清零);约 3fps 分析任务(300ms 周期,V1.4.2.3);设置 on/sens/line 网页可调持久化;局限:静止目标≈15s 被背景吸收、与背景同色可能漏检 |
 | app_scene | **场景联动(V1.4.2.4 新增)**:GPIO 输入沿触发→联动输出/拍照邮件/事件录像;4 条规则 NVS 掉电保存;10ms 轮询+50ms 去抖(连续5采样)+10s 冷却;沿类型升/降/双;动作掩码可组合;输出 HoldSecs 自动回退(0=保持);网页 GPIO 页规则配置(增改/触发计数/测试按钮);strapping 脚(GPIO0/12)硬拒+SD 总线脚校验;引脚配置 5s 周期自愈(SD 后台挂载重置 IO_MUX);实测:上升沿触发→GPIO4 置高 10s 精确回退✅;**坑:场景 API 响应 Content-Length 必须 strlen 按 UTF-8 字节数(中文硬编码长度截断);输出脚自愈重配会清联动电平→自愈只配输入脚** |
