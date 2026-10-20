@@ -3,7 +3,7 @@
 - **板卡**:AI-Thinker ESP32-CAM(SoC:ESP32-D0WDQ6,双核 Xtensa LX6 @ 240MHz,4MB Flash / **实测板载 8MB PSRAM**--经典 ESP32 最多映射 4MB)
 - **传感器**:**OV3660**(实测 PID=0x3660,标称 OV2640 的板子实际装了 OV3660,驱动自动识别;UXGA 上限,QXGA 不启用)
 - **SDK**:ESP-IDF **v6.1**(Windows 激活脚本 `F:\00.Code\11ESP\idf-env.bat`;**Linux YYM 机**:IDF 仓库 `/mnt/sda1/esp-idf`(v6.1 tag,SSH 22 直连克隆)、工具链 `IDF_TOOLS_PATH=/mnt/sda1/espressif`(install.sh 须加 `IDF_GITHUB_ASSETS=dl.espressif.com/github_assets` 走乐鑫镜像,github 直下被拒);构建 `export IDF_TOOLS_PATH=/mnt/sda1/espressif && source /mnt/sda1/esp-idf/export.sh && idf.py build`);摄像头驱动 **esp32-camera 2.1.8**(组件仓库自动拉取,`main/idf_component.yml` 声明)
-- **版本号规则**:同 ESP-32 工程(V主.次.大功能.小功能);当前 **V1.4.2.3**(修六项实测 bug:邮件测试先落表单/运行时间每秒跳/检测误报占比判据/膨胀连碎片修漏报/邮件MP4播放提示/存储页replay回放+文件邮件发送+SD异常自暴露;前版 1.4.2.2 修邮件网络层短写续传+30s 预算+重试+关省电)
+- **版本号规则**:同 ESP-32 工程(V主.次.大功能.小功能);当前 **V1.4.2.4**(新增场景联动:GPIO输入沿触发→继电器输出/拍照邮件/事件录像,NVS掉电保存,网页可配;修场景API中文响应截断;BROWNOUT 确诊供电临界,临时禁检测救急;前版 1.4.2.3 修六项实测 bug)
 - **代码仓**:`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`(串口透传工程见 develop 分支;Linux YYM 机本地副本 `/home/yym/sda1/ESP`,构建产物 `build/esp32_cam.bin`);架构/分层规范同 ESP-32 工程(APP→BSP→HAL→ESP-IDF,见仓库 `Project_Level_Skill.md`)
 - **网页端**:暗色单页四标签(配网/视频监控/GPIO 控制/存储),配网栈与网页谱系移植自 develop 分支(ESP8266-develop 参照)
 
@@ -83,6 +83,7 @@
 |------|--------|
 | app_net | 初始化链 bsp_wifi → store → gpio → sd(异步) → cam → **detect** → web;联网后 SNTP 对时(录像/抓拍时间戳命名依赖);状态 JSON:`ver/mode/ssid/ip/rssi/heap/psram/uptime/size/quality/fps/clients/sensor/sd/sdcap/sdfree`(录像另走 /api/rec,检测另走 /api/detect) |
 | app_detect | **人体活动检测+人流量统计(V1.3.0.0 起,纯算法方案--经典 ESP32 无 NN 算力)**:JPEG 1/8 缩放解码(esp_jpeg 组件 RGB565→80x60 灰度重采样)→ 背景慢更新(τ≈16s)差分 → **全局光照突变占比判据(>45% 丢帧,V1.4.2.3)** → **差分膨胀 1 轮(V1.4.2.3)** → 洪泛连通域+面积/宽高比人形过滤(无面积上限) → 质心最近邻跟踪(20格半径,2帧确认/3帧丢失)→ 计数线左右状态翻转判进/出(NVS 持久,跨日自动清零);约 3fps 分析任务(300ms 周期,V1.4.2.3);设置 on/sens/line 网页可调持久化;局限:静止目标≈15s 被背景吸收、与背景同色可能漏检 |
+| app_scene | **场景联动(V1.4.2.4 新增)**:GPIO 输入沿触发→联动输出/拍照邮件/事件录像;4 条规则 NVS 掉电保存;10ms 轮询+50ms 去抖(连续5采样)+10s 冷却;沿类型升/降/双;动作掩码可组合;输出 HoldSecs 自动回退(0=保持);网页 GPIO 页规则配置(增改/触发计数/测试按钮);strapping 脚(GPIO0/12)硬拒+SD 总线脚校验;引脚配置 5s 周期自愈(SD 后台挂载重置 IO_MUX);实测:上升沿触发→GPIO4 置高 10s 精确回退✅;**坑:场景 API 响应 Content-Length 必须 strlen 按 UTF-8 字节数(中文硬编码长度截断);输出脚自愈重配会清联动电平→自愈只配输入脚** |
 | app_mail | **邮件推送(V1.4.1.x 新增)**:检测触发/网页测试 → 队列→发送任务;SMTP 隐式 SSL(esp-tls,不挂证书 bundle:QQ/163 下发链缺中间证书);触发瞬间先拍照缓存 SPIRAM(照片与检测时刻对齐,V1.4.1.5);事件录像开启时等段收尾后随邮件附视频(base64 流式分块);60s 节流;配置 NVS 持久;**V1.4.2.2 网络层修复:短写循环续传(TLS SO_SNDTIMEO 到期返短计数)/30s 总预算/TLS 连接失败自动重试 2 次/GOT_IP 后关 STA 省电(DTIM 休眠致下行丢段)/分层错误码(esp 0x8000 系+mbedtls+sock errno,网页映射具体原因)**;**V1.4.2.3 交互修复:测试按钮先自动 POST 当前表单再 test=1(测旧配置坑)** |
 | app_main | 主循环 10ms 槽(当前空槽,业务全事件/请求驱动) |
 
