@@ -3,7 +3,7 @@
 - **板卡**:AI-Thinker ESP32-CAM(SoC:ESP32-D0WDQ6,双核 Xtensa LX6 @ 240MHz,4MB Flash / **实测板载 8MB PSRAM**--经典 ESP32 最多映射 4MB)
 - **传感器**:**OV3660**(实测 PID=0x3660,标称 OV2640 的板子实际装了 OV3660,驱动自动识别;UXGA 上限,QXGA 不启用)
 - **SDK**:ESP-IDF **v6.1**(Windows 激活脚本 `F:\00.Code\11ESP\idf-env.bat`;**Linux YYM 机**:IDF 仓库 `/mnt/sda1/esp-idf`(v6.1 tag,SSH 22 直连克隆)、工具链 `IDF_TOOLS_PATH=/mnt/sda1/espressif`(install.sh 须加 `IDF_GITHUB_ASSETS=dl.espressif.com/github_assets` 走乐鑫镜像,github 直下被拒);构建 `export IDF_TOOLS_PATH=/mnt/sda1/espressif && source /mnt/sda1/esp-idf/export.sh && idf.py build`);摄像头驱动 **esp32-camera 2.1.8**(组件仓库自动拉取,`main/idf_component.yml` 声明)
-- **版本号规则**:同 ESP-32 工程(V主.次.大功能.小功能);当前 **V1.4.2.5**(人流量统计开关化默认关;新增外部视觉检测引擎:API优先本地回退,端点网页可配,联动打通;场景联动拆独立页;前版 1.4.2.4 场景联动)
+- **版本号规则**:同 ESP-32 工程(V主.次.大功能.小功能);当前 **V1.4.2.6**(邮件忙拒拆分+检测节流300s+API在线本地联动让位+vision QVGA弱信号采样;实测vok 6/6在线率+邮件5s送达;PC端vision-server并发化+缩图提速。前版 1.4.2.5 人流量开关+外部视觉检测引擎)(人流量统计开关化默认关;新增外部视觉检测引擎:API优先本地回退,端点网页可配,联动打通;场景联动拆独立页;前版 1.4.2.4 场景联动)
 - **代码仓**:`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`(串口透传工程见 develop 分支;Linux YYM 机本地副本 `/home/yym/sda1/ESP`,构建产物 `build/esp32_cam.bin`);架构/分层规范同 ESP-32 工程(APP→BSP→HAL→ESP-IDF,见仓库 `Project_Level_Skill.md`)
 - **网页端**:暗色单页四标签(配网/视频监控/GPIO 控制/存储),配网栈与网页谱系移植自 develop 分支(ESP8266-develop 参照)
 
@@ -83,6 +83,7 @@
 |------|--------|
 | app_net | 初始化链 bsp_wifi → store → gpio → sd(异步) → cam → **detect** → web;联网后 SNTP 对时(录像/抓拍时间戳命名依赖);状态 JSON:`ver/mode/ssid/ip/rssi/heap/psram/uptime/size/quality/fps/clients/sensor/sd/sdcap/sdfree`(录像另走 /api/rec,检测另走 /api/detect) |
 | vision-server(PC) | **PC 端检测服务(V1.4.2.5 配套)**:Ubuntu 主机 /home/yym/vision-server;OpenCV 4.10 HOG 行人检测(~200ms/帧,CPU 4核);ThreadingHTTPServer 并发+短读容错;systemd --user 自启(linger 已开);协议同 app_vision(POST base64→{boxes 千分比});注意:JSON 必须紧凑分隔符(设备端按"boxes":[精确匹配,Python 默认带空格会解析失败) |
+| bug 修复 | V1.4.2.6: 存储页"邮"报"正在发送其他邮件"=双引擎重复联动+60s节流<单封耗时+PC服务单线程挂死三层叠加;修=节流300s/忙拒拆分/API在线本地让位/QVGA采样20KB |
 | app_vision | **外部视觉检测(V1.4.2.5 新增,API优先+本地回退)**:HTTP 端点 POST base64<JPEG>→{boxes:[[x,y,w,h,conf,cls]千分比]};三态模式(0仅本地/1仅API/2API优先);连续3次失败自动回退本地算法,恢复切回;URL/间隔网页可配NVS持久;SPIRAM 48KB base64缓冲;检出目标走本地同套联动(0→1录像+邮件);实测假端点回退/真端点在线/断电保存全通过;适合 CodeProject.AI/YOLO网关/百度云经网关转换 |
 | app_detect | **人体活动检测+人流量统计(V1.3.0.0 起,纯算法方案--经典 ESP32 无 NN 算力)**:JPEG 1/8 缩放解码(esp_jpeg 组件 RGB565→80x60 灰度重采样)→ 背景慢更新(τ≈16s)差分 → **全局光照突变占比判据(>45% 丢帧,V1.4.2.3)** → **差分膨胀 1 轮(V1.4.2.3)** → 洪泛连通域+面积/宽高比人形过滤(无面积上限) → 质心最近邻跟踪(20格半径,2帧确认/3帧丢失)→ 计数线左右状态翻转判进/出(NVS 持久,跨日自动清零);约 3fps 分析任务(300ms 周期,V1.4.2.3);设置 on/sens/line 网页可调持久化;局限:静止目标≈15s 被背景吸收、与背景同色可能漏检 |
 | app_scene | **场景联动(V1.4.2.4 新增)**:GPIO 输入沿触发→联动输出/拍照邮件/事件录像;4 条规则 NVS 掉电保存;10ms 轮询+50ms 去抖(连续5采样)+10s 冷却;沿类型升/降/双;动作掩码可组合;输出 HoldSecs 自动回退(0=保持);网页 GPIO 页规则配置(增改/触发计数/测试按钮);strapping 脚(GPIO0/12)硬拒+SD 总线脚校验;引脚配置 5s 周期自愈(SD 后台挂载重置 IO_MUX);实测:上升沿触发→GPIO4 置高 10s 精确回退✅;**坑:场景 API 响应 Content-Length 必须 strlen 按 UTF-8 字节数(中文硬编码长度截断);输出脚自愈重配会清联动电平→自愈只配输入脚** |
