@@ -3,7 +3,7 @@
 - **板卡**:AI-Thinker ESP32-CAM(SoC:ESP32-D0WDQ6,双核 Xtensa LX6 @ 240MHz,4MB Flash / **实测板载 8MB PSRAM**--经典 ESP32 最多映射 4MB)
 - **传感器**:**OV3660**(实测 PID=0x3660,标称 OV2640 的板子实际装了 OV3660,驱动自动识别;UXGA 上限,QXGA 不启用)
 - **SDK**:ESP-IDF **v6.1**(Windows 激活脚本 `F:\00.Code\11ESP\idf-env.bat`;**Linux YYM 机**:IDF 仓库 `/mnt/sda1/esp-idf`(v6.1 tag,SSH 22 直连克隆)、工具链 `IDF_TOOLS_PATH=/mnt/sda1/espressif`(install.sh 须加 `IDF_GITHUB_ASSETS=dl.espressif.com/github_assets` 走乐鑫镜像,github 直下被拒);构建 `export IDF_TOOLS_PATH=/mnt/sda1/espressif && source /mnt/sda1/esp-idf/export.sh && idf.py build`);摄像头驱动 **esp32-camera 2.1.8**(组件仓库自动拉取,`main/idf_component.yml` 声明)
-- **版本号规则**:同 ESP-32 工程(V主.次.大功能.小功能);当前 **V1.4.2.6**(邮件忙拒拆分+检测节流300s+API在线本地联动让位+vision QVGA弱信号采样;实测vok 6/6在线率+邮件5s送达;PC端vision-server并发化+缩图提速。前版 1.4.2.5 人流量开关+外部视觉检测引擎)(人流量统计开关化默认关;新增外部视觉检测引擎:API优先本地回退,端点网页可配,联动打通;场景联动拆独立页;前版 1.4.2.4 场景联动)
+- **版本号规则**:同 ESP-32 工程(V主.次.大功能.小功能);当前 **V1.4.2.7**(硬件供电加固:5V/GND 跨 680µF 电解电容+排线重插;恢复 BOD 欠压检测(带 BOD 过 boot 射频校准+满负载 0 复位);前版 1.4.2.6 邮件忙拒拆分+检测节流 300s+API 在线本地联动让位+vision QVGA 弱信号采样)
 - **代码仓**:`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`(串口透传工程见 develop 分支;Linux YYM 机本地副本 `/home/yym/sda1/ESP`,构建产物 `build/esp32_cam.bin`);架构/分层规范同 ESP-32 工程(APP→BSP→HAL→ESP-IDF,见仓库 `Project_Level_Skill.md`)
 - **网页端**:暗色单页四标签(配网/视频监控/GPIO 控制/存储),配网栈与网页谱系移植自 develop 分支(ESP8266-develop 参照)
 
@@ -103,7 +103,7 @@
 ## 实测性能与环境(2026-10-10,STA 回传)
 
 - VGA q12:**~22fps**(20KB/帧,3.7Mbps);UXGA q10:**~2.7fps**(199KB/帧,传感器读出物理上限)--监控建议 VGA/SVGA
-- 供电:摄像头+WiFi 峰值电流高,5V ≥2A;弱供会 brownout 反复重启
+- 供电:摄像头+WiFi 峰值电流高,5V ≥2A;弱供会 brownout 反复重启。**根治实测(2026-10-21):5V/GND 跨 680µF 电解电容**(极性/耐压≥6.3V,尽量贴近引脚),WiFi 射频大电流冲击不再拉跌电压,ping 延迟 ~100ms→~5ms;接口动力测试(3 路并发 MJPEG)0 复位
 - 上游网络:PC Windows ICS 热点(YYM_1339,192.168.137.0/24)实测**极不稳**(设备反复被拒/掉线),测试优先直连路由器
 
 ## 踩坑记录(按定位顺序)
@@ -146,10 +146,13 @@
 29. **Linux YYM 机 IDF 环境二次踩坑(2026-10-19)**:1系统 python3 从 3.10 升到 3.12 后 venv 软链 `python_env/idf6.1_py3.10_env/bin/python3` 跟着指向 3.12,export 报 rich 缺失/环境不存在--修法:重建软链指向 `/usr/bin/python3.10`,且 export 前加 `IDF_PYTHON_ENV_PATH` 显式指定;2build 目录残留半配置状态会在 `toolchain/cflags` 尾部残留自引用 `@cflags` 行,gcc 报 `too many @-files encountered`(响应文件递归)--修法:`rm -rf build` 全新配置;3cmake 用 /usr/bin 的 3.28(IDF 要求 4.0.3 但兼容),ninja 未装走 Unix Makefiles;4烧录口权限:yym 不在 dialout 组且无 sudo 免密,`chmod 666 /dev/ttyUSB1` 需提权(长期解法 `sudo usermod -aG dialout yym` 后重新登录);5**idf.py set-target/fullclean 重生成 sdkconfig 会丢弃手工改动**--ESP_TLS_INSECURE/SKIP_SERVER_CERT_VERIFY 曾只改在 sdkconfig(c6c4deb),fullclean 后静默回归,邮件 TLS 直接 0x8017(No server verification option set),**所有 sdkconfig 手工改动必须同步写进 sdkconfig.defaults**
 30. **邮件 TLS 深层根因(2026-10-19 终版)**:0x8017 有两层:1上面坑29-5 的证书跳过配置丢失;2**MBEDTLS_INTERNAL_MEM_ALLOC=y(默认)强制 SSL 走内部 RAM**--检测+事件录像+流媒体并发时内部 RAM 挤干,mbedtls_ssl_setup 的 in_buf(16KB,MBEDTLS_SSL_IN_CONTENT_LEN)+out_buf(4KB)calloc 失败返回 tls=141(=PSA_ERROR_INSUFFICIENT_MEMORY,MBEDTLS_ERR_SSL_ALLOC_FAILED 在 PSA 化后不再是负十六进制而是 PSA 码)-->esp 层 0x8017。修=CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y(SSL 缓冲走 8MB PSRAM,邮件低频后台任务性能无感)+app_mail 任务栈 8192→12288。诊断抓手:/api/mail 的 err/whex/sock 三元组+串口 grep "ssl_setup returned";**教训:自由堆大的系统也要盯内部 RAM 专用的分配链,PSA 化后 ALLOC_FAILED 错误码形态变了(141 而非 -0x7F00 系)**
 
+31. **USB 供电临界全套定位与硬件根治(2026-10-20~21)**:表象四连环--boot 循环(SW_RESET 伪装)/自发重启(09:02、10:14、17:xx、21:xx 无操作触发)/SD 间歇异常/cam_hal NO-SOI 帧损坏,同根因 **电脑 USB 供电临界,WiFi phy_init 射频校准瞬时 500mA+ 把 5V 拉跌**。定位链:复位原因日志(新加)对时间点对账 → 串口抓到 `E BOD: Brownout detector was triggered`;曾救急 sdkconfig 禁 BOD 换稳定(⚠️ 副作用:真跌压时 flash 写有损坏风险,且 brownout 复位后日志变 POWERON_RESET 与真拔电不可分,只能靠时间点对账)。**硬件根治:5V/GND 跨 680µF 电解电容**(≥470µF,极性别接反,耐压≥6.3V,引脚尽量短贴板)。验证法(模板可复用):①uptime 连续性监测(回落=复位) ②接口压力测试脚本(单路→3 路并发 MJPEG 60s→检测 API 连打,BOD 开关各跑一轮,0 复位+sensor 在线=过) ③ping 延迟旁证(~100ms 抖→~5ms 稳)。附带发现:**插拔电容碰 FPC 排线会让 sensor 上电 ~60s 后掉线**(sensor:none+heap 释放 2.2→4.1MB,SD 正常),重插排线即愈,别误判成电容问题。sudo 直跑 idf.py flash 会触发 component_manager 的 ESP_IDF_VERSION 环境变量 bug(TypeError),绕法=sudo 直接跑 venv python -m esptool write-flash @flash_args
+
 ## 版本历史
 
 | 版本 | 日期 | 提交 | 说明 |
 |------|------|------|------|
+| V1.4.2.7 | 10-21 | caef606 | 【硬件+配置】供电问题闭环：5V/GND 跨 680µF 电解电容（USB 供电临界→WiFi 射频校准拉跌 5V→BOD 循环根治）；恢复 CONFIG_ESP_BROWNOUT_DET=y 并同步 sdkconfig.defaults 防回归；带 BOD 过射频校准+满负载压测 0 复位；摄像头排线接触→sensor 上电 60s 掉线问题一并修复（见踩坑 31） |
 | V1.4.2.3 | 10-19 | 70c3b8e | 【修复】四项实测 bug：①邮件测试前自动落当前表单（测旧配置必败的交互坑）②状态轮询 3s→1s（运行时间每秒跳）③检测误报：全局光照突变改超阈占比>45%判据，取消面积上限 2000（误杀贴脸大目标）④差分膨胀 1 轮连回 JPEG 压缩碎片（大/远目标碎裂漏检），周期 350→300ms |
 | V1.3.0.7 | 10-16 | f916f52 | 【加固】JPEG 帧完整性校验补 EOI 尾标记(FFD9)——原仅查 SOI，截断帧静默过检（流端浏览器解码半截 JPEG 保留上一帧局部内容=残影式缺陷，录像端坏帧花屏）；流/抓拍/录像全入口生效。快移残影主体为物理特性（逐行曝光+运动模糊+高压缩块效应），详见踩坑 27 |
 | V1.3.0.6 | 10-15 | 585c251 | 【修复】Mesh 多 AP 环境 AP "消失":STA 钉住 BSSID+信道免扫描重连;8 次失败自动解锁重扫。含 SD 劣质卡 write stall 观测记录(8s 看门狗自停正常兜底) |
