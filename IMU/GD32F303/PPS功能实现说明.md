@@ -12,19 +12,18 @@ PPS（秒脉冲）输入用于 IMU 时间戳校准与脉冲触发推送。三种
 |------|------|------|
 | 0 | 空 | 不校准、脉冲不触发推送 |
 | 1 | 校准内部时间戳 | PPS 捕获回调实时同步校正系数，全部推送报文时间戳使用校准时间 |
-| 2 | PPS 脉冲触发推送 | 数据推送由 PPS 脉冲沿触发（替代周期推送），推送通道由 PPSSwitchType 决定 |
+| 2 | PPS 脉冲触发推送 | 数据推送由 PPS 脉冲沿触发（替代周期推送），推送内容由各通道总开关 PushStatus 决定 |
 
 ## 二、配置接口（三接口，谁配置谁生效来源）
 
-三个物理接口配置**同一组**全局 PPS 开关/模式，并通过 `PPSSwitchType` 记录"最后由谁开启"：
+三个物理接口配置**同一组**全局 PPS 开关/模式：
 
-| 接口 | 指令/报文 | 开关 | 模式 | SwitchType |
-|------|-----------|------|------|-----------|
-| AT 文本 | `AT+PPS=ON/OFF`、`AT+PPSMODE=n`、`AT+PPS?`、`AT+PPSMODE?` | PPSStatus | PPSMode | 1 |
-| HEX 报文 | 0x0012（Op=0x00 查询/0x01 设置/0x02 设置并保存） | PPSStatus | PPSMode | 2 |
-| CAN 报文 | 0x109（Data[0]=0x00 查询/0x01 设置/0x02 设置并保存；Playload[0]=模式 [1]=锁定 [2]=开关） | PPSStatus | PPSMode | 3 |
+| 接口 | 指令/报文 | 开关 | 模式 |
+|------|-----------|------|------|
+| AT 文本 | `AT+PPS=ON/OFF`、`AT+PPSMODE=n`、`AT+PPS?`、`AT+PPSMODE?` | PPSStatus | PPSMode |
+| HEX 报文 | 0x0012（Op=0x00 查询/0x01 设置/0x02 设置并保存） | PPSStatus | PPSMode |
+| CAN 报文 | 0x109（Data[0]=0x00 查询/0x01 设置/0x02 设置并保存；Playload[0]=模式 [1]=锁定 [2]=开关） | PPSStatus | PPSMode |
 
-- 开启任一接口的 PPS → `PPSSwitchType` 置对应值（1/2/3）；关闭 → 归 0（未定义）
 - 模式值域 0~2，开关值域 0/1，`BspDefaultCfgCheck()` 白名单纠错（非法归 0）
 - 查询类指令各自回显当前全局 PPSStatus/PPSMode，0x109 额外回显锁定状态
 
@@ -69,7 +68,7 @@ EXTI 捕获回调(BspPPS1SCallback, 中断上下文)
 主循环 BspUserDataPushControlCenter()(每圈轮询)
   ├─ 门控: BspPPSModeGet()==2 && BspPPSStatusCtrlGet()==1
   ├─ TrigCnt = BspPPSTriggerConsume(1)   ← 每圈最多消费 1 轮
-  └─ 按 PPSSwitchType 分流推送(见 4.2)
+  └─ 按 PushStatus 推送全部开启通道(见 4.2)
 ```
 
 - **计数器而非单 bit 标志**：主循环两圈之间到来的多个脉冲不丢失，高频 PPS（~700Hz）
@@ -80,18 +79,19 @@ EXTI 捕获回调(BspPPS1SCallback, 中断上下文)
 - 模式 2 进出边界（`BspPPSModeSet()` 内检测）清残留计数，防切换后旧脉冲推新帧
 - 组包/发送仍在主循环上下文，与周期推送/应答帧无重入冲突
 
-### 4.2 推送通道分流（PPSSwitchType 决定）
+### 4.2 推送内容（各通道总开关决定）
 
-模式 2 激活且 SwitchType 已定义（≠0）时，三通道周期推送**全部停止**
-（`TrigStopPeriodic`），仅 SwitchType 对应通道由脉冲触发：
+模式 2 激活期间三通道周期推送**全部停止**（`TrigMode2Active` 门控），
+脉冲触发推送全部总开关开启的通道：
 
-| SwitchType | 脉冲触发推送 | 其它通道 |
-|-----------|-------------|---------|
-| 1（AT 指令开启） | 一帧 AT 数据（受 `UserATDataPushCfg.PushStatus` 约束） | HEX/CAN 周期与脉冲均不推 |
-| 2（HEX 0x0012 开启） | HEX 全部已订阅包（0x0001/0002/0010/0013/0022，受 HEX PushStatus 与各包订阅位约束） | AT/CAN 均不推 |
-| 3（CAN 0x109 开启） | CAN 已开启流（完整流+精简流各自受 PushStatus 约束） | AT/HEX 均不推 |
-| 0（未定义，如旧配置升级） | 回退为三通道常规周期推送，脉冲不推（防升级后设备静默） | — |
+| 通道 | 脉冲触发推送 | 总开关 |
+|------|-------------|--------|
+| AT | 一帧 AT 数据 | `UserATDataPushCfg.PushStatus` |
+| HEX | 全部已订阅包（0x0001/0002/0010/0013/0022，另受各包订阅位约束） | `UserHexDataPushCfg.PushStatus` |
+| CAN 完整流 | 完整流数据 | `UserCanDataPushCfg.PushStatus` |
+| CAN 精简流 | 精简流数据 | `UserCanSimpDataPushCfg.PushStatus` |
 
+- 各通道独立开关独立生效：开着哪个推哪个，全关时脉冲无物可推（设备静默属用户主动配置）
 - 上位机 3D/原始数据为独立通道，不受模式 2 控制（维持周期推送，仅时间戳受模式 1 校准）
 - 模式 2 退出后周期推送立即恢复（LastPushTick 已过阈值，无需额外处理）
 
@@ -117,15 +117,20 @@ if (pSub->DataPacket0x0001 == 1) { BspPushSensorDataToUser_0x0001(); } ...
 
 ## 五、存储与兼容
 
-### 5.1 PPSSwitchType 启用预留区
+### 5.1 预留区与字段回退记录
 
-`PPSSwitchType`（u8，0:未定义 1:AT 2:HEX 3:CAN）声明于 `UserCanSimpDataPushCfg`
-与 Reserved 之间，Reserved 100B→99B：
+预留区 100B 当前**未启用任何字段**。曾实现过 `PPSSwitchType`（u8，记录 PPS 开关
+来源接口 1:AT 2:HEX 3:CAN，用于模式 2 单通道分流）——声明于 `UserCanSimpDataPushCfg`
+与 Reserved 之间（Reserved 100B→99B，sizeof 恒 204B）。后该方案回退删除，
+Reserved 恢复 100B：
 
-- `sizeof(ProductInfo_S)` 恒为 204B，CRC 长度不变 → **旧格式页（L1/L2/L3）迁移
-  与 CRC 校验完全不受影响**
-- 旧页迁移后 PPSSwitchType=0（未定义），语义正确
-- 依据预留区规程（见《参数页升级SN乱码与预留区扩展机制报告》）：
+- 回退原因：模式 2 推送语义最终定为"各通道总开关 PushStatus 独立决定"，无需来源记录
+- **回退兼容性**：删 1B 字段 + Reserved +1B 相互抵消，sizeof/CRC 长度不变，
+  旧格式页迁移不受影响；曾保存过 SwitchType 的设备该字节落在新固件 `Reserved[0]`，
+  不读不校验，无需处理
+- 经验：字段引入/删除只要始终"在注释与 Reserved 之间声明 + 同步增减 Reserved 字节数"，
+  即可保证任何版本间双向兼容
+- 预留区规程（见《参数页升级SN乱码与预留区扩展机制报告》）：
 
 ```text
 新增字段 = 在注释与 Reserved 之间声明 + Reserved 减对应字节数 + 维护分配表
@@ -146,8 +151,8 @@ BspPPSModeSet(pProductInfoShadow->PPSMode);
 
 0x0013 为 PPS 状态报文：`PPSStatus` 字段填锁定状态（`BspPPSLockStatusGet()`）、
 `PPSMode` 填全局模式；时间戳恒用校准时间（`BspPPSCalibratedUsGet()`）。
-其推送归属随 PPSSwitchType：SwitchType=2 时随 HEX 全包脉冲触发；
-SwitchType≠2 时保持周期推送（回退语义）。
+其推送归属：模式 2 激活时随 HEX 通道其它已订阅包一并由脉冲触发；
+非模式 2 时保持周期推送（回退语义）。
 
 ## 七、实现避坑清单
 
@@ -155,8 +160,9 @@ SwitchType≠2 时保持周期推送（回退语义）。
 |---|------|
 | 1 | 模式 2 消费点门控用运行态接口（`BspPPSStatusCtrlGet/BspPPSModeGet`），勿读工作副本——Op=0x01 设置路径不同步工作副本 |
 | 2 | `BspPPSModeSet()` 内做模式 2 进出边界清计数，切换模式不残留旧脉冲 |
-| 3 | 0x0013 在 `BspPushUserHexData` 内直接推（周期/脉冲两入口互斥不双发，由调度层 TrigStopPeriodic 保证） |
+| 3 | 0x0013 在 `BspPushUserHexData` 内直接推（周期/脉冲两入口互斥不双发，由调度层 TrigMode2Active 门控保证） |
 | 4 | HEX 订阅判定读 shadow，保证 MSGID 指令 Op=0x01 写 RAM 即时生效 |
 | 5 | AT 指令字符串比较用 `sizeof("AT+PPSMODE?")-1`，防止 "AT+PPSMODE?" 被 "AT+PPSMODE=" 前缀分支截获 |
 | 6 | AT 关键应答使用 `BspParseSendDataWait` 等发送缓冲空闲，防数据交织 |
 | 7 | PPS 信号消抖窗口 1ms（支持至 700Hz 输入）；全通道关闭时回调忽略脉冲防毛刺 |
+| 8 | AT 推送帧内含时间戳回退检测（`BspPushUserATData` 开头，检测原始时基回退自动停推）：检测用原始时基、输出用统一时间戳源（模式 1 为校准时间），两源整秒对齐存在 ≤1s 相位差，勿跨源比较否则模式切换瞬间会误触发停推 |
