@@ -3,7 +3,7 @@
 - **板卡**:AI-Thinker ESP32-CAM(SoC:ESP32-D0WDQ6,双核 Xtensa LX6 @ 240MHz,4MB Flash / **实测板载 8MB PSRAM**--经典 ESP32 最多映射 4MB)
 - **传感器**:**OV3660**(实测 PID=0x3660,标称 OV2640 的板子实际装了 OV3660,驱动自动识别;UXGA 上限,QXGA 不启用)
 - **SDK**:ESP-IDF **v6.1**(Windows 激活脚本 `F:\00.Code\11ESP\idf-env.bat`;**Linux YYM 机**:IDF 仓库 `/mnt/sda1/esp-idf`(v6.1 tag,SSH 22 直连克隆)、工具链 `IDF_TOOLS_PATH=/mnt/sda1/espressif`(install.sh 须加 `IDF_GITHUB_ASSETS=dl.espressif.com/github_assets` 走乐鑫镜像,github 直下被拒);构建 `export IDF_TOOLS_PATH=/mnt/sda1/espressif && source /mnt/sda1/esp-idf/export.sh && idf.py build`);摄像头驱动 **esp32-camera 2.1.8**(组件仓库自动拉取,`main/idf_component.yml` 声明)
-- **版本号规则**:同 ESP-32 工程(V主.次.大功能.小功能);当前 **V1.4.2.8**(移除视频监控页人体检测框选叠加层(实测反馈:监控页不再需要物体框选,页面更简洁;检测/计数/邮件/场景联动逻辑不变,/api/detect 仍返回 boxes 字段保持 API 兼容);前版 1.4.2.7 硬件供电加固:5V/GND 跨 680µF 电解电容+排线重插;恢复 BOD 欠压检测(带 BOD 过 boot 射频校准+满负载 0 复位);前版 1.4.2.6 邮件忙拒拆分+检测节流 300s+API 在线本地联动让位+vision QVGA 弱信号采样)
+- **版本号规则**:同 ESP-32 工程(V主.次.大功能.小功能);当前 **V1.4.2.9**(修复 SD 可用容量统计不准:FSInfo.free_count 长期失准,StatRefresh 低频 15 分钟全 FAT 扫描自愈,见踩坑 32;前版 1.4.2.8 移除视频监控页人体检测框选叠加层(实测反馈:监控页不再需要物体框选,页面更简洁;检测/计数/邮件/场景联动逻辑不变,/api/detect 仍返回 boxes 字段保持 API 兼容);前版 1.4.2.7 硬件供电加固:5V/GND 跨 680µF 电解电容+排线重插;恢复 BOD 欠压检测(带 BOD 过 boot 射频校准+满负载 0 复位);前版 1.4.2.6 邮件忙拒拆分+检测节流 300s+API 在线本地联动让位+vision QVGA 弱信号采样)
 - **代码仓**:`https://gitee.com/YYM642443594/ESP.git` 分支 `feature/ESP32-Camer`(串口透传工程见 develop 分支;Linux YYM 机本地副本 `/home/yym/sda1/ESP`,构建产物 `build/esp32_cam.bin`);架构/分层规范同 ESP-32 工程(APP→BSP→HAL→ESP-IDF,见仓库 `Project_Level_Skill.md`)
 - **网页端**:暗色单页四标签(配网/视频监控/GPIO 控制/存储),配网栈与网页谱系移植自 develop 分支(ESP8266-develop 参照)
 
@@ -35,7 +35,7 @@
 | V1.4.2.3 | 通过邮件发送出去的MP4视频无法正常的播放 | 2026.10.19 | 已修复(非文件损坏:ffprobe验证MP4容器合法全帧可解,根因MJPEG编码浏览器/系统播放器不支持;邮件正文加VLC/PotPlayer播放提示) | 2026.10.20 |
 | V1.4.2.3 | 存储界面存储的视频不能正常的查看，且缺少邮件发送功能 | 2026.10.19 | 已修复(新增GET /replay按容器解帧MJPEG流回放,「查看」改内嵌弹层浏览器原生渲染;「邮」按钮POST /api/mail/sendfile复用SMTP管线;另/api/sd加err字段暴露SD异常+启动打复位原因诊断今早两次意外重启) | 2026.10.20 |
 | V1.4.2.3 | 从该版本开始视频监控页面中不再需要物体框选的功能 | 2026.10.26 | 已修复(移除视频监控页 detboxes 框选叠加层与 detRender 画框循环,监控画面不再绘制检测框;检测/人流量/邮件触发/场景联动逻辑不变,/api/detect 仍返回 boxes 字段保持 API 兼容;版本号同步校正 V1.4.2.3→V1.4.2.8,已烧录验证) | 2026.10.26 |
-| V1.4.2.8 | 对于板子上的SD卡可用容量的统计不准确，好像一直是可用0.4G | 2026.10.26 |  |  |
+| V1.4.2.8 | 对于板子上的SD卡可用容量的统计不准确，好像一直是可用0.4G | 2026.10.26 | 已修复(V1.4.2.9:根因FAT32 f_getfree优先采信FSInfo.free_count缓存(FF_FS_NOFSINFO=0),异常断电/拔卡后长期失准不自愈——实测删全部37文件(实际释放约7GB)报数仅426→431MB而写入递减正常;治法StatRefresh低频15分钟置free_clst无效触发全FAT扫描重算并回写FSInfo自愈,烧录验证删0.9MB文件free 428→429正确回升,见踩坑32) | 2026.10.26 |
 
 
 
@@ -150,10 +150,13 @@
 
 31. **USB 供电临界全套定位与硬件根治(2026-10-20~21)**:表象四连环--boot 循环(SW_RESET 伪装)/自发重启(09:02、10:14、17:xx、21:xx 无操作触发)/SD 间歇异常/cam_hal NO-SOI 帧损坏,同根因 **电脑 USB 供电临界,WiFi phy_init 射频校准瞬时 500mA+ 把 5V 拉跌**。定位链:复位原因日志(新加)对时间点对账 → 串口抓到 `E BOD: Brownout detector was triggered`;曾救急 sdkconfig 禁 BOD 换稳定(⚠️ 副作用:真跌压时 flash 写有损坏风险,且 brownout 复位后日志变 POWERON_RESET 与真拔电不可分,只能靠时间点对账)。**硬件根治:5V/GND 跨 680µF 电解电容**(≥470µF,极性别接反,耐压≥6.3V,引脚尽量短贴板)。验证法(模板可复用):①uptime 连续性监测(回落=复位) ②接口压力测试脚本(单路→3 路并发 MJPEG 60s→检测 API 连打,BOD 开关各跑一轮,0 复位+sensor 在线=过) ③ping 延迟旁证(~100ms 抖→~5ms 稳)。附带发现:**插拔电容碰 FPC 排线会让 sensor 上电 ~60s 后掉线**(sensor:none+heap 释放 2.2→4.1MB,SD 正常),重插排线即愈,别误判成电容问题。sudo 直跑 idf.py flash 会触发 component_manager 的 ESP_IDF_VERSION 环境变量 bug(TypeError),绕法=sudo 直接跑 venv python -m esptool write-flash @flash_args
 
+32. **SD 可用容量恒报 0.4G 的根因与治法(V1.4.2.9,2026-10-26)**:用户报“8GB 卡可用容量统计不准,一直是 0.4G”。定位:设备端 f_getfree 返回的 free 与卡上文件总量严重脱节——`/api/sd` 列出 37 文件仅 ~5MB,报可用仅 426MB;**实测删除全部 37 个文件(实际释放约 7GB)后报数仅 426→431MB(+5MB≈删掉的小文件)**,而写入 1.2MB 抓拍 free 递减 1MB 完全正确→写入/删除路径的增量记账正常,**问题只在基准值:FSInfo.free_count 长期 stale**。根因链:IDF FatFs `FF_FS_NOFSINFO=0`→挂载时直接采信 FSInfo 扇区的空闲簇数,仅在 free_clst==0xFFFFFFFF(无效)时才全 FAT 扫描;FF_FS_NOFSINFO=0 下缓存永不被主动作废→异常断电/拔卡后 FSInfo 长期失准且仅靠写操作增量修正不自愈(卡曾被读卡器/Windows 操作或半路掉电即中招)。治法:`BspSdStatRefresh` 低频(**15 分钟一次**)先取一次拿 FATFS 句柄再把 `pFs->free_clst=0xFFFFFFFF`,随后的 f_getfree 即全扫描重算并经 sync_fs 回写 FSInfo 自愈;启动后首次刷新即触发一次全扫描,挂载日志/页面立即可见真值。**代价量化:8GB 卡全扫描约 0.5~1s(190 万簇×4B 逐项读扇区),调用点均在 G_SdMux 互斥锁内串行执行,实测 /api/sd 0.22s 返回、capture 60ms、流媒体无感**。教训:**“统计值长期不动”先分清“增量记账坏了”还是“基准值坏了”——本例增量全对、基准错,修法是低频重建基准而非改记账逻辑;凡依赖 f_getfree 显示/判满的功能,都要假设 FSInfo 可能长期失准**
+
 ## 版本历史
 
 | 版本 | 日期 | 提交 | 说明 |
 |------|------|------|------|
+| V1.4.2.9 | 10-26 | 970f9f6 | 【修复】SD 卡可用容量统计不准（知识库遗留 bug：8GB 卡恒报约 0.4G 可用）：根因 FAT32 f_getfree 优先采信 FSInfo.free_count 缓存（FF_FS_NOFSINFO=0），异常断电/拔卡后长期失准不自愈（实测删全部 37 文件仅 426→431MB）；治法 StatRefresh 低频 15 分钟置 free_clst 无效触发全 FAT 扫描重算并回写 FSInfo 自愈，启动首刷即见真值；烧录验证删除 0.9MB 文件 free 428→429 正确回升（详见踩坑 32） |
 | V1.4.2.8 | 10-26 | 7742d7d | 【修复】移除视频监控页人体检测框选叠加层（知识库遗留 bug：监控页不再需要物体框选）：删 detboxes 容器与 detRender 画框循环；检测/人流量/邮件/场景联动逻辑不变，/api/detect 仍返回 boxes 保持 API 兼容；版本字符串此前滞留 V1.4.2.3 未随 .4~.7 同步，本次一并校正；烧录验证 /api/status 报 V1.4.2.8、页面 JS 无回归 |
 | V1.4.2.7 | 10-21 | caef606 | 【硬件+配置】供电问题闭环：5V/GND 跨 680µF 电解电容（USB 供电临界→WiFi 射频校准拉跌 5V→BOD 循环根治）；恢复 CONFIG_ESP_BROWNOUT_DET=y 并同步 sdkconfig.defaults 防回归；带 BOD 过射频校准+满负载压测 0 复位；摄像头排线接触→sensor 上电 60s 掉线问题一并修复（见踩坑 31） |
 | V1.4.2.3 | 10-19 | 70c3b8e | 【修复】四项实测 bug：①邮件测试前自动落当前表单（测旧配置必败的交互坑）②状态轮询 3s→1s（运行时间每秒跳）③检测误报：全局光照突变改超阈占比>45%判据，取消面积上限 2000（误杀贴脸大目标）④差分膨胀 1 轮连回 JPEG 压缩碎片（大/远目标碎裂漏检），周期 350→300ms |
