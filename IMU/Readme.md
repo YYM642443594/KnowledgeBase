@@ -18,8 +18,17 @@
 IMU/
 ├── Readme.md      ← 本索引（工程映射、文档索引、知识链、归档规则）
 ├── GD32F103/      ← 工程 IMU_103_303_333（产品 303、333）
-└── GD32F303/      ← 工程 IMU_303_351（产品 351）
+├── GD32F303/      ← 工程 IMU_303_351（产品 351）
+└── Linux-UartTestVerifDemo/ ← 上位机测试工具（Linux 串口验证程序 imu_test）
 ```
+
+## 上位机测试工具（非固件工程）
+
+| 目录 | 工程 | 说明 |
+|------|------|------|
+| [Linux-UartTestVerifDemo/](Linux-UartTestVerifDemo/) | IMUDemo（分支 `feature/LinuxUartTestVerifDemo`） | Linux 串口验证程序 `imu_test`：数据流统计 / AT 指令验证 / HEX 协议验证（含压力模式），模块功能实现文档 + 源码快照，入口 [Readme](Linux-UartTestVerifDemo/Readme.md) |
+
+> 与固件工程的关系：该工具依据《用户协议》（AT 第2章 / HEX 3.2章）对固件做黑盒验证，帧格式逐 ID 对照固件 `bsp_parse.c` 核实（固件为行为权威）；其混流容错、CRC16、帧同步等结论与固件侧串口知识链互为印证。
 
 ## 文档索引
 
@@ -30,6 +39,7 @@ IMU/
 | GD32F103 | [量产Loader升级SN丢失与参数页安全迁移报告](GD32F103/量产Loader升级SN丢失与参数页安全迁移报告.md) | 参数页迁出 Loader 擦除区（唯一安全区 0x08003000/0x08003400）、A/B 双页保护、旧格式迁移体系、复位/升级入口 Flush 兜底 |
 | GD32F303 | [0x091时间戳抖动修复报告](GD32F303/0x091时间戳抖动修复报告.md) | 时间戳源锁存位置问题、时基源注入架构（增量契约）、回绕周期一致性 |
 | GD32F303 | [串口丢字节修复报告](GD32F303/串口丢字节修复报告.md) | SysTick 内 64 位软件除法拖长最高优先级中断致 ORE 丢字节，修复为 32 位硬件除法 |
+| Linux-UartTestVerifDemo | [模块文档 01~07](Linux-UartTestVerifDemo/Doc/01-架构与线程模型.md) | 三层架构与线程模型 / termios 驱动 / SPSC 无锁队列 / 帧同步+CRC16+统计 / AT·HEX 验证器（混流容错、自动还原、压力模式）/ 构建运行与排障 |
 
 ## 跨平台知识链（串口丢字节，全平台通用）
 
