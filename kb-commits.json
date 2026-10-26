@@ -1,8 +1,26 @@
 {
  "_meta": {
-  "content_head": "718fdbeb"
+  "content_head": "8f49ddcf"
  },
  "commits": [
+  {
+   "sha": "8f49ddcf",
+   "date": "2026-10-26 14:11",
+   "msg": "ESP32-CAM bug修复同步: SD可用容量统计不准(V1.4.2.9,烧录验证通过)",
+   "author": "yangying97"
+  },
+  {
+   "sha": "b532e8e3",
+   "date": "2026-10-26 13:15",
+   "msg": "【新增】增加一个SD卡容量统计错误的bug;",
+   "author": "yangying97"
+  },
+  {
+   "sha": "b4d43a43",
+   "date": "2026-10-26 13:08",
+   "msg": "更新可视化浏览HTML+志翔协议文档同步 (自动: 知识库viewer)",
+   "author": "yangying97"
+  },
   {
    "sha": "718fdbeb",
    "date": "2026-10-26 13:08",
@@ -133,24 +151,6 @@
    "sha": "11a643a2",
    "date": "2026-10-20 06:50",
    "msg": "ESP32-CAM: V1.4.2.5 人流量开关+外部视觉检测引擎登记",
-   "author": "yangying97"
-  },
-  {
-   "sha": "5dcd24f6",
-   "date": "2026-10-20 04:55",
-   "msg": "ESP32-CAM: V1.4.2.4 场景联动功能登记+供电BROWNOUT诊断结论",
-   "author": "yangying97"
-  },
-  {
-   "sha": "b48b907e",
-   "date": "2026-10-20 03:09",
-   "msg": "【修复】ESP-32-CAM V1.4.2.3 两条bug闭环:邮件MP4播放(MJPEG兼容性提示)+存储页repla",
-   "author": "yangying97"
-  },
-  {
-   "sha": "0043766c",
-   "date": "2026-10-19 13:48",
-   "msg": "【新增】一个bug记录;",
    "author": "yangying97"
   }
  ]
