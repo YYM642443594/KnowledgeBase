@@ -1,8 +1,44 @@
 {
  "_meta": {
-  "content_head": "78c8f60a"
+  "content_head": "718fdbeb"
  },
  "commits": [
+  {
+   "sha": "718fdbeb",
+   "date": "2026-10-26 13:08",
+   "msg": "ESP32-CAM bug修复同步: 移除监控页框选叠加层(V1.4.2.8,烧录验证通过)",
+   "author": "yangying97"
+  },
+  {
+   "sha": "add45b64",
+   "date": "2026-10-26 12:42",
+   "msg": "【修改】新增一个ESP32-Camer的bug;",
+   "author": "yangying97"
+  },
+  {
+   "sha": "d33d38b3",
+   "date": "2026-10-26 10:11",
+   "msg": "新增志翔协议文档同步(WorkRecord@feature/zhixiang)+viewer协议分区与内嵌图片 (自动:",
+   "author": "yangying97"
+  },
+  {
+   "sha": "3341de76",
+   "date": "2026-10-26 09:27",
+   "msg": "午夜推送改为增量模式（自动: 知识库viewer）",
+   "author": "yangying97"
+  },
+  {
+   "sha": "91b08846",
+   "date": "2026-10-26 09:26",
+   "msg": "更新可视化浏览HTML (自动: 知识库viewer)",
+   "author": "yangying97"
+  },
+  {
+   "sha": "46ee7fd1",
+   "date": "2026-10-26 09:26",
+   "msg": "知识库viewer构建脚本入库（自动: 知识库viewer）",
+   "author": "yangying97"
+  },
   {
    "sha": "db49c5e7",
    "date": "2026-10-26 09:25",
@@ -115,42 +151,6 @@
    "sha": "0043766c",
    "date": "2026-10-19 13:48",
    "msg": "【新增】一个bug记录;",
-   "author": "yangying97"
-  },
-  {
-   "sha": "427c6b68",
-   "date": "2026-10-19 13:37",
-   "msg": "ESP-32-CAM: 补坑29-5(sdkconfig重生成丢TLS配置)+坑30(mbedtls内部RAM挤干致SS",
-   "author": "yangying97"
-  },
-  {
-   "sha": "55a60e96",
-   "date": "2026-10-19 12:44",
-   "msg": "ESP-32-CAM: V1.4.2.3 四项实测bug修复——邮件测试先落表单/运行时间1s跳/检测误报占比判据/膨胀",
-   "author": "yangying97"
-  },
-  {
-   "sha": "6a62e305",
-   "date": "2026-10-19 09:20",
-   "msg": "IMU_303_351: 串口丢字节修复报告——SysTick内64位除法拖长中断逼近字节时间致ORE丢字节,32位硬件",
-   "author": "yangying97"
-  },
-  {
-   "sha": "3d4a11ef",
-   "date": "2026-10-16 14:34",
-   "msg": "【修改】增加ESP32-CAM的Bug记录;",
-   "author": "yangying97"
-  },
-  {
-   "sha": "2a7668c1",
-   "date": "2026-10-16 09:06",
-   "msg": "【新增】增加一条bug记录;",
-   "author": "yangying97"
-  },
-  {
-   "sha": "14e39047",
-   "date": "2026-10-16 03:37",
-   "msg": "ESP-32-CAM: V1.3.0.7 JPEG帧校验补EOI尾标记（快移残影排查+防御加固，踩坑27+版本历史）",
    "author": "yangying97"
   }
  ]
