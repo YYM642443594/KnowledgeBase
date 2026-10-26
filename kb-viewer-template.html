@@ -294,6 +294,15 @@ function resolveLinks(html, doc){
     if(target) return 'data-intlink="#'+target.hash+'"';
     return 'data-extmd="'+esc(p)+'"';
   });
+  /* embedded images: src attributes use various separators (\\ . ./ 00.image|00.Image); resolve to embedded data URIs */
+  html = html.replace(/(<img\s[^>]*src=")([^"]*00[.\/\\]?[Ii]mage[\/\\][^"]*)(")/g, (m,pre,src,post)=>{
+    let fn = src.split(/[\/\\]/).pop();
+    let parts = (base + "00.Image/" + fn).split('/');
+    const st = [];
+    parts.forEach(p2=>{ if(p2===''||p2==='.') return; if(p2==='..') st.pop(); else st.push(p2); });
+    const data = (KB.images||{})[st.join('/')];
+    return data ? pre+data+post : m;
+  });
   return html;
 }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }

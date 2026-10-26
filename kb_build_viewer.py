@@ -4,7 +4,7 @@
 All inputs/outputs live inside this repo (~/KnowledgeBase). Run kb-sync.py instead
 of calling this directly — it handles incremental checks and git push.
 """
-import json, re, os
+import json, re, os, base64
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "kb-viewer-template.html")
@@ -18,6 +18,7 @@ SECTIONS = [
     ("imu",    "IMU",           "🧭", "#3fb27f", "GD32F103 / GD32F303 两个 MCU 平台的 IMU 固件知识：串口丢字节、参数页迁移、指令集、PPS 功能"),
     ("qt",     "QT-Tools",      "🖥", "#e2a03f", "志翔 IMU 上位机（Qt 6 / QML）：Hex 指令、蓝牙、波形与页面性能优化、协议开发规范"),
     ("linux",  "Linux-Scripts", "🐧", "#e05c5c", "常用机环境脚本：Claude Code / OpenClaw 安装配置、FTP 服务、硬盘挂载、依赖清理"),
+    ("proto",  "Protocols",     "📜", "#9b6ce0", "志翔协议文档（同步自 WorkRecord@feature/zhixiang）：IMU 通讯协议与指令、坐标系示意、自动售水机通信协议（二进制帧 / MQTT JSON）"),
 ]
 
 def read(p):
@@ -89,6 +90,18 @@ def build(commits):
         for x in s["docs"]:
             by_path[x["relPath"]] = x["hash"]
 
+    # embed referenced images as data URIs (viewer must be self-contained, opened via file://)
+    images = {}
+    for sid, d, *_ in SECTIONS:
+        imgdir = os.path.join(HERE, d, "00.Image")
+        if not os.path.isdir(imgdir): continue
+        for fn in os.listdir(imgdir):
+            if not fn.lower().endswith((".png", ".jpg", ".jpeg", ".gif")): continue
+            ext = fn.rsplit(".", 1)[1].lower()
+            mime = "image/png" if ext == "png" else ("image/gif" if ext == "gif" else "image/jpeg")
+            with open(os.path.join(imgdir, fn), "rb") as f:
+                images[d + "/00.Image/" + fn] = f"data:{mime};base64," + base64.b64encode(f.read()).decode()
+
     head = commits[0]["sha"] if commits else "unknown"
 
     tpl = read(TEMPLATE)
@@ -97,7 +110,7 @@ def build(commits):
 
     html = tpl.replace("__MARKED_JS__", marked)
     html = html.replace("__KB_DATA__", json.dumps(
-        {"sections": data, "byPath": by_path}, ensure_ascii=False, separators=(",", ":")))
+        {"sections": data, "byPath": by_path, "images": images}, ensure_ascii=False, separators=(",", ":")))
     html = html.replace("__COMMITS__", json.dumps(commits, ensure_ascii=False))
     html = html.replace("__SYNC_DATE__", commits[0]["date"][:10] if commits else "?")
     html = html.replace("__HEAD_SHA__", head)

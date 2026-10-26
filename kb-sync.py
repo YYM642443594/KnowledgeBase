@@ -90,12 +90,19 @@ def main():
     if not head:
         fail("FETCH_FAIL: cannot reach GitHub API")
 
-    if not force and old_head and head.startswith(old_head[:7]):
+    # protocol docs: sync from WorkRecord (gitee feature/zhixiang) before any skip decision
+    proto = sh(sys.executable + ' "' + os.path.join(HERE, "kb-sync-protocols.py") + '"')
+    proto_status = proto.stdout.strip().splitlines()[-1] if proto.stdout.strip() else ""
+    if proto_status not in ("PROTOCOLS_UPDATED", "PROTOCOLS_SAME"):
+        fail("FETCH_FAIL: protocol sync: " + (proto_status or (proto.stderr or "no output")[:200]))
+    print("PROTOCOLS: " + proto_status)
+
+    if not force and proto_status == "PROTOCOLS_SAME" and old_head and head.startswith(old_head[:7]):
         print("SKIP_SYNC: remote HEAD matches last built content HEAD", old_head)
         print("SKIP_PUSH")
         return
 
-    if not force and not is_content_sha(head):
+    if not force and proto_status == "PROTOCOLS_SAME" and not is_content_sha(head):
         print("SKIP_SYNC: remote HEAD is viewer-generated (loop protection), content unchanged")
         print("SKIP_PUSH")
         return
@@ -129,13 +136,13 @@ def main():
     if "__KB_DATA__" in html or "__MARKED_JS__" in html or len(html) < 100000:
         fail("BUILD_FAIL: placeholder left in output")
 
-    if not force and old_head and content_head.startswith(old_head[:7]):
+    if not force and proto_status == "PROTOCOLS_SAME" and old_head and content_head.startswith(old_head[:7]):
         print("SKIP_PUSH: content unchanged (only metadata refreshed)")
         return
 
     # commit & push via SSH
     os.chdir(HERE)
-    if sh("git add -A 知识库-可视化浏览.html && git commit -m '更新可视化浏览HTML (自动: 知识库viewer)'").returncode != 0:
+    if sh("git add -A && git commit -m '更新可视化浏览HTML+志翔协议文档同步 (自动: 知识库viewer)'").returncode != 0:
         out = sh("git status --porcelain").stdout.strip()
         if out:
             fail("COMMIT_FAIL: " + out)

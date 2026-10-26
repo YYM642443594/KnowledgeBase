@@ -4,6 +4,12 @@
  },
  "commits": [
   {
+   "sha": "db49c5e7",
+   "date": "2026-10-26 09:25",
+   "msg": "更新可视化浏览HTML (自动: 知识库viewer)",
+   "author": "yangying97"
+  },
+  {
    "sha": "78c8f60a",
    "date": "2026-10-26 09:21",
    "msg": "IMU: 归档Linux上位机串口验证程序——新增Linux-UartTestVerifDemo目录(源工程IMUDem",
@@ -145,12 +151,6 @@
    "sha": "14e39047",
    "date": "2026-10-16 03:37",
    "msg": "ESP-32-CAM: V1.3.0.7 JPEG帧校验补EOI尾标记（快移残影排查+防御加固，踩坑27+版本历史）",
-   "author": "yangying97"
-  },
-  {
-   "sha": "bd4faafc",
-   "date": "2026-10-15 15:33",
-   "msg": "QT-Tools: B5 QML_ELEMENT AOT注册完成归档——根因更正(前置声明指针C2338为真根因,枚举S",
    "author": "yangying97"
   }
  ]
