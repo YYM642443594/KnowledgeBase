@@ -63,9 +63,13 @@ def sync_to_remote():
 
 def fetch_commits():
     """Recent commits for the viewer panel — real content changes only.
-    Viewer-generated commits are filtered out, which both keeps noise out of
-    the panel and makes rebuilds deterministic (no self-perpetuating diffs)."""
-    out = git_out(f'git log origin/{BRANCH} -30 --format=%H%x09%ad%x09%s --date=format:"%Y-%m-%d %H:%M"')
+    Walks history until LIMIT real commits are collected (viewer-generated
+    ones never count), so pushing a viewer commit does not slide the window
+    and re-embed a different history — otherwise every push would churn out
+    another diff forever."""
+    LIMIT = 30
+    out = git_out(
+        f'git log origin/{BRANCH} -200 --format=%H%x09%ad%x09%s --date=format:"%Y-%m-%d %H:%M"')
     if not out:
         return None
     commits = []
@@ -77,6 +81,8 @@ def fetch_commits():
         if MARKER in msg:
             continue
         commits.append({"sha": sha[:8], "date": date, "msg": msg[:60]})
+        if len(commits) >= LIMIT:
+            break
     return commits or None
 
 def sync_protocols(force=False):
