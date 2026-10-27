@@ -1,8 +1,44 @@
 {
  "_meta": {
-  "content_head": "94018f27"
+  "content_head": "fff741d0"
  },
  "commits": [
+  {
+   "sha": "fff741d0",
+   "date": "2026-10-27 12:58",
+   "msg": "STM32_F10x 模板同步: 0.1节补充主仓库职责说明(形态A仅HAL/形态B全在主仓库)",
+   "author": "yangying97"
+  },
+  {
+   "sha": "cbaa1d5a",
+   "date": "2026-10-27 12:54",
+   "msg": "STM32_F10x 架构模板同步: 四层改三层(BSP下沉为板级兼容层)",
+   "author": "yangying97"
+  },
+  {
+   "sha": "8ba4c545",
+   "date": "2026-10-27 10:02",
+   "msg": "协议同步脚本修复: rsync前先快进WorkRecord工作树,防止复制过期协议文档 (自动: 知识库viewer)",
+   "author": "yangying97"
+  },
+  {
+   "sha": "1d74628b",
+   "date": "2026-10-27 08:39",
+   "msg": "移除viewer重复HTML旧文件名副本(改名后由旧脚本重建,已修正脚本并留新名唯一副本) (自动: 知识库viewer",
+   "author": "yangying97"
+  },
+  {
+   "sha": "62854834",
+   "date": "2026-10-27 08:33",
+   "msg": "viewer脚本跟随HTML改名(知识库-可视化浏览.html→知识库.html) (自动: 知识库viewer)",
+   "author": "yangying97"
+  },
+  {
+   "sha": "03de2360",
+   "date": "2026-10-27 08:29",
+   "msg": "更新可视化浏览HTML+志翔协议文档同步 (自动: 知识库viewer)",
+   "author": "yangying97"
+  },
   {
    "sha": "94018f27",
    "date": "2026-10-27 07:44",
@@ -115,42 +151,6 @@
    "sha": "d6fc51cb",
    "date": "2026-10-23 09:28",
    "msg": "IMU_303_351: PPS功能实现说明更新——移除PPSSwitchType方案,模式2推送语义回退为各通道总开关",
-   "author": "yangying97"
-  },
-  {
-   "sha": "0fc5a700",
-   "date": "2026-10-23 06:50",
-   "msg": "IMU_303_351: 新增AT/HEX/CAN指令集说明文档——AT指令24条(含AT+PPS/PPSMODE/MS",
-   "author": "yangying97"
-  },
-  {
-   "sha": "f4de8848",
-   "date": "2026-10-23 06:19",
-   "msg": "IMU_303_351: 新增两份文档——参数页升级SN乱码与预留区扩展机制报告(L1L2L3四级长度复验+按格式迁移,",
-   "author": "yangying97"
-  },
-  {
-   "sha": "11ff725c",
-   "date": "2026-10-23 06:11",
-   "msg": "IMU: 知识库重组为按MCU型号划分——原IMU_103_303_333与IMU_303_351两工程目录合并为IMU",
-   "author": "yangying97"
-  },
-  {
-   "sha": "eecbb12f",
-   "date": "2026-10-23 05:42",
-   "msg": "IMU_103_303_333: 新增项目条目——三份修复报告(921600波特率串口丢字节五层排查-O0放大器/双TX",
-   "author": "yangying97"
-  },
-  {
-   "sha": "a0be7ce3",
-   "date": "2026-10-21 02:40",
-   "msg": "ESP32-CAM: V1.4.2.7 供电加固(680µF电容)+BOD恢复登记",
-   "author": "yangying97"
-  },
-  {
-   "sha": "41091ca6",
-   "date": "2026-10-20 13:21",
-   "msg": "ESP32-CAM: V1.4.2.6 邮件忙拒/双引擎联动/vision弱信号修复登记",
    "author": "yangying97"
   }
  ]
