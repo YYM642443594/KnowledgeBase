@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "a4d93fc8"
+  "content_head": "366e5d3c"
  },
  "commits": [
+  {
+   "sha": "366e5d3c",
+   "date": "2026-10-27 23:27",
+   "msg": "kb-sync.py: 以origin/develop为唯一真源；分歧仅重置纯viewer提交，推送竞争自动重试"
+  },
   {
    "sha": "a4d93fc8",
    "date": "2026-10-27 23:12",
@@ -67,16 +72,6 @@
    "sha": "d6fc51cb",
    "date": "2026-10-23 17:28",
    "msg": "IMU_303_351: PPS功能实现说明更新——移除PPSSwitchType方案,模式2推送语义回退为各通道总开关"
-  },
-  {
-   "sha": "0fc5a700",
-   "date": "2026-10-23 14:50",
-   "msg": "IMU_303_351: 新增AT/HEX/CAN指令集说明文档——AT指令24条(含AT+PPS/PPSMODE/MS"
-  },
-  {
-   "sha": "f4de8848",
-   "date": "2026-10-23 14:19",
-   "msg": "IMU_303_351: 新增两份文档——参数页升级SN乱码与预留区扩展机制报告(L1L2L3四级长度复验+按格式迁移,"
   }
  ]
 }
