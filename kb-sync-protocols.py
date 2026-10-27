@@ -52,6 +52,15 @@ def main():
         print("PROTOCOLS_SAME")
         return
 
+    # rsync reads from the working tree: fast-forward it to origin head first,
+    # otherwise new protocol commits would copy stale files.
+    st = sh("git status --porcelain", cwd=CLONE).stdout.strip()
+    if st:
+        fail("WorkRecord clone has local changes, refusing fast-forward: " + st[:200])
+    ff = sh(f"git checkout {BRANCH} && git merge --ff-only origin/{BRANCH}", cwd=CLONE)
+    if ff.returncode != 0:
+        fail("fast-forward failed: " + (ff.stderr or ff.stdout)[:200])
+
     if not os.path.isdir(SRC):
         fail(f"source dir missing: {SRC}")
     r = sh(f'rsync -a --delete --exclude .git "{SRC}/" "{DEST}/"')
