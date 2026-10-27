@@ -11,7 +11,7 @@ Exit codes: 0 = success (PUSHED or SKIP_PUSH), 1 = failure (prints FETCH_FAIL/PU
 import json, os, subprocess, sys, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-HTML = os.path.join(HERE, "知识库-可视化浏览.html")
+HTML = os.path.join(HERE, "知识库.html")
 COMMITS_JSON = os.path.join(HERE, "kb-commits.json")
 URL = "https://api.github.com/repos/YYM642443594/KnowledgeBase/commits/develop"
 BRANCH = "develop"

@@ -10,7 +10,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "kb-viewer-template.html")
 MARKED = os.path.join(HERE, "marked.min.js")
 COMMITS_JSON = os.path.join(HERE, "kb-commits.json")
-OUT = os.path.join(HERE, "知识库-可视化浏览.html")
+OUT = os.path.join(HERE, "知识库.html")
 
 # section metadata: id, dir, icon, color, description
 SECTIONS = [
