@@ -12,6 +12,10 @@ MARKED = os.path.join(HERE, "marked.min.js")
 COMMITS_JSON = os.path.join(HERE, "kb-commits.json")
 OUT = os.path.join(HERE, "知识库.html")
 
+# When set (by kb-sync.py) the viewer header shows this content HEAD instead of
+# commits[0], keeping rebuilds stable across viewer/script-only commits.
+HEAD_OVERRIDE = None
+
 # section metadata: id, dir, icon, color, description
 SECTIONS = [
     ("esp",    "ESP",           "📡", "#4f8cff", "ESP32 / ESP32-CAM / ESP8266 三个芯片平台的固件工程知识：透传、网页终端、视频监控、五云协议、踩坑记录"),
@@ -102,7 +106,9 @@ def build(commits):
             with open(os.path.join(imgdir, fn), "rb") as f:
                 images[d + "/00.Image/" + fn] = f"data:{mime};base64," + base64.b64encode(f.read()).decode()
 
-    head = commits[0]["sha"] if commits else "unknown"
+    # HEAD_OVERRIDE: content head pinned by kb-sync.py (newest real commit),
+    # so a rebuild right after a script-only push renders identically.
+    head = HEAD_OVERRIDE or (commits[0]["sha"] if commits else "unknown")
 
     tpl = read(TEMPLATE)
     marked = read(MARKED)

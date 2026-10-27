@@ -101,6 +101,10 @@ def build_once():
     commits = fetch_commits()
     if not commits:
         fail("FETCH_FAIL: cannot read commit history")
+    # content head = newest real commit (never our own viewer/script commit),
+    # so re-rendering right after a script-only push is byte-identical and
+    # produces no spurious viewer diff.
+    kb_build_viewer.HEAD_OVERRIDE = commits[0]["sha"]
     with open(COMMITS_JSON, "w", encoding="utf-8") as f:
         json.dump({"_meta": {"content_head": commits[0]["sha"]}, "commits": commits},
                   f, ensure_ascii=False, indent=1)
