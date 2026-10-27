@@ -101,6 +101,8 @@ def build_once():
     commits = fetch_commits()
     if not commits:
         fail("FETCH_FAIL: cannot read commit history")
+    sys.path.insert(0, HERE)
+    import kb_build_viewer
     # content head = newest real commit (never our own viewer/script commit),
     # so re-rendering right after a script-only push is byte-identical and
     # produces no spurious viewer diff.
@@ -108,8 +110,6 @@ def build_once():
     with open(COMMITS_JSON, "w", encoding="utf-8") as f:
         json.dump({"_meta": {"content_head": commits[0]["sha"]}, "commits": commits},
                   f, ensure_ascii=False, indent=1)
-    sys.path.insert(0, HERE)
-    import kb_build_viewer
     kb_build_viewer.build(commits)
     html = open(HTML, encoding="utf-8").read()
     if "__KB_DATA__" in html or "__MARKED_JS__" in html or len(html) < 100000:
