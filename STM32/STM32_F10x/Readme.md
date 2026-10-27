@@ -17,3 +17,4 @@
 |------|------|
 | [Project_Level_Skill.md](./Project_Level_Skill.md) | 嵌入式项目架构规范（跨仓库通用模板） |
 | [Doc/架构调整-四层改三层.md](./Doc/架构调整-四层改三层.md) | 分层架构由四层调整为三层（BSP 下沉为板级兼容层）的调整记录 |
+| [Doc/三层架构重构完成记录.md](./Doc/三层架构重构完成记录.md) | bsp_ptj_module 全模块重构完成记录（RAM 零增长、Flash -280B、0 Err/0 Warn） |
