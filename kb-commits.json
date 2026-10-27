@@ -1,8 +1,20 @@
 {
  "_meta": {
-  "content_head": "8f49ddcf"
+  "content_head": "94018f27"
  },
  "commits": [
+  {
+   "sha": "94018f27",
+   "date": "2026-10-27 07:44",
+   "msg": "【修改】修改HEML命名;",
+   "author": "yangying97"
+  },
+  {
+   "sha": "1c363f8d",
+   "date": "2026-10-26 16:00",
+   "msg": "更新可视化浏览HTML+志翔协议文档同步 (自动: 知识库viewer)",
+   "author": "yangying97"
+  },
   {
    "sha": "8f49ddcf",
    "date": "2026-10-26 14:11",
@@ -139,18 +151,6 @@
    "sha": "41091ca6",
    "date": "2026-10-20 13:21",
    "msg": "ESP32-CAM: V1.4.2.6 邮件忙拒/双引擎联动/vision弱信号修复登记",
-   "author": "yangying97"
-  },
-  {
-   "sha": "bbd5ad2b",
-   "date": "2026-10-20 07:44",
-   "msg": "ESP32-CAM: 登记 PC 端 vision-server 检测服务",
-   "author": "yangying97"
-  },
-  {
-   "sha": "11a643a2",
-   "date": "2026-10-20 06:50",
-   "msg": "ESP32-CAM: V1.4.2.5 人流量开关+外部视觉检测引擎登记",
    "author": "yangying97"
   }
  ]
