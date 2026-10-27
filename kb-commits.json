@@ -1,157 +1,82 @@
 {
  "_meta": {
-  "content_head": "fff741d0"
+  "content_head": "a4d93fc8"
  },
  "commits": [
   {
+   "sha": "a4d93fc8",
+   "date": "2026-10-27 23:12",
+   "msg": "STM32_F10x 板级参数完全收敛同步: §14 DRV无板级硬编码检查项达成"
+  },
+  {
+   "sha": "bd805ca6",
+   "date": "2026-10-27 22:35",
+   "msg": "STM32_F10x 三层架构重构完成同步: bsp_ptj_module全模块合并(RAM零增长/Flash-280B"
+  },
+  {
    "sha": "fff741d0",
-   "date": "2026-10-27 12:58",
-   "msg": "STM32_F10x 模板同步: 0.1节补充主仓库职责说明(形态A仅HAL/形态B全在主仓库)",
-   "author": "yangying97"
+   "date": "2026-10-27 20:58",
+   "msg": "STM32_F10x 模板同步: 0.1节补充主仓库职责说明(形态A仅HAL/形态B全在主仓库)"
   },
   {
    "sha": "cbaa1d5a",
-   "date": "2026-10-27 12:54",
-   "msg": "STM32_F10x 架构模板同步: 四层改三层(BSP下沉为板级兼容层)",
-   "author": "yangying97"
-  },
-  {
-   "sha": "8ba4c545",
-   "date": "2026-10-27 10:02",
-   "msg": "协议同步脚本修复: rsync前先快进WorkRecord工作树,防止复制过期协议文档 (自动: 知识库viewer)",
-   "author": "yangying97"
-  },
-  {
-   "sha": "1d74628b",
-   "date": "2026-10-27 08:39",
-   "msg": "移除viewer重复HTML旧文件名副本(改名后由旧脚本重建,已修正脚本并留新名唯一副本) (自动: 知识库viewer",
-   "author": "yangying97"
-  },
-  {
-   "sha": "62854834",
-   "date": "2026-10-27 08:33",
-   "msg": "viewer脚本跟随HTML改名(知识库-可视化浏览.html→知识库.html) (自动: 知识库viewer)",
-   "author": "yangying97"
-  },
-  {
-   "sha": "03de2360",
-   "date": "2026-10-27 08:29",
-   "msg": "更新可视化浏览HTML+志翔协议文档同步 (自动: 知识库viewer)",
-   "author": "yangying97"
+   "date": "2026-10-27 20:54",
+   "msg": "STM32_F10x 架构模板同步: 四层改三层(BSP下沉为板级兼容层)"
   },
   {
    "sha": "94018f27",
-   "date": "2026-10-27 07:44",
-   "msg": "【修改】修改HEML命名;",
-   "author": "yangying97"
-  },
-  {
-   "sha": "1c363f8d",
-   "date": "2026-10-26 16:00",
-   "msg": "更新可视化浏览HTML+志翔协议文档同步 (自动: 知识库viewer)",
-   "author": "yangying97"
+   "date": "2026-10-27 15:44",
+   "msg": "【修改】修改HEML命名;"
   },
   {
    "sha": "8f49ddcf",
-   "date": "2026-10-26 14:11",
-   "msg": "ESP32-CAM bug修复同步: SD可用容量统计不准(V1.4.2.9,烧录验证通过)",
-   "author": "yangying97"
+   "date": "2026-10-26 22:11",
+   "msg": "ESP32-CAM bug修复同步: SD可用容量统计不准(V1.4.2.9,烧录验证通过)"
   },
   {
    "sha": "b532e8e3",
-   "date": "2026-10-26 13:15",
-   "msg": "【新增】增加一个SD卡容量统计错误的bug;",
-   "author": "yangying97"
-  },
-  {
-   "sha": "b4d43a43",
-   "date": "2026-10-26 13:08",
-   "msg": "更新可视化浏览HTML+志翔协议文档同步 (自动: 知识库viewer)",
-   "author": "yangying97"
+   "date": "2026-10-26 21:15",
+   "msg": "【新增】增加一个SD卡容量统计错误的bug;"
   },
   {
    "sha": "718fdbeb",
-   "date": "2026-10-26 13:08",
-   "msg": "ESP32-CAM bug修复同步: 移除监控页框选叠加层(V1.4.2.8,烧录验证通过)",
-   "author": "yangying97"
+   "date": "2026-10-26 21:08",
+   "msg": "ESP32-CAM bug修复同步: 移除监控页框选叠加层(V1.4.2.8,烧录验证通过)"
   },
   {
    "sha": "add45b64",
-   "date": "2026-10-26 12:42",
-   "msg": "【修改】新增一个ESP32-Camer的bug;",
-   "author": "yangying97"
-  },
-  {
-   "sha": "d33d38b3",
-   "date": "2026-10-26 10:11",
-   "msg": "新增志翔协议文档同步(WorkRecord@feature/zhixiang)+viewer协议分区与内嵌图片 (自动:",
-   "author": "yangying97"
-  },
-  {
-   "sha": "3341de76",
-   "date": "2026-10-26 09:27",
-   "msg": "午夜推送改为增量模式（自动: 知识库viewer）",
-   "author": "yangying97"
-  },
-  {
-   "sha": "91b08846",
-   "date": "2026-10-26 09:26",
-   "msg": "更新可视化浏览HTML (自动: 知识库viewer)",
-   "author": "yangying97"
-  },
-  {
-   "sha": "46ee7fd1",
-   "date": "2026-10-26 09:26",
-   "msg": "知识库viewer构建脚本入库（自动: 知识库viewer）",
-   "author": "yangying97"
-  },
-  {
-   "sha": "db49c5e7",
-   "date": "2026-10-26 09:25",
-   "msg": "更新可视化浏览HTML (自动: 知识库viewer)",
-   "author": "yangying97"
+   "date": "2026-10-26 20:42",
+   "msg": "【修改】新增一个ESP32-Camer的bug;"
   },
   {
    "sha": "78c8f60a",
-   "date": "2026-10-26 09:21",
-   "msg": "IMU: 归档Linux上位机串口验证程序——新增Linux-UartTestVerifDemo目录(源工程IMUDem",
-   "author": "yangying97"
-  },
-  {
-   "sha": "733560b6",
-   "date": "2026-10-26 08:25",
-   "msg": "更新可视化浏览HTML (自动: 知识库viewer)",
-   "author": "yangying97"
-  },
-  {
-   "sha": "4b9495a5",
-   "date": "2026-10-26 08:22",
-   "msg": "更新可视化浏览HTML (自动: 知识库viewer)",
-   "author": "yangying97"
-  },
-  {
-   "sha": "5486147e",
-   "date": "2026-10-26 08:19",
-   "msg": "更新可视化浏览HTML (自动: 知识库viewer)",
-   "author": "yangying97"
+   "date": "2026-10-26 17:21",
+   "msg": "IMU: 归档Linux上位机串口验证程序——新增Linux-UartTestVerifDemo目录(源工程IMUDem"
   },
   {
    "sha": "4b218314",
-   "date": "2026-10-26 06:09",
-   "msg": "新增Linux常用机脚本目录:备份00.FTP下6个环境配置脚本并附使用文档",
-   "author": "yangying97"
+   "date": "2026-10-26 14:09",
+   "msg": "新增Linux常用机脚本目录:备份00.FTP下6个环境配置脚本并附使用文档"
   },
   {
    "sha": "cf665d14",
-   "date": "2026-10-26 06:09",
-   "msg": "重组:三个ESP顶层目录收纳进ESP/知识库,参照IMU模式新建顶层索引",
-   "author": "yangying97"
+   "date": "2026-10-26 14:09",
+   "msg": "重组:三个ESP顶层目录收纳进ESP/知识库,参照IMU模式新建顶层索引"
   },
   {
    "sha": "d6fc51cb",
-   "date": "2026-10-23 09:28",
-   "msg": "IMU_303_351: PPS功能实现说明更新——移除PPSSwitchType方案,模式2推送语义回退为各通道总开关",
-   "author": "yangying97"
+   "date": "2026-10-23 17:28",
+   "msg": "IMU_303_351: PPS功能实现说明更新——移除PPSSwitchType方案,模式2推送语义回退为各通道总开关"
+  },
+  {
+   "sha": "0fc5a700",
+   "date": "2026-10-23 14:50",
+   "msg": "IMU_303_351: 新增AT/HEX/CAN指令集说明文档——AT指令24条(含AT+PPS/PPSMODE/MS"
+  },
+  {
+   "sha": "f4de8848",
+   "date": "2026-10-23 14:19",
+   "msg": "IMU_303_351: 新增两份文档——参数页升级SN乱码与预留区扩展机制报告(L1L2L3四级长度复验+按格式迁移,"
   }
  ]
 }
