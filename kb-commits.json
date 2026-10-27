@@ -1,8 +1,18 @@
 {
  "_meta": {
-  "content_head": "e3c968d9"
+  "content_head": "33289db9"
  },
  "commits": [
+  {
+   "sha": "33289db9",
+   "date": "2026-10-27 23:32",
+   "msg": "kb-sync.py: 修复HEAD_OVERRIDE赋值顺序与kb-commits.json写入"
+  },
+  {
+   "sha": "2ca6d3e1",
+   "date": "2026-10-27 23:31",
+   "msg": "viewer: HEAD显示最新真实内容提交(HEAD_OVERRIDE)，重建跨viewer提交稳定"
+  },
   {
    "sha": "e3c968d9",
    "date": "2026-10-27 23:29",
@@ -142,16 +152,6 @@
    "sha": "55a60e96",
    "date": "2026-10-19 20:44",
    "msg": "ESP-32-CAM: V1.4.2.3 四项实测bug修复——邮件测试先落表单/运行时间1s跳/检测误报占比判据/膨胀"
-  },
-  {
-   "sha": "6a62e305",
-   "date": "2026-10-19 17:20",
-   "msg": "IMU_303_351: 串口丢字节修复报告——SysTick内64位除法拖长中断逼近字节时间致ORE丢字节,32位硬件"
-  },
-  {
-   "sha": "3d4a11ef",
-   "date": "2026-10-16 22:34",
-   "msg": "【修改】增加ESP32-CAM的Bug记录;"
   }
  ]
 }
