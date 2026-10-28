@@ -63,7 +63,7 @@ ESP/
 | WS 网页终端 | :81 端口二进制通道广播串口数据；慢客户端处理：ESP-32 登记表+合批缓冲（30ms 合帧），ESP-8266 心跳剔除僵尸+逐客户端发送 | ESP-32 bsp_web；ESP-8266 V1.0.5.19 补丁 |
 | 阻塞 connect 卡主循环 | 建链前置校验（凭据/NTP 门控）+ 非阻塞退避，DNS/TCP 同步阻塞会冻结轮询数秒 | ESP-8266 V1.0.2.7 / V1.0.5.1；ESP-32 转发用非阻塞 connect+select |
 | Mesh/多 AP 同名 | STA 钉住 BSSID+信道免扫描重连（扫描期间 SoftAP 停发信标），8 次失败解锁重扫 | ESP-32-CAM 踩坑 26（V1.3.0.6） |
-| 烧录口纪律 | Linux YYM 机：ESP32-CAM=/dev/ttyUSB1、ESP8266=/dev/ttyUSB0，均 115200（460800 失联）；烧录前后检查 serial_sim.py 存活 | ESP-32-CAM 硬件表/踩坑 22 |
+| 烧录口纪律 | Linux YYM 机：ESP32-CAM=/dev/ttyUSB1、ESP8266=/dev/ttyUSB0，均 115200（460800 失联）；烧录前后检查 serial_sim.py 存活；ESP32-CAM 构建/烧录须 `export IDF_TOOLS_PATH=/home/yym/sda1/espressif`（配置在 /mnt/sda1 会被拒：python_env 实际在 /home/yym/sda1，双目录易混） | ESP-32-CAM 硬件表/踩坑 22/版本历史 V1.4.2.10 复测行 |
 
 ## 归档规则
 
