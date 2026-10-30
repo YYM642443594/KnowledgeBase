@@ -56,3 +56,6 @@ dkms.conf
 
 # viewer build artifacts
 __pycache__/
+
+# AI 工具本地配置
+.claude/
