@@ -8,7 +8,7 @@
 |------------------|----------|------|----------|---------------|
 | [ESP-32/](ESP-32/) | 串口 ↔ WiFi/蓝牙透传 + 网页终端（配网/串口终端/转发三标签） | ESP32-WROOM-32（ESP32-D0WDQ6，双核 LX6 @ 240MHz，4MB Flash） | ESP-IDF v6.1 | gitee `ESP.git` develop 分支 |
 | [ESP-32-CAM/](ESP-32-CAM/) | 网页视频监控（OV3660 + SD 录像 + 人体检测 + 邮件推送 + 场景联动） | AI-Thinker ESP32-CAM（实测 OV3660，4MB Flash / 8MB PSRAM） | ESP-IDF v6.1 + esp32-camera 2.1.8 | gitee `ESP.git` feature/ESP32-Camer 分支（Linux 本地副本 `/home/yym/sda1/ESP`） |
-| [ESP-8266/](ESP-8266/) | ESP8266-XCOM 串口 WiFi 透传器（五云平台桥 + GPIO 控制 + 防克隆绑定） | ESP8266（NodeMCU v2，板载 CH340） | PlatformIO + Arduino | ESP8266 仓库（远程经 SSH 别名 `git@github-esp8266`） |
+| [ESP-8266/](ESP-8266/) | ESP8266-XCOM 串口 WiFi 透传器（五云平台桥 + GPIO 控制 + 防克隆绑定） | ESP8266（NodeMCU v2，板载 CH340） | PlatformIO + Arduino | 双远程镜像：gitee `ESP.git` develop 分支 + github `ESP8266.git` develop 分支（本地副本 `/mnt/sda1/esp8266-xcom`） |
 
 > 两个 ESP32 工程同一代码仓不同分支：develop = 串口透传，feature/ESP32-Camer = 摄像头监控。新工程 = 新芯片平台时登记本表并新建同名目录；同平台新功能更新对应目录 Readme，不新建目录。
 
