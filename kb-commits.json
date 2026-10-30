@@ -1,8 +1,28 @@
 {
  "_meta": {
-  "content_head": "1540d93a"
+  "content_head": "d7c11424"
  },
  "commits": [
+  {
+   "sha": "d7c11424",
+   "date": "2026-10-30 13:48",
+   "msg": "Merge remote-tracking branch 'origin/develop' into develop"
+  },
+  {
+   "sha": "e4fefec6",
+   "date": "2026-10-30 13:48",
+   "msg": "Merge remote-tracking branch 'origin/main' into develop"
+  },
+  {
+   "sha": "2e36396f",
+   "date": "2026-10-30 13:45",
+   "msg": "【新增】增加一个ESP8266的bug;"
+  },
+  {
+   "sha": "4c727553",
+   "date": "2026-10-30 00:20",
+   "msg": "ESP-32-CAM: V1.4.2.10 第二轮自动巡检复测记录——8条bug全修复无新增,四向一致核验,重建产物md"
+  },
   {
    "sha": "1540d93a",
    "date": "2026-10-28 19:54",
@@ -132,26 +152,6 @@
    "sha": "41091ca6",
    "date": "2026-10-20 21:21",
    "msg": "ESP32-CAM: V1.4.2.6 邮件忙拒/双引擎联动/vision弱信号修复登记"
-  },
-  {
-   "sha": "bbd5ad2b",
-   "date": "2026-10-20 15:44",
-   "msg": "ESP32-CAM: 登记 PC 端 vision-server 检测服务"
-  },
-  {
-   "sha": "11a643a2",
-   "date": "2026-10-20 14:50",
-   "msg": "ESP32-CAM: V1.4.2.5 人流量开关+外部视觉检测引擎登记"
-  },
-  {
-   "sha": "5dcd24f6",
-   "date": "2026-10-20 12:55",
-   "msg": "ESP32-CAM: V1.4.2.4 场景联动功能登记+供电BROWNOUT诊断结论"
-  },
-  {
-   "sha": "b48b907e",
-   "date": "2026-10-20 11:09",
-   "msg": "【修复】ESP-32-CAM V1.4.2.3 两条bug闭环:邮件MP4播放(MJPEG兼容性提示)+存储页repla"
   }
  ]
 }
