@@ -7,7 +7,7 @@
 - **MCU**：ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）
 - **SDK**：PlatformIO + Arduino 框架（env `nodemcuv2`，LittleFS，唯一外部库 links2004/WebSockets）
 - **架构**：`main → APP(app_*) → BSP(bsp_*) → HAL(hal_*) → Arduino 核心` 单向依赖（形态B 单仓库：HAL 在 `01.HAL/`，BSP/APP 在 `modules/`），规范见 [Project_Level_Skill.md](Project_Level_Skill.md)
-- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.5.20**（develop）
+- **定位**：串口 ↔ WiFi 双向透传 + 物联网云桥 + GPIO 网页控制（闹钟定时）；当前版本 **V1.0.7.2**（develop）
 
 
 
@@ -51,7 +51,7 @@
 | V1.0.3.0  | GPIO控制页的设备时间应该i同A0模拟对齐，时间应该同释放对齐    | 2026.09.30 | 已修复   |          |
 | V1.0.5.2  | 设备在连接网络后因意外情况断联后无法自动重连必须要手动复位设备才会重连上 | 2026.10.12 | 已修复   |          |
 | V1.0.5.19 | 循环发送的间隔不能设置小100的值,设置小于100的值时会被还原为1000 | 2026.10.14 | 已修复 (V1.0.5.20) | 2026.10.14 |
-| V1.0.5.21 | 设备运行一段时间后出现WiFi搜索不到，板子的板载LED灯也不闪烁，电脑通过IP地址与板子的连接断开，通过RST复位后设备恢复正常 |  |  |  |
+| V1.0.5.21 | 设备运行一段时间后出现WiFi搜索不到，板子的板载LED灯也不闪烁，电脑通过IP地址与板子的连接断开，通过RST复位后设备恢复正常 | 2026.10.30 | 已修复 (V1.0.7.2: 双重根因——①核心 waveform 生成器(analogWrite/tone)整体接管 timer1 重配 NMI 自用，应用自挂的 LED/按键节拍 ISR 被摘除，PWM 一开 LED 即永灭；②核心停完最后一路波形后把 timer1 留在 disabled 态，节拍喂软狗路径消失，主循环偶发长阻塞(云 TLS/同步写短超时，慢圈峰值实测 ~1.2s)叠加卡死时软狗无人喂→整机僵死，仅 RST 能救。治法=节拍改挂核心 setTimer1Callback() 与 waveform 同一 NMI 永久共存(timer1CB 非空核心永不关 timer1)+getCycleCount 门控 20ms 节拍+app_main 新增节拍停掉 10s 看门狗兑底自愈，详见踩坑记录) | 2026.10.31 |
 | V1.0.7.0 | 串口终端在接收数据到达一定量时会出现串口终端的数据不再刷新，若点击清屏后串口终端的接收和显示均正常了 | 2026.10.30 | 已修复 (V1.0.7.1: 前端三根因——①rAF 节流缺兜底: 标签页隐藏/被丢弃时 requestAnimationFrame 永不回调，onmessage 只攒帧不再调度且 frag 无上限堆积，现隐藏期 8 万字节封顶丢弃+100ms setTimeout 兜底接力；②termFlush 抛错(转储巨 frag/裁剪 6000 节点被节流打断)使 rAF 链断头，try/finally 保证 termRaf 复位；③WS 半开：readyState 卡 CONNECTING 时 wsEnsure 重入护栏永久阻止重连，创建时挂 10s 检查器超时废弃旧实例重建；三者临床均为「到量后静默，清屏复位三件套」) | 2026.10.31 |
 
 
@@ -373,6 +373,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 | WiFi 断联后永不自动重连须手动复位（V1.0.5.2） | “门户使用中暂停重连”门控被永久占死：WS 服务端无心跳→终端页非正常关闭后客户端计数永不归零；AP 挂站点+持续 HTTP 轮询→2min 门户窗口无限续期，DrvWifiStaMaintain 永久跳过重连；**修复=WS enableHeartbeat(15s/3s×2) 剔僵尸 + 暂停封顶 5min 强制试连（V1.0.5.3）**；教训：**暂停/门控类机制必须有上限**，否则保护机制反杀核心功能；占用状态计数必须配心跳/超时自愈，否则一次异常状态就是永久状态 |
 | 串口终端「数据到一定量就不刷新，清屏恢复」三根因（V1.0.7.0） | 前端渲染链三处叠加：①rAF 节流当调度器却无兜底——标签页隐藏时 requestAnimationFrame 永不回调，onmessage 只攒帧；②flush 抛错断 rAF 链——巨 frag 转储/6000 节点裁剪被浏览器节流打断；③WS 半开卡 CONNECTING——wsEnsure 重入护栏永久阻止重连。修复=隐藏期 8 万字节封顶丢弃(串口流不可回放)+100ms setTimeout 兜底接力+try/finally 复位+10s 连接超时重建（V1.0.7.1）；教训：**rAF 驱动的渲染循环必须有定时器兜底，「把回调挂上去」不等于「回调会执行」** |
 | 自动化会话连坐收割 setsid 进程（烧录工具链） | flash.sh 烧完用 setsid+nohup 恢复 serial_sim，实测仍被自动化会话退出连坐杀死，连 sim_guard 守护循环一起死（/tmp/sim.log 留 20s 一轮「sim 退出(码0)」死亡循环）；**修复=systemd-run --user 瞬态单元（56f026f），挂 user systemd 下不随会话退出回收**；教训：**会话内起的进程归会话管，跨会话存活的唯一正路是交给 systemd**；烧录后必须 pgrep+rx 增长双核验 |
+| analogWrite/tone 会整体接管 timer1，应用自挂的 timer1 中断被摘除（V1.0.5.21） | 核心 waveform 生成器 startWaveformClockCycles_bound 初始化时 `timer1_disable()`+`ETS_FRC_TIMER1_NMI_INTR_ATTACH(timer1Interrupt)`+单发模式自用——应用 HalTimerTickStart 自挂的 timer1 中断（LED/按键节拍）被整体剥夺，PWM 一开 LED 即永灭；且核心停完最后一路波形后 disableIdleTimer 把 timer1 留在 disabled 态，原设计"节拍 ISR 喂软狗"路径消失，主循环偶发长阻塞（云 TLS connect/同步写短超时，慢圈峰值实测 ~1.2s）叠加卡死时软狗无人喂→整机僵死（WiFi 搜不到/LED 灭/IP 失联/仅 RST 能救，即遗留 bug V1.0.5.21 临床）。**治法=节拍改挂核心公开 API `setTimer1Callback(fn)`**（core_esp8266_waveform.h）：与 waveform 生成器同一 NMI 共存，timer1CB 非空核心永不关 timer1；回调可能被 PWM 边沿高频调用，必须用 ESP.getCycleCount() 门控到 20ms 节拍（回调契约=返回距下次期望调用的 CPU 周期数）；另加 app_main 节拍停掉 10s 看门狗（远大于实测最大单圈 1.2s，误杀趋零）兑底自愈。教训：**第三方/核心库与自家代码共享同一硬件资源（timer/NMI/DMA）时，先查清对方的接管行为再自挂中断；"上电顺序看似正常"不代表运行期资源抢占不会发生** |
 | esptool read_mac 不是只读探测（ESP32-CAM 事故） | 双串口识别芯片时对 CAM 口跑 read_mac，其完整走下载模式进出（拉 IO0/EN），退出 hard reset 未生效致板子卡 ROM 下载模式失联（串口持续吐 ets Jun 8 2016 横幅）；**恢复=pyserial dtr=False(释放 IO0)+rts 脉冲(EN 复位)**；教训：**双 CH340 识别改用 AT 应答或 udev 路径，probe 类工具后必须核验设备回网** |
 
 
@@ -410,6 +411,7 @@ PYTHONPATH=/home/yym/.local/lib/python3.8/site-packages python3 -c "import seria
 | 版本 | 日期 | 提交 | 内容 |
 |------|------|------|------|
 | V1.0.7.1 | 10-31 | d7aeb73 | 【修复】KB 遗留 bug：串口终端接收达一定量后不再刷新（清屏恢复）——前端三根因同遗留 Bug 表 V1.0.7.0 行；上板验证 verify.sh 12 项 PASS、10KB/s 洪泛 rx 持续增长无冻结、heap 11.3KB 稳定、门户 gzip 15871B 完整、主循环无阻塞尖峰（max 65ms）；门户 gz 再生。注：V1.0.6.0~V1.0.7.0 段版本史未整理，待人工补录（提交 d0b2485/e1c010e/db14b9d） |
+| V1.0.7.2 | 10-31 | b00d2b0 | 【修复】KB 遗留 bug V1.0.5.21：运行一段时间后整机僵死（WiFi 搜不到/LED 灭/IP 失联/仅 RST 能救）——双根因：①analogWrite/tone（核心 waveform 生成器）整体接管 timer1 重配 NMI 自用，应用自挂 LED/按键节拍 ISR 被剥夺，PWM 一开 LED 即永灭；②核心停完最后一路波形后 timer1 留 disabled 态，节拍喂软狗路径消失，主循环偶发长阻塞（云 TLS/同步写短超时，实测慢圈峰值 ~1.2s）叠加卡死时软狗无人喂→整机僵死。修复=节拍改挂核心 setTimer1Callback()（与 waveform 同一 NMI 永久共存，timer1CB 非空核心永不关 timer1；回调按 getCycleCount 门控到 20ms）+hal_timer 新增 HalTimerTickCount() 存活探测+app_main 节拍停掉 10s 看门狗兑底自愈。验证：构建 RAM 62.2%/Flash 51.3%；烧录后 verify.sh 13 项全 PASS；上电 144s+ 持续无重启（旧缺陷节拍死 10s 必触发自愈复位，反证节拍链存活）；PWM 中段占空比期间节拍正常推进（LED 灯语不停）；串口 rx 持续增长、主循环 12 连采无 >800ms 尖峰（max 315ms） |
 | 工具链 | 10-31 | 56f026f | flash.sh sim 恢复改 systemd-run --user 瞬态单元：setsid+nohup 仍被自动化会话退出连坐收割（guard 循环同死），systemd 单元跨会话存活实测 rx 持续增长；自动化烧录后必须 pgrep+rx 增长双核验 |
 
 ### 版本号规范化前后（09-26 ~ 09-28，功能密集期）
