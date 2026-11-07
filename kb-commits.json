@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "165423ce"
+  "content_head": "db4e1165"
  },
  "commits": [
+  {
+   "sha": "db4e1165",
+   "date": "2026-11-07 21:06",
+   "msg": "第六轮自动巡检: 双工程bug空检四向一致(ESP32-CAM V1.4.2.10帧链路全过/ESP8266 V1.0."
+  },
   {
    "sha": "165423ce",
    "date": "2026-11-06 15:13",
@@ -147,11 +152,6 @@
    "sha": "d6fc51cb",
    "date": "2026-10-23 17:28",
    "msg": "IMU_303_351: PPS功能实现说明更新——移除PPSSwitchType方案,模式2推送语义回退为各通道总开关"
-  },
-  {
-   "sha": "0fc5a700",
-   "date": "2026-10-23 14:50",
-   "msg": "IMU_303_351: 新增AT/HEX/CAN指令集说明文档——AT指令24条(含AT+PPS/PPSMODE/MS"
   }
  ]
 }
