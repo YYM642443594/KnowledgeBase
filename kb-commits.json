@@ -1,8 +1,23 @@
 {
  "_meta": {
-  "content_head": "db4e1165"
+  "content_head": "713801af"
  },
  "commits": [
+  {
+   "sha": "713801af",
+   "date": "2026-11-09 17:55",
+   "msg": "【新增】QT-Tools 3D姿态仪HUD交互优化报告:合并页HUD六个QML坑(父容器坐标拖拽/绑定打断裁切/min双"
+  },
+  {
+   "sha": "f3dbdc85",
+   "date": "2026-11-09 03:42",
+   "msg": "ESP32-CAM踩坑34补实战数据: http_wdg累计自愈3次闭环成立(hangcnt=3), 并发status阻"
+  },
+  {
+   "sha": "14b45356",
+   "date": "2026-11-09 03:30",
+   "msg": "第七轮自动巡检: ESP32-CAM发现并修复HTTP应用层挂死新bug(V1.4.2.11 http_wdg回环探测自"
+  },
   {
    "sha": "db4e1165",
    "date": "2026-11-07 21:06",
@@ -137,21 +152,6 @@
    "sha": "78c8f60a",
    "date": "2026-10-26 17:21",
    "msg": "IMU: 归档Linux上位机串口验证程序——新增Linux-UartTestVerifDemo目录(源工程IMUDem"
-  },
-  {
-   "sha": "4b218314",
-   "date": "2026-10-26 14:09",
-   "msg": "新增Linux常用机脚本目录:备份00.FTP下6个环境配置脚本并附使用文档"
-  },
-  {
-   "sha": "cf665d14",
-   "date": "2026-10-26 14:09",
-   "msg": "重组:三个ESP顶层目录收纳进ESP/知识库,参照IMU模式新建顶层索引"
-  },
-  {
-   "sha": "d6fc51cb",
-   "date": "2026-10-23 17:28",
-   "msg": "IMU_303_351: PPS功能实现说明更新——移除PPSSwitchType方案,模式2推送语义回退为各通道总开关"
   }
  ]
 }
