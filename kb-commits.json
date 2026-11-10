@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "713801af"
+  "content_head": "dbe8104f"
  },
  "commits": [
+  {
+   "sha": "dbe8104f",
+   "date": "2026-11-10 15:11",
+   "msg": "【新增】QT-Tools HEXCommands协议全量审计与3D轴标签重构报告:串口协议逐条对照(0x00组20条+0"
+  },
   {
    "sha": "713801af",
    "date": "2026-11-09 17:55",
@@ -147,11 +152,6 @@
    "sha": "add45b64",
    "date": "2026-10-26 20:42",
    "msg": "【修改】新增一个ESP32-Camer的bug;"
-  },
-  {
-   "sha": "78c8f60a",
-   "date": "2026-10-26 17:21",
-   "msg": "IMU: 归档Linux上位机串口验证程序——新增Linux-UartTestVerifDemo目录(源工程IMUDem"
   }
  ]
 }
