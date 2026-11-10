@@ -40,6 +40,7 @@ CMake -G Ninja -B build\cli-Debug，全量 70 步约 1 分钟。
 
 ## 记录索引
 
+- 2026-11-10 [HEXCommands协议全量审计与3D轴标签重构报告](Doc/HEXCommands协议全量审计与3D轴标签重构报告.md) — 0x21 YAW归零补齐、mapFrom3DScene NaN实证与广告牌方案排坑
 - 2026-10-10 [HexCommands 实现核对与修复报告](Doc/HexCommands-实现核对与修复报告.md) — 17 条指令全量核对、5 处修复、COM8 实测证据
 - 2026-10-10 [XCOM 功能对照报告](Doc/XCOM功能对照报告.md) — DebugPage vs ATK-XCOM
 - 2026-10-10 [波形页优化报告](Doc/波形页优化报告.md) — 卡顿三根因、Y轴自适应、鼠标缩放/平移查看（X轴§11 / Y轴§13）、**滚轮无效根因§14（qmlcachegen 编译下 MouseArea.onWheel 失效，改用 WheelHandler）**、数据入口过滤根因(§12)、自测钩子与实测数据
