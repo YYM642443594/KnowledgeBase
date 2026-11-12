@@ -1,6 +1,6 @@
 # 志翔协议文档
 
-> 自动同步自日常工作仓库 `WorkRecord@feature/zhixiang` 的 `03.志翔/00.协议文档/`（2026-11-11，源 HEAD `666ffc67`）。请勿在本目录手工编辑，修改请在 WorkRecord 仓库进行，同步后此处自动更新。
+> 自动同步自日常工作仓库 `WorkRecord@feature/zhixiang` 的 `03.志翔/00.协议文档/`（2026-11-12，源 HEAD `ebd8336d`）。请勿在本目录手工编辑，修改请在 WorkRecord 仓库进行，同步后此处自动更新。
 
 ## 文档索引
 
