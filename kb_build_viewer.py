@@ -16,13 +16,19 @@ OUT = os.path.join(HERE, "知识库.html")
 # commits[0], keeping rebuilds stable across viewer/script-only commits.
 HEAD_OVERRIDE = None
 
-# section metadata: id, dir, icon, color, description
+# section metadata: id, dir, icon, color, description[, display label]
+# dir: single directory name (str), or a tuple of names for a multi-root section.
 SECTIONS = [
     ("esp",    "ESP",           "📡", "#4f8cff", "ESP32 / ESP32-CAM / ESP8266 三个芯片平台的固件工程知识：透传、网页终端、视频监控、五云协议、踩坑记录"),
     ("imu",    "IMU",           "🧭", "#3fb27f", "GD32F103 / GD32F303 两个 MCU 平台的 IMU 固件知识：串口丢字节、参数页迁移、指令集、PPS 功能"),
+    ("stm32",  "STM32",         "🔧", "#5a9bd4", "STM32_F10x 工程知识：MAX7219 点阵显示、四层改三层架构重构、跨仓库工程架构规范"),
     ("qt",     "QT-Tools",      "🖥", "#e2a03f", "志翔 IMU 上位机（Qt 6 / QML）：Hex 指令、蓝牙、波形与页面性能优化、协议开发规范"),
     ("linux",  "Linux-Scripts", "🐧", "#e05c5c", "常用机环境脚本：Claude Code / OpenClaw 安装配置、FTP 服务、硬盘挂载、依赖清理"),
     ("proto",  "Protocols",     "📜", "#9b6ce0", "志翔协议文档（同步自 WorkRecord@feature/zhixiang）：IMU 通讯协议与指令、坐标系示意、自动售水机通信协议（二进制帧 / MQTT JSON）"),
+    ("kb",     ("00-索引", "01-技术笔记", "02-项目文档", "03-问题排查", "04-工具使用",
+                "05-读书笔记", "06-参考资料", "07-日常记录"),
+                               "📚", "#7a8b99", "规范沉淀区：按主题分类的跨平台知识文档（技术笔记、项目文档、问题排查、工具使用等）",
+               "00~07 目录"),
 ]
 
 def read(p):
@@ -62,31 +68,35 @@ def desc_of(meta, text):
 def build(commits):
     """Render viewer HTML for the given commits list. Returns the html string."""
     data = []
-    for sid, d, icon, color, desc in SECTIONS:
-        base = os.path.join(HERE, d)
+    for section in SECTIONS:
+        sid, d, icon, color, desc = section[:5]
+        label = section[5] if len(section) > 5 else (d if isinstance(d, str) else "/".join(d))
+        roots = d if isinstance(d, tuple) else (d,)
         docs = []
-        for root, dirs, files in os.walk(base):
-            dirs.sort()
-            for fn in sorted(files):
-                if not fn.lower().endswith((".md", ".markdown")): continue
-                p = os.path.join(root, fn)
-                rel = os.path.relpath(p, HERE)
-                md = read(p)
-                meta = front_meta(md)
-                title = meta.get("title") or fn.rsplit(".", 1)[0]
-                docs.append({
-                    "hash": rel.replace(os.sep, "/"),
-                    "title": title,
-                    "relPath": rel.replace(os.sep, "/"),
-                    "desc": desc_of(meta, plain_text(md))[:150],
-                    "created": meta.get("created", ""),
-                    "updated": meta.get("updated", ""),
-                    "tags": meta.get("tags", []) if isinstance(meta.get("tags"), list) else ([meta.get("tags")] if meta.get("tags") else []),
-                    "sizeKB": round(os.path.getsize(p) / 1024, 1),
-                    "_text": plain_text(md)[:6000],
-                    "content": md,
-                })
-        data.append({"id": sid, "name": d, "dir": d + "/", "icon": icon, "color": color,
+        for root_dir in roots:
+            base = os.path.join(HERE, root_dir)
+            for root, dirs, files in os.walk(base):
+                dirs.sort()
+                for fn in sorted(files):
+                    if not fn.lower().endswith((".md", ".markdown")): continue
+                    p = os.path.join(root, fn)
+                    rel = os.path.relpath(p, HERE)
+                    md = read(p)
+                    meta = front_meta(md)
+                    title = meta.get("title") or fn.rsplit(".", 1)[0]
+                    docs.append({
+                        "hash": rel.replace(os.sep, "/"),
+                        "title": title,
+                        "relPath": rel.replace(os.sep, "/"),
+                        "desc": desc_of(meta, plain_text(md))[:150],
+                        "created": meta.get("created", ""),
+                        "updated": meta.get("updated", ""),
+                        "tags": meta.get("tags", []) if isinstance(meta.get("tags"), list) else ([meta.get("tags")] if meta.get("tags") else []),
+                        "sizeKB": round(os.path.getsize(p) / 1024, 1),
+                        "_text": plain_text(md)[:6000],
+                        "content": md,
+                    })
+        data.append({"id": sid, "name": label, "dir": label + "/", "icon": icon, "color": color,
                      "desc": desc, "docs": docs, "bytes": sum(x["sizeKB"] * 1024 for x in docs)})
 
     by_path = {}
@@ -96,15 +106,17 @@ def build(commits):
 
     # embed referenced images as data URIs (viewer must be self-contained, opened via file://)
     images = {}
-    for sid, d, *_ in SECTIONS:
-        imgdir = os.path.join(HERE, d, "00.Image")
-        if not os.path.isdir(imgdir): continue
-        for fn in os.listdir(imgdir):
-            if not fn.lower().endswith((".png", ".jpg", ".jpeg", ".gif")): continue
-            ext = fn.rsplit(".", 1)[1].lower()
-            mime = "image/png" if ext == "png" else ("image/gif" if ext == "gif" else "image/jpeg")
-            with open(os.path.join(imgdir, fn), "rb") as f:
-                images[d + "/00.Image/" + fn] = f"data:{mime};base64," + base64.b64encode(f.read()).decode()
+    for section in SECTIONS:
+        d = section[1]
+        for root_dir in (d if isinstance(d, tuple) else (d,)):
+            imgdir = os.path.join(HERE, root_dir, "00.Image")
+            if not os.path.isdir(imgdir): continue
+            for fn in os.listdir(imgdir):
+                if not fn.lower().endswith((".png", ".jpg", ".jpeg", ".gif")): continue
+                ext = fn.rsplit(".", 1)[1].lower()
+                mime = "image/png" if ext == "png" else ("image/gif" if ext == "gif" else "image/jpeg")
+                with open(os.path.join(imgdir, fn), "rb") as f:
+                    images[root_dir + "/00.Image/" + fn] = f"data:{mime};base64," + base64.b64encode(f.read()).decode()
 
     # HEAD_OVERRIDE: content head pinned by kb-sync.py (newest real commit),
     # so a rebuild right after a script-only push renders identically.
