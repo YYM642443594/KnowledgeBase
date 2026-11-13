@@ -1,0 +1,305 @@
+{
+  "meta": {
+    "name": "知识库项目卡片清单",
+    "updated": "2026-11-13",
+    "description": "知识库工程知识区 8 个项目的结构化清单：每个项目按「功能 / 芯片 / 指令 / 问题」四个维度登记，条目均注明出处文档（仓库内相对路径）。供网页查看器「项目总览」视图与文档导航消费。",
+    "provenance": "由知识库整理助手基于仓库文档逐篇盘点生成（KNOWLEDGE-11 T1）；只收录能在仓库文档中找到出处的信息，未在文档中出现的内容不录入。",
+    "schema": {
+      "id": "稳定标识（与工程目录名一致）",
+      "name": "项目显示名",
+      "dir": "仓库内目录（相对路径）",
+      "summary": "一句话定位",
+      "features": "支持的功能列表，每条 {item, source}，source 为出处文档相对路径",
+      "chips": "使用的芯片/平台，每条 {item, source}",
+      "commands": "支持的指令集/API，每条 {item, source}",
+      "issues": "遇到过的问题（含修复结论），每条 {item, source}",
+      "docs": "关键文档链接列表（仓库内相对路径）",
+      "note": "补充说明（无则为空字符串）",
+      "updated": "信息核对日期（YYYY-MM-DD）"
+    },
+    "non_project_dirs": [
+      {
+        "dir": "Linux-Scripts",
+        "reason": "支撑资料：Linux 常用机环境脚本（Claude Code / OpenClaw 安装、FTP 服务、硬盘挂载等），非固件或上位机工程，不设项目卡；导航入口保留于 00-索引/索引.md「工程知识区/Linux-Scripts」。",
+        "docs": ["Linux-Scripts/Readme.md"]
+      },
+      {
+        "dir": "Protocols",
+        "reason": "支撑资料：志翔协议文档（自动同步自 WorkRecord@feature/zhixiang，禁止手工编辑），非独立工程，不设项目卡；协议内容经各项目卡 commands/docs 引用（如 Protocols/用户协议.md），导航入口保留于索引。",
+        "docs": ["Protocols/Readme.md"]
+      }
+    ]
+  },
+  "projects": [
+    {
+      "id": "ESP-32",
+      "name": "ESP32 串口透传与网页终端",
+      "dir": "ESP/ESP-32",
+      "summary": "ESP32-WROOM-32 串口 ↔ WiFi/蓝牙透传固件：内置网页终端（配网/串口终端/转发三标签），支持 TCP/UDP 转发、蓝牙 SPP 透传与 NAPT 热点借道上网。",
+      "features": [
+        { "item": "串口 ↔ WiFi/蓝牙透传 + 网页终端（配网/串口终端/转发三标签，WS 81 端口数据通道）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "WiFi 网页配网（SoftAP ESP32_Config 常开，扫描列表选择，NVS 持久化，断线自动重连）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "NAPT 热点借道上网（STA 联网即自动开启，断开自动关，单射频预期 10~20Mbps）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "经典蓝牙 SPP 透传（服务端 ESP32-UART，蓝牙转发开关 NVS 持久化）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "TCP 客户端 / UDP 网络转发（UART2 ↔ 网络目标双向透传，断线 2s 自动重连）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "网页在线修改波特率（300~2000000，NVS 持久化重启保留）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "按键状态机（单击/双击/长按/连发识别，20ms 消抖，任意 GPIO 运行时绑定）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "APP→BSP→DRV→HAL 四层架构与 CFG_XXX_EN 编译期功能裁剪", "source": "ESP/ESP-32/Project_Level_Skill.md" }
+      ],
+      "chips": [
+        { "item": "ESP32-WROOM-32（SoC ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / 520KB SRAM）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "ESP-IDF v6.1 框架", "source": "ESP/ESP-32/Readme.md" }
+      ],
+      "commands": [
+        { "item": "GET /api/status（状态 JSON：ver/mode/ssid/ip/rssi/heap/baud/uptime/rx/tx/转发与蓝牙字段）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "GET /api/scan（周边热点列表）、POST /api/wifi（配网）、POST /api/serial（改波特率并持久化）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "POST /api/forward（TCP/UDP 转发配置 + 蓝牙转发开关）、POST /api/reboot、POST /api/resetwifi（清配网）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "WS /（81 端口）二进制帧：网页串口终端双向数据通道", "source": "ESP/ESP-32/Readme.md" }
+      ],
+      "issues": [
+        { "item": "蓝牙可发现距离被 2.4GHz 干扰（电脑 WiFi/USB3.0 噪声、路由器同频）从 10 米以上压缩到约 0.5 米，使用时模块须远离电脑/路由器 1 米以上；SPP 服务注册会复位 GAP 设置，设备名/可发现模式须在服务启动后重新应用", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "转发目标必须是设备可达地址：VMware 虚拟网卡等本机专用网段路由不到，UDP 无连接会显示「已连接」但实际丢包（TCP 诚实报连不上）", "source": "ESP/ESP-32/Readme.md" },
+        { "item": "换 WROVER 模组时 GPIO16/17 被 PSRAM 占用，UART2 通信口引脚须改 bsp_uart.h 宏；GPIO6~11（模组 Flash）按键绑定被黑名单拒绝，GPIO34~39 仅输入且无内部上下拉", "source": "ESP/ESP-32/Readme.md" }
+      ],
+      "docs": ["ESP/ESP-32/Readme.md", "ESP/ESP-32/Project_Level_Skill.md", "ESP/Readme.md"],
+      "note": "",
+      "updated": "2026-11-13"
+    },
+    {
+      "id": "ESP-32-CAM",
+      "name": "ESP32-CAM 网页视频监控",
+      "dir": "ESP/ESP-32-CAM",
+      "summary": "AI-Thinker ESP32-CAM 网页视频监控固件：MJPEG 视频流/抓拍、SD 录像（AVI 分段滚动）、人体检测与人流量统计、邮件推送与场景联动，帧停摆/HTTP 挂死/掉网三重自愈看门狗。",
+      "features": [
+        { "item": "网页四标签门户（配网/视频监控/GPIO 控制/存储）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "MJPEG 视频流（81 端口独立流实例）与抓拍 /capture（VGA q12 实测约 22fps，UXGA 约 2.7fps）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "SD 卡管理：抓拍/列表/流式下载/删除；AVI(MJPEG) 分段滚动录像 + 满卡循环覆盖 + 开机自动续录（V1.2.0.0）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "人体活动检测 + 人流量统计（纯算法：差分+连通域+质心跟踪+计数线，V1.3.0.0）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "外部视觉检测 API（app_vision：API 优先+连续 3 败自动回退本地算法，适合 CodeProject.AI/YOLO 网关，V1.4.2.5）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "邮件推送（SMTP 隐式 SSL，触发瞬间拍照对齐 + 事件录像随邮件附视频）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "场景联动（GPIO 输入沿触发输出/拍照邮件/事件录像，4 条规则 NVS 掉电保存，V1.4.2.4）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "GPIO 网页控制 + 补光灯；SNTP 对时（录像/抓拍时间戳命名依赖）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "NAPT 借道上网 + Mesh/多 AP 同名环境防摇摆（STA 钉住 BSSID+信道免扫描重连，V1.3.0.6）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "自愈看门狗：摄像头帧停摆（camfail/camrst，V1.4.2.10）、HTTP 应用层挂死（http_wdg 回环探测，V1.4.2.11）、WiFi 掉网三路判据正交", "source": "ESP/ESP-32-CAM/Readme.md" }
+      ],
+      "chips": [
+        { "item": "AI-Thinker ESP32-CAM（SoC ESP32-D0WDQ6，双核 LX6 @ 240MHz，4MB Flash / 实测 8MB PSRAM——经典 ESP32 最多映射 4MB）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "摄像头传感器 OV3660（实测 PID=0x3660，标称 OV2640 的板子实装 OV3660，驱动自动识别，UXGA 上限）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "ESP-IDF v6.1 + esp32-camera 2.1.8（框架/摄像头驱动）", "source": "ESP/ESP-32-CAM/Readme.md" }
+      ],
+      "commands": [
+        { "item": "主实例 16 条路由：/（四标签门户）、/api/status|scan|wifi|cam|flash|gpio|sd|sd/save|sd/del|reboot|resetwifi、/capture、/sd/*（通配下载，白名单校验防路径穿越）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "流实例 /stream（MJPEG）；/replay（按容器解帧 MJPEG 流回放）；/api/rec（录像）、/api/detect（检测）、/api/mail（邮件）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "/api/status 可观测字段：camfail/camrst（帧停摆看门狗）、hangrst/hangcnt（HTTP 挂死看门狗）", "source": "ESP/ESP-32-CAM/Readme.md" }
+      ],
+      "issues": [
+        { "item": "HTTP 应用层整体挂死无自愈（capture 返回 200 空 body 后全端点超时而 ping 活，TWDT 静默 + camfail=0 双看门狗判据全绿够不着）→ 新增 http_wdg 30s 回环探测，连续 3 败约 90s 记 NVS 并 esp_restart 自愈，实战 90 秒无人值守自愈闭环（V1.4.2.11）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "摄像头帧产出停摆 4.8 天无自愈（esp32-camera 驱动 DMA 停摆已知失效模式，检测/抓拍/流全部取帧失败，巡检只核 /api/status 漏检 4 天）→ hal_cam 停摆看门狗 fb_get 连败 3 次 deinit+PWDN 断电重启（V1.4.2.10）；教训：设备在线≠摄像头在工作，健康检查须打到功能层", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "SD 可用容量恒报约 0.4G（FAT32 f_getfree 采信 FSInfo.free_count 缓存，异常断电/拔卡后长期失准不自愈）→ StatRefresh 低频 15 分钟置 free_clst 无效触发全 FAT 扫描重建基准（V1.4.2.9）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "USB 供电临界→WiFi 射频校准瞬时大电流拉跌 5V→BOD 循环重启（boot 循环/自发重启/SD 间歇异常/NO-SOI 帧损坏四连环）→ 5V/GND 跨 680µF 电解电容硬件根治，恢复 BOD 检测（V1.4.2.7）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "邮件推送不能正常发送（三层叠加：TLS 短写需续传、MBEDTLS 内部内存被并发业务挤干致 0x8017、测试按钮不落当前表单测到旧配置）→ 短写循环续传/SSL 缓冲迁 PSRAM/测试前隐式保存（V1.4.2.2/.3）", "source": "ESP/ESP-32-CAM/Readme.md" },
+        { "item": "人体检测漏报/误报（面积上限 2000 误杀贴近大目标；AEC/开关灯光照突变全帧超阈误判有人）→ 改「超阈像素占比>45%」判据 + 差分膨胀 1 轮（V1.4.2.3）", "source": "ESP/ESP-32-CAM/Readme.md" }
+      ],
+      "docs": ["ESP/ESP-32-CAM/Readme.md", "ESP/Readme.md"],
+      "note": "",
+      "updated": "2026-11-13"
+    },
+    {
+      "id": "ESP-8266",
+      "name": "ESP8266-XCOM 串口 WiFi 透传器",
+      "dir": "ESP/ESP-8266",
+      "summary": "ESP8266（NodeMCU）串口 ↔ WiFi 双向透传器：TCP/UDP/MQTT/HTTP 四协议转发、五云平台桥（阿里/OneNET/巴法/腾讯/华为）、GPIO 网页控制与每日闹钟、防克隆芯片绑定。",
+      "features": [
+        { "item": "串口 ↔ WiFi 双向透传 + 网页串口终端（WS 81 端口，一帧串口数据三投：终端/转发/云上行）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "四协议转发：TCP 客户端 / UDP / MQTT 客户端 / HTTP 客户端（V1.0.3.0 端到端实测）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "五云平台接入：阿里云 / OneNET / 巴法云（TCP/MQTT/MQTTS 三接入方式）/ 腾讯云（V1.0.4.0）/ 华为云 IoTDA（V1.0.5.0），五家全通", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "GPIO 七通道电平/PWM 控制 + ONCE 倒计时 / DAILY 每日闹钟（闹钟掉电保存，NTP 东八区对时）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "配网页（WiFi 配网/重启/清配网）+ 异步热点扫描；断线自动重连（退避 4s→16s→64s→256s 封顶 300s）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "防克隆芯片绑定（HMAC-MD5(盐, eFuse 芯片 ID) 绑定，宽容 3 次后沉默降级，V1.0.2.12）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "mDNS xcom.local 局域网域名；板载 LED 三态灯语（STA 心跳/AP 慢闪/连接快闪）", "source": "ESP/ESP-8266/Readme.md" }
+      ],
+      "chips": [
+        { "item": "ESP8266（NodeMCU v2，板载 CH340 USB 转串口，WiFi 仅 2.4GHz）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "PlatformIO + Arduino 框架（main→APP→BSP→HAL 单向依赖，唯一外部库 links2004/WebSockets）", "source": "ESP/ESP-8266/Readme.md" }
+      ],
+      "commands": [
+        { "item": "网页 API 13 条路由：/api/status（全量状态 JSON，含 cloudtag/clouderr/cloudrc 云诊断字段）、/api/scan、/api/wifi、/api/serial、/api/forward、/api/cloud、/api/gpio（GET/POST）、/api/multi、/api/reboot、/api/resetwifi", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "巴法云 TCP 指令（8344）：cmd=1 订阅 / cmd=2 发布 / cmd=7 取时间 / cmd=9 拉历史 / 心跳 ping（65s 不发掉线，建议 25s）；MQTT 9501 明文 / 9503 TLS", "source": "ESP/ESP-8266/Cloud_Protocol.md" },
+        { "item": "手工 MQTT 组包规范：CONNECT flags 必须 0xC2、CONNACK 返回码在第 4 字节、QoS0 最简路径；各云签名算法（阿里 HMAC-MD5 / OneNET token 2018-10-31 / 腾讯 HMAC-SHA1 / 华为 HMAC-SHA256 密钥=时间戳内容=secret）", "source": "ESP/ESP-8266/Cloud_Protocol.md" }
+      ],
+      "issues": [
+        { "item": "运行一段时间整机僵死（WiFi 搜不到/LED 灭/IP 失联/仅 RST 能救）：analogWrite/tone 核心波形生成器整体接管 timer1 重配 NMI，应用自挂节拍 ISR 被剥夺且软狗无人喂 → 节拍改挂核心 setTimer1Callback() 共存 + 10s 节拍停掉看门狗兜底（V1.0.5.21 → V1.0.7.2）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "串口终端接收达一定量不再刷新（清屏恢复）：前端 rAF 节流无兜底 + termFlush 抛错断链 + WS 半开卡 CONNECTING 三根因 → 隐藏期封顶丢弃 + setTimeout 兜底 + try/finally + 10s 连接超时重建（V1.0.7.0 → V1.0.7.1）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "WiFi 断联后永不自动重连须手动复位：「门户使用中暂停重连」门控被永久占死（WS 无心跳致客户端计数永不归零 + 门户窗口无限续期）→ 心跳剔僵尸 + 暂停封顶 5min 强制试连（V1.0.5.2 → V1.0.5.3）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "WebSockets 库「心跳保护」反杀全部客户端（慢客户端堵窗时 sendPing 失败 lastPing 不刷新，超时判定恒真毫秒级踢光含健康者）→ 库补丁三处（patches/ 目录，libdeps 重装后须重新覆盖）（V1.0.5.19）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "无互联网/云凭据为空时阻塞 connect 卡主循环数秒（终端周期性卡 1~2s）→ NTP 未同步跳过建链 + AppCloudCredOk() 建链前置校验（V1.0.2.7 / V1.0.5.1）", "source": "ESP/ESP-8266/Readme.md" },
+        { "item": "OneNET 认证通过（CONNACK rc=0）但发任何 PUBLISH 即被服务器静默断链（约 3s EOF，任意主题/载荷，PC 与固件双端同现象）→ 定性非固件问题，疑产品接入模式/物模型强校验配置，待控制台核实", "source": "ESP/ESP-8266/Cloud_Protocol.md" },
+        { "item": "Ubuntu brltty 服务抢占 CH340 串口（1a86:7523）→ apt remove brltty + mask brltty-udev", "source": "ESP/ESP-8266/Readme.md" }
+      ],
+      "docs": ["ESP/ESP-8266/Readme.md", "ESP/ESP-8266/Cloud_Protocol.md", "ESP/ESP-8266/Project_Level_Skill.md", "ESP/Readme.md"],
+      "note": "",
+      "updated": "2026-11-13"
+    },
+    {
+      "id": "GD32F103",
+      "name": "GD32F103 平台 IMU 固件（IMU_103_303_333）",
+      "dir": "IMU/GD32F103",
+      "summary": "GD32F103 平台 IMU 固件工程 IMU_103_303_333，服务产品 303/333；与 GD32F303 平台共用 BSP_IMU.git 子仓（指令表与 PPS 功能同源）。",
+      "features": [
+        { "item": "PPS 授时功能（三模式：时间戳校准/脉冲触发推送；《PPS功能实现说明》适用工程标注含 IMU_103_303_333）", "source": "IMU/GD32F303/PPS功能实现说明.md" },
+        { "item": "参数页 A/B 双页保护与旧格式迁移体系（量产 Loader 升级 SN 保留，复位/升级入口 Flush 兜底）", "source": "IMU/GD32F103/量产Loader升级SN丢失与参数页安全迁移报告.md" },
+        { "item": "AT/HEX/CAN 三接口指令集（与 GD32F303 平台同源，共用 BSP_IMU.git 子仓库）", "source": "IMU/GD32F303/PPS功能实现说明.md" }
+      ],
+      "chips": [
+        { "item": "GD32F103（Cortex-M3 @ 108MHz；量产 Loader 布局实测 GD32F103T8）", "source": "IMU/GD32F103/Readme.md" },
+        { "item": "固件工程 IMU_103_303_333（工程名规则 IMU_{MCU}_{产品...}，服务产品 303、333）", "source": "IMU/GD32F103/Readme.md" }
+      ],
+      "commands": [
+        { "item": "AT/HEX/CAN 指令集与 GD32F303 平台同源共用（共用 BSP_IMU.git 子仓，指令表同源）；本目录未单独维护指令集文档，指令表全文见 GD32F303 目录《AT与HEX及CAN指令集说明》", "source": "IMU/GD32F303/AT与HEX及CAN指令集说明.md" }
+      ],
+      "issues": [
+        { "item": "921600 波特率串口丢字节（帧 CRC 失败、整字节干净丢失、偏向帧后段）：五层排查——-O0 放大器/TX 双路径交织/分频门控溢出/满态重置索引错位/真凶 SysTick 64 位软件除法", "source": "IMU/GD32F103/921600波特率串口丢字节排查报告.md" },
+        { "item": "AC5 编译器 __packed 结构成员指针与函数形参不兼容（重构后 24 个同型编译错误）→ __packed T* 形参规则、memcpy 显式 (void*) 转换、严禁 (float*) 强转", "source": "IMU/GD32F103/AC5下packed指针与函数形参不兼容修复报告.md" },
+        { "item": "量产 Loader 升级后 SN 序列号丢失、部分配置回出厂（参数页落在 Loader 擦除区）+ 配置后 2 秒内立即复位/升级配置丢失 → 参数页迁至唯一安全区 0x08003000/0x08003400、A/B 双页保护、入口 Flush 兜底", "source": "IMU/GD32F103/量产Loader升级SN丢失与参数页安全迁移报告.md" }
+      ],
+      "docs": ["IMU/GD32F103/Readme.md", "IMU/GD32F103/921600波特率串口丢字节排查报告.md", "IMU/GD32F103/AC5下packed指针与函数形参不兼容修复报告.md", "IMU/GD32F103/量产Loader升级SN丢失与参数页安全迁移报告.md", "IMU/Readme.md"],
+      "note": "本目录未单独维护指令集文档；AT/HEX/CAN 指令表与 GD32F303 平台同源（BSP_IMU.git 子仓共用），《PPS功能实现说明》适用工程标注含 IMU_103_303_333。",
+      "updated": "2026-11-13"
+    },
+    {
+      "id": "GD32F303",
+      "name": "GD32F303 平台 IMU 固件（IMU_303_351 / GD32F303MCU）",
+      "dir": "IMU/GD32F303",
+      "summary": "GD32F303 平台双工程：IMU_303_351（产品 351，硬件 C00，内置六轴 + PPS 授时）与 GD32F303MCU（产品 506/硬件 B06，SCH16T-K01 六轴 + RM3100 外置磁力计九轴自研融合），共用 AT/HEX/CAN 指令集。",
+      "features": [
+        { "item": "AT/HEX/CAN 三接口指令集（351/506 双工程共用同一指令表，506 差异独立成节）", "source": "IMU/GD32F303/AT与HEX及CAN指令集说明.md" },
+        { "item": "PPS 授时（模式 0/1/2：时间戳校准/脉冲触发推送；351 完整功能，PPS 可经 AT/HEX/CAN 三接口配置）", "source": "IMU/GD32F303/PPS功能实现说明.md" },
+        { "item": "算法模式位图（HEX 0x06）：B06 支持 6 轴自研 + 9 轴自研（351/C00 仅 6 轴自研），超位图值被 BspAlgoSupportCheck 静默拒绝", "source": "IMU/GD32F303/AT与HEX及CAN指令集说明.md" },
+        { "item": "HEX 数据推送包 5 种（0x0001/0002/0010/0013/0022）逐包订阅控制（AT+MSGID / HEX 0x0011 / CAN 0x104 三处统一）", "source": "IMU/GD32F303/AT与HEX及CAN指令集说明.md" },
+        { "item": "时间体系：351 时基经 PPS 校准；506 无 PPS 脉冲源，日历 = 上位机设置一次（HEX 0x0019）+ 内部时基（SysTick 1kHz + DWT 增量）走时", "source": "IMU/GD32F303/Readme.md" }
+      ],
+      "chips": [
+        { "item": "GD32F303CB（HD 系列，128KB Flash/32KB RAM）@ 120MHz —— 工程 IMU_303_351，硬件 C00，内置六轴（+PPS 授时），服务产品 351", "source": "IMU/GD32F303/Readme.md" },
+        { "item": "GD32F303CGT6（XD 系列，1MB Flash/96KB RAM）@ 120MHz —— 工程 GD32F303MCU，硬件 B06，传感器 SCH16T-K01 六轴 IMU（SPI，200Hz ODR）+ RM3100 外置磁力计（SPI0，CMM 600Hz），服务产品 506", "source": "IMU/GD32F303/Readme.md" }
+      ],
+      "commands": [
+        { "item": "AT 指令 23 条（AT+VERSION / BAUD / SET / PUSHFRQ / MSGID / COORDINATE / PPS / PPSMODE / CANBAUD / SN / ZEROBIASCAL / DATATIME / DATALINK（Buf[7]=0x00 一键关闭四路推送） / GRAPHRQ / ORIGRQ / ACCSCALECFG / GYROSCALECFG / FLASHCFG / FLASHPROTECT / YAWRESET / RST / CMD / CONFIG）", "source": "IMU/GD32F303/AT与HEX及CAN指令集说明.md" },
+        { "item": "HEX 指令（帧格式 AA 55|CMD|ID|Op|Len|Data|CRC16，Op: 0x00 查询/0x01 设置仅 RAM/0x02 设置并保存）：用户配置 CMD 0x00 共 16 条 ID（0x03 版本 ~ 0x22 量程，含算法模式 0x06、包订阅 0x11、PPS 0x12、时间 0x19、YAW 归零 0x21 等）+ CMD 0x01（A 值/电池查询）", "source": "IMU/GD32F303/AT与HEX及CAN指令集说明.md" },
+        { "item": "生产/标定指令（G_BSPParseCMD，产测工装/上位机使用）：单板测试/温标/写 SN/转台标定/温漂参数/校准/进升级模式/磁力计校准等（CMD 0x01~0x08）", "source": "IMU/GD32F303/AT与HEX及CAN指令集说明.md" },
+        { "item": "CAN 指令 0x100~0x115（版本/推送频率/坐标系/数据流开关/MSGID 订阅/SN 查询/CAN 与串口波特率/PPS/复位/零偏/YAW 归零/串口开关/精简流开关/量程）", "source": "IMU/GD32F303/AT与HEX及CAN指令集说明.md" },
+        { "item": "506 差异：PPS 类指令可配置但无实际授时效果；量程配置暂缓启用；AT+FLASHINFO 属 Loader 工程指令，APP 固件 AT 表中不存在（发送无应答属正常，查 Flash 配置用 AT+FLASHCFG）", "source": "IMU/GD32F303/AT与HEX及CAN指令集说明.md" }
+      ],
+      "issues": [
+        { "item": "0x091 时间戳抖动（1000Hz CAN 推送相邻包 Δt 在 0.8~1.2ms 波动，理论应恒 1ms）：时间戳源锁存位置问题 → 时基源注入架构与增量契约、回绕周期一致性", "source": "IMU/GD32F303/0x091时间戳抖动修复报告.md" },
+        { "item": "串口丢字节（921600bps 连发 AT 随机丢 0.2%~0.95%）：SysTick 中断（最高优先级）内 64 位软件除法拖长中断逼近 1 字节时间致 ORE → 改 32 位硬件除法（数学等价），72540 字节零丢失；系 0x091 修复选型引入的回归", "source": "IMU/GD32F303/串口丢字节修复报告.md" },
+        { "item": "参数页升级 SN 乱码（V3.0.0.14/15 → V3.0.0.21+ 升级链路）→ 预留区扩展机制与字段兼容规程（字段在注释与 Reserved 之间声明、同步增减字节数保证双向兼容）", "source": "IMU/GD32F303/参数页升级SN乱码与预留区扩展机制报告.md" },
+        { "item": "506 推送帧时间乱走（三层排查）：真根因 DWT 时基源丢失增量基准更新致时间膨胀二次方增长；另有 64 位撕裂读分析与复位源诊断", "source": "IMU/GD32F303/506推送帧时间乱走排查与修复报告.md" },
+        { "item": "506 工程芯片迁移 GD32F303CB→CGT6：HD/XD 子系列宏互斥双定义致 1320 编译错误、启动文件迁移、Flash 特性核对与资源核算", "source": "IMU/GD32F303/506工程GD32F303CB升级CGT6迁移报告.md" }
+      ],
+      "docs": ["IMU/GD32F303/Readme.md", "IMU/GD32F303/AT与HEX及CAN指令集说明.md", "IMU/GD32F303/PPS功能实现说明.md", "IMU/GD32F303/0x091时间戳抖动修复报告.md", "IMU/GD32F303/串口丢字节修复报告.md", "IMU/GD32F303/参数页升级SN乱码与预留区扩展机制报告.md", "IMU/GD32F303/506推送帧时间乱走排查与修复报告.md", "IMU/GD32F303/506工程GD32F303CB升级CGT6迁移报告.md", "IMU/Readme.md"],
+      "note": "",
+      "updated": "2026-11-13"
+    },
+    {
+      "id": "Linux-UartTestVerifDemo",
+      "name": "IMU Linux 串口验证程序（imu_test）",
+      "dir": "IMU/Linux-UartTestVerifDemo",
+      "summary": "Linux 上位机侧志翔 IMU 黑盒验证工具（单可执行 imu_test，V1.7.8）：数据流统计、AT 指令验证（40 条用例）与 HEX 协议验证（19 报文 ID / 32 用例 + 压力模式）。",
+      "features": [
+        { "item": "功能 1 数据流统计：数据包 1/2/3/4 帧级统计（帧数/平均Hz/瞬时Hz/帧间隔极值）+ 最新帧物理量解析 + 设备时间戳 Δt 统计（全样本）", "source": "IMU/Linux-UartTestVerifDemo/Readme.md" },
+        { "item": "功能 2 AT 指令验证：依据《用户协议》第 2 章 40 条用例逐条下发，按文档应答格式判定，配置成对自动还原", "source": "IMU/Linux-UartTestVerifDemo/Readme.md" },
+        { "item": "功能 3 HEX 协议验证：19 个报文 ID 逐 ID 验证（32 条用例含异常组），另有压力/暴力模式 5 项（fuzz 轰炸/截断恢复等）", "source": "IMU/Linux-UartTestVerifDemo/Readme.md" },
+        { "item": "三层架构：termios 串口驱动（原始模式 8N1、八档波特率、ASYNC_LOW_LATENCY）/ 4KB SPSC 无锁环形队列 / 协议层帧同步 + CRC16 + 统计", "source": "IMU/Linux-UartTestVerifDemo/Doc/01-架构与线程模型.md" },
+        { "item": "混流容错：推送帧与 AT/HEX 应答同串口字节级交织时，先按帧结构整帧剔除 AA 55 推送帧再做判定", "source": "IMU/Linux-UartTestVerifDemo/Readme.md" }
+      ],
+      "chips": [
+        { "item": "Linux PC（gcc + pthread，无第三方依赖）", "source": "IMU/Linux-UartTestVerifDemo/Readme.md" },
+        { "item": "验证对象：志翔 IMU 设备（串口 921600 8N1，志翔私有协议）", "source": "IMU/Linux-UartTestVerifDemo/Readme.md" }
+      ],
+      "commands": [
+        { "item": "AT 指令验证覆盖《用户协议》第 2 章 40 条用例（用例表驱动，风险组先查原值→设避让档→自动还原）", "source": "IMU/Linux-UartTestVerifDemo/Doc/05-AT指令验证模块-bsp_at_test.md" },
+        { "item": "HEX 协议验证覆盖第 3.2 章 19 个报文 ID（查询缓存动态还原、异常组、0x0022 三格式探测）；协议全量文档《用户协议》知识库侧同步版见 Protocols/用户协议.md", "source": "IMU/Linux-UartTestVerifDemo/Doc/06-HEX协议验证模块-bsp_hex_test.md" },
+        { "item": "命令行用法：./imu_test <串口> <波特率> [功能] [模式]，run.sh 一键编译+菜单（默认 /dev/ttyUSB0 @921600）", "source": "IMU/Linux-UartTestVerifDemo/Doc/07-主入口与构建运行.md" }
+      ],
+      "issues": [
+        { "item": "串口抢占陷阱：两实例同读一串口会瓜分字节流，双方都无法组帧（新实例 11s 仅收 2 帧、411 帧 CRC 失败），排障先查 lsof /dev/ttyUSB0（V1.1.1 定性）", "source": "IMU/Linux-UartTestVerifDemo/Doc/07-主入口与构建运行.md" },
+        { "item": "混流假 FAIL：数据流推送帧与 AT/HEX 应答同串口共存且字节级交织，直接判定会误报失败 → 先整帧剔除推送帧再判定（剔帧+双条件判定）", "source": "IMU/Linux-UartTestVerifDemo/Doc/05-AT指令验证模块-bsp_at_test.md" },
+        { "item": "0x0022 查询应答与文档不一致（应答长度/SN 倒序等）：逐 ID 对照固件 bsp_parse.c 定因修复（固件为行为权威），查询三格式探测+宽容兜底", "source": "IMU/Linux-UartTestVerifDemo/Doc/06-HEX协议验证模块-bsp_hex_test.md" }
+      ],
+      "docs": ["IMU/Linux-UartTestVerifDemo/Readme.md", "IMU/Linux-UartTestVerifDemo/Doc/01-架构与线程模型.md", "IMU/Linux-UartTestVerifDemo/Doc/02-串口驱动模块-drv_serial.md", "IMU/Linux-UartTestVerifDemo/Doc/03-环形队列模块-bsp_uart_queue.md", "IMU/Linux-UartTestVerifDemo/Doc/04-协议层模块-bsp_uart_protocol.md", "IMU/Linux-UartTestVerifDemo/Doc/05-AT指令验证模块-bsp_at_test.md", "IMU/Linux-UartTestVerifDemo/Doc/06-HEX协议验证模块-bsp_hex_test.md", "IMU/Linux-UartTestVerifDemo/Doc/07-主入口与构建运行.md"],
+      "note": "上位机测试工具（非固件工程），依据《用户协议》对固件做黑盒验证；固件为行为权威。",
+      "updated": "2026-11-13"
+    },
+    {
+      "id": "STM32_F10x",
+      "name": "STM32F10x 综合工程（bsp_ptj_module）",
+      "dir": "STM32/STM32_F10x",
+      "summary": "STM32F103C8T6 寄存器级综合工程（自研代码在子仓 bsp_ptj_module）：APP→DRV→HAL 三层架构、AT 指令按域解析、编译期功能裁剪与云平台多后端互斥。",
+      "features": [
+        { "item": "三层架构 APP→DRV→HAL→厂商库严格单向（BSP 为板级兼容层旁路：bsp_config.h 机型配置表 + bsp_board 板级初始化）", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" },
+        { "item": "AT 指令解析按域拆分（motion/param/sensor/env/imu/gps/ir/rtc/io/fp/rfid/w25q64/apds/dot 等十余域，通道路由 UART1/UART3/USB CDC）", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" },
+        { "item": "时间片轮询调度（裸机无 RTOS，100Hz/10Hz/1Hz 三档频率槽，tick 快照防慢任务系统性饿死）", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" },
+        { "item": "编译期功能裁剪（cfg_modules.h：#error 互斥/依赖守卫；实测关阿里云组省约 20KB、关 CAN 组省约 2.5KB）", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" },
+        { "item": "云平台多后端编译期互斥选择（阿里云/巴法云/OneNET，三云共用一个 ESP-01S 串口；USB 与 CAN 共用 PA11/PA12 互斥）", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" },
+        { "item": "中断分发链分层转发（向量函数→HalXxxIrqHandler→注册回调）+ 回调注册模式解决下层通知上层", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" },
+        { "item": "USB CDC 虚拟串口（移植后经全工程合规审查整改闭环）", "source": "STM32/STM32_F10x/Doc/架构规范整改与合规复检复盘.md" },
+        { "item": "MAX7219 点阵显示（8x8 ASCII 字库 + 3x7 紧凑数字字模同显两位数字）", "source": "STM32/STM32_F10x/Doc/MAX7219点阵0-99数字显示.md" },
+        { "item": "DRV 器件驱动约 40 个模块（sensor/flash/无线/总线器件）", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" }
+      ],
+      "chips": [
+        { "item": "STM32F103C8T6（Cortex-M3 @ 72MHz，64KB Flash / 20KB RAM）", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" },
+        { "item": "Keil MDK + ARMCC V5.06 工具链", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" }
+      ],
+      "commands": [
+        { "item": "AT+DOTNUM=<0~99>（点阵同显两位数字，未初始化回 READY=0，超界提示 0..99）、AT+DOTSTR=<字符串>（走马灯滚动，与 ShowNum 互斥：ShowNum 会停止滚动）", "source": "STM32/STM32_F10x/Doc/MAX7219点阵0-99数字显示.md" },
+        { "item": "AT 指令按域拆分注册：app_parse.c 分发（指令表 + 通道路由），具体处理在 app_parse_<域>.c，新增指令域不动分发框架", "source": "STM32/STM32_F10x/Doc/工程架构说明.md" }
+      ],
+      "issues": [
+        { "item": "USB CDC 移植引入 5 项分层违规（APP 直调 HAL、BSP 反向依赖 DRV 在 SysTick 直调器件 tick 等）→ DRV 薄转发层 + 节拍钩子注册整改，固件尺寸逐字节持平；复检 10 维度 6✅4❌，残留 153 项均为低风险注释/命名类", "source": "STM32/STM32_F10x/Doc/架构规范整改与合规复检复盘.md" },
+        { "item": "drv_usb.c 编译开关守卫 #ifdef APP_MOD_USBCDC 未先 include cfg_modules.h → 宏不可见整文件被预处理器裁空 → 链接期 Undefined symbol；模块开关宏可见性必须从 .c 第一个 include 开始保证", "source": "STM32/STM32_F10x/Doc/架构规范整改与合规复检复盘.md" },
+        { "item": "源码编码陷阱（GBK/UTF-8 检测、Latin-1 无损转换、行尾统一，git blob 判源）：与本项目强相关的通用排查沉淀，收录于 03-问题排查", "source": "03-问题排查/嵌入式C工程源码编码陷阱-GBK与UTF8.md" }
+      ],
+      "docs": ["STM32/STM32_F10x/Readme.md", "STM32/STM32_F10x/Project_Level_Skill.md", "STM32/STM32_F10x/Doc/工程架构说明.md", "STM32/STM32_F10x/Doc/架构规范整改与合规复检复盘.md", "STM32/STM32_F10x/Doc/三层架构重构完成记录.md", "STM32/STM32_F10x/Doc/架构调整-四层改三层.md", "STM32/STM32_F10x/Doc/MAX7219点阵0-99数字显示.md", "03-问题排查/嵌入式C工程源码编码陷阱-GBK与UTF8.md"],
+      "note": "",
+      "updated": "2026-11-13"
+    },
+    {
+      "id": "QT-Tools",
+      "name": "志翔 IMU 上位机（CommTools）",
+      "dir": "QT-Tools",
+      "summary": "志翔 IMU 上位机 CommTools（Qt 6 / QML，Windows）：串口调试（XCOM 级）+ Hex 指令收发 + 实时波形 + 3D 姿态 + 固件升级 + 蓝牙 SPP 数据链路一体工具。",
+      "features": [
+        { "item": "串口调试页 DebugPage：端口/9 档波特率/数据位/停止位/校验、HEX↔文本互转、时间戳、定时/循环多条发送并自动持久化（对照 ATK-XCOM 核心功能全覆盖，缺发送文件/编码选择/自定义波特率/毫秒级时间戳 4 项）", "source": "QT-Tools/Doc/XCOM功能对照报告.md" },
+        { "item": "实时波形页：4 图×3 系、Y 轴自适应量程、鼠标缩放/平移查看、seq 增量同步不丢帧", "source": "QT-Tools/Doc/波形页优化报告.md" },
+        { "item": "HexCommands 页：协议指令组注册/载荷构建/回复解析三层齐全，17 条输入指令经 COM8 实机（921600 8N1）逐条核对", "source": "QT-Tools/Doc/HexCommands-实现核对与修复报告.md" },
+        { "item": "3D 姿态仪：场景内广告牌 XYZ 轴标签（2D 投影方案因 mapFrom3DScene 返回 NaN 弃用）+ HUD 小窗", "source": "QT-Tools/Doc/HEXCommands协议全量审计与3D轴标签重构报告.md" },
+        { "item": "蓝牙扫描 + SPP 连接（Windows 原生双栈：WinRT AEP 扫描 + Winsock RFCOMM 免配对直连，与串口同一解析管线，实测 20s 扫到 12 台）", "source": "QT-Tools/Doc/蓝牙功能实现.md" },
+        { "item": "协议解析：DataParser Hex*_S 结构体（#pragma pack(1)）+ CRC16（init=0x3692、poly=0x8408 LSB-first）", "source": "QT-Tools/Readme.md" },
+        { "item": "固件升级（工程定位：串口调试 + Hex 指令 + 3D 姿态 + 固件升级一体工具）", "source": "QT-Tools/Readme.md" }
+      ],
+      "chips": [
+        { "item": "Qt 6 / QML（本机 Qt 6.11.1 MSVC2022 64bit + jom 构建验证通过）", "source": "QT-Tools/Readme.md" },
+        { "item": "运行平台 Windows；蓝牙采用 WinRT + Winsock 原生双栈（Qt Bluetooth 模块缺失且 Windows 不支持经典 SPP 客户端连接）", "source": "QT-Tools/Doc/蓝牙功能实现.md" },
+        { "item": "验证对象：志翔 IMU 设备（串口 921600 8N1，协议事实来源 IMU-用户协议）", "source": "QT-Tools/Readme.md" }
+      ],
+      "commands": [
+        { "item": "HEX 协议指令 0x00 组 20 条 + 0x01 组 3 条全量审计与协议一致：0x03 版本 / 0x04 推送频率 / 0x05 蓝牙名称 / 0x06 算法模式 / 0x07 数据流 / 0x11 报文 ID 控制 / 0x12 PPS / 0x15 坐标系 / 0x16 串口波特率 / 0x17 CAN 波特率 / 0x18 SN 查询 / 0x19 时间设置 / 0x20 零偏校准 / 0x01 0x01 A 值 / 0x01 0x03 电池电量等", "source": "QT-Tools/Doc/HEXCommands协议全量审计与3D轴标签重构报告.md" },
+        { "item": "0x00 0x21 YAW 角归零重置：审计发现缺失 → 已补齐（命令表/buildPayload/字段表三处，帧型同 0x14/0x18/0x20）；推送帧 0x0001/0x0002/0x0009/0x0010/0x0013/0x0102 已注册解析", "source": "QT-Tools/Doc/HEXCommands协议全量审计与3D轴标签重构报告.md" },
+        { "item": "发送帧头 7B（AA 55 cmd id op len16LE）、CRC16(0x3692/0x8408) 与协议一致；协议唯一事实来源为工程内 IMU-用户协议.md（知识库侧同步版：Protocols/用户协议.md）", "source": "QT-Tools/Doc/HexCommands-实现核对与修复报告.md" }
+      ],
+      "issues": [
+        { "item": "0x19 时间设置回复解析不符协议（误用 23B 发送结构体解析 16B 回复：越界+乱码时间）→ 改按偏移解析，实测回复恰 16B 证实（gitee 1c7e2f7）", "source": "QT-Tools/Doc/HexCommands-实现核对与修复报告.md" },
+        { "item": "0x11 载荷字节序原实现要求输入颠倒值 → 改按报文 ID 原值输入（高字节→DATA1、低字节→DATA2），实测设备正常应答；0x01 0x03 显示误标「A值信息」→ 更正电池电量", "source": "QT-Tools/Doc/HexCommands-实现核对与修复报告.md" },
+        { "item": "3D 轴标签 mapFrom3DScene 在本场景持续返回 NaN/无效坐标致标签永久隐藏（历史自测记录实际未生效）→ 改场景内广告牌方案：轴尖放 Rectangle 面板 Model 反向绑定相机角度", "source": "QT-Tools/Doc/HEXCommands协议全量审计与3D轴标签重构报告.md" },
+        { "item": "波形页运行一段时间卡顿三根因：rebuildNeeded 全清重建 1.8 万点尖峰 / remove(0,n) O(n) 前删 / 隐藏页日志全量过滤逐帧唤醒 → 整窗重绘 + 增量日志等修复", "source": "QT-Tools/Doc/波形页优化报告.md" },
+        { "item": "波形页滚轮缩放无效：qmlcachegen 编译下 MouseArea.onWheel 失效 → 改用 WheelHandler", "source": "QT-Tools/Doc/波形页优化报告.md" },
+        { "item": "页面切换卡顿：Windows 同步串口枚举阻塞 UI 10~100ms → refreshSerialPortsAsync 异步化；波形 13 通道 QVariantList→QList<double> 消除每 tick 装箱转换；调试页日志改后端 seq 增量拉取", "source": "QT-Tools/Doc/页面切换卡顿优化报告.md" },
+        { "item": "HUD 小窗六个 QML 坑：手写拖拽须父容器坐标系、命令式赋值打断 height 绑定致裁切、min(宽,高) 双约束产生不对称空白、3D 轴标签首帧 NaN 永久隐藏（Timer 兜底）、ViewModel 20fps 节流致 3D 姿态延迟（→16ms）、缩放系数绑错 root", "source": "QT-Tools/Doc/3D姿态仪HUD交互优化报告.md" },
+        { "item": "遗留待验：SN 字节序未定（实测设备 SN 全 0x00 无法判定，待固件写入真实 SN 后复核）；电池电量读数恒 0（疑 USB 供电无电池，待带电池复测）；0x21 真机收发未做（审计时无串口设备）", "source": "QT-Tools/Doc/HexCommands-实现核对与修复报告.md" }
+      ],
+      "docs": ["QT-Tools/Readme.md", "QT-Tools/Doc/协议开发规范.md", "QT-Tools/Doc/HEXCommands协议全量审计与3D轴标签重构报告.md", "QT-Tools/Doc/HexCommands-实现核对与修复报告.md", "QT-Tools/Doc/XCOM功能对照报告.md", "QT-Tools/Doc/波形页优化报告.md", "QT-Tools/Doc/蓝牙功能实现.md", "QT-Tools/Doc/页面切换卡顿优化报告.md", "QT-Tools/Doc/3D姿态仪HUD交互优化报告.md", "Protocols/用户协议.md"],
+      "note": "",
+      "updated": "2026-11-13"
+    }
+  ]
+}
