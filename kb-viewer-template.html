@@ -11,6 +11,7 @@
   --t-fast:.15s ease; --t-med:.25s cubic-bezier(.4,0,.2,1);
   --fg:#d8dee9; --fg-dim:#8b93a5; --fg-faint:#5c6478;
   --accent:#4f8cff; --accent2:#7aa5ff; --green:#3fb27f; --orange:#e2a03f; --red:#e05c5c;
+  --grad:linear-gradient(135deg,#4f8cff,#9b6ce0); /* 派生令牌：主色 --accent + 分区紫(proto #9b6ce0)，首页 hero/统计卡用 */
   --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -31,7 +32,7 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 #searchbox{flex:1;max-width:560px;position:relative}
 #searchbox input{width:100%;height:34px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--fg);padding:0 12px 0 34px;font-size:.9rem;outline:none;transition:border var(--t-fast),box-shadow var(--t-fast)}
 #searchbox input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,140,255,.18)}
-#searchbox .icon{position:absolute;left:11px;top:8px;color:var(--fg-faint);pointer-events:none}
+#searchbox .icon{position:absolute;left:11px;top:9px;width:16px;height:16px;color:var(--fg-faint);pointer-events:none}
 #searchclear{position:absolute;right:8px;top:8px;width:20px;height:20px;border:none;background:none;color:var(--fg-dim);cursor:pointer;display:none;font-size:1rem}
 #topbar .meta{margin-left:auto;font-size:.75rem;color:var(--fg-dim);white-space:nowrap;text-align:right}
 #topbar .meta b{color:var(--green);font-weight:600}
@@ -46,7 +47,8 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 .nav-sec{margin-bottom:6px}
 .nav-sec-head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;user-select:none;transition:background var(--t-fast)}
 .nav-sec-head:hover,.nav-item:hover{background:var(--bg-hover)}
-.nav-sec-head .ico{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+.nav-sec-head .ico{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--sec,var(--fg-dim));background:var(--sec-a12,var(--bg3));flex-shrink:0}
+.nav-sec-head .ico .ico-svg{width:15px;height:15px}
 .nav-sec-head .name{font-weight:600;font-size:.92rem}
 .nav-sec-head .cnt{margin-left:auto;font-size:.72rem;color:var(--fg-dim);background:var(--bg3);border-radius:10px;padding:1px 8px}
 .nav-sec-head .arrow{margin-left:6px;color:var(--fg-faint);font-size:.7rem;transition:transform var(--t-fast)}
@@ -86,6 +88,14 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 .md code{font-family:var(--mono);font-size:.85em;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:1px 6px}
 .md pre{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;overflow-x:auto;margin:14px 0;line-height:1.55;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
 .md pre code{background:none;border:none;padding:0;font-size:.83rem}
+/* syntax highlight tokens (M2): 单一深色主题，取值由 M1 令牌派生 ——
+   k=accent2 / n=orange / c=fg-faint / p=accent，s 与 f 为 --green(--3fb27f) 与分区紫(#9b6ce0) 在深底上的提亮值 */
+.md pre code .tk-k{color:var(--accent2)}
+.md pre code .tk-s{color:#62c48f}
+.md pre code .tk-n{color:var(--orange)}
+.md pre code .tk-c{color:var(--fg-faint);font-style:italic}
+.md pre code .tk-f{color:#b48ce0}
+.md pre code .tk-p{color:var(--accent)}
 .md table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.88rem;display:block;overflow-x:auto}
 .md th,.md td{border:1px solid var(--border-soft);padding:7px 12px;text-align:left;vertical-align:top}
 .md th{background:var(--bg3);font-weight:600;white-space:nowrap}
@@ -118,17 +128,44 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 #toc a.on{color:var(--accent2);border-left-color:var(--accent)}
 @media(max-width:1450px){#toc{display:none}}
 
-/* ===== welcome ===== */
-#welcome{max-width:820px;margin:0 auto;padding:46px 48px 80px}
-#welcome h1{font-size:1.8rem;margin-bottom:6px}
-#welcome .sub{color:var(--fg-dim);margin-bottom:30px}
-.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:22px 0 34px}
-.stat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,.25)}
-.stat .n{font-size:1.7rem;font-weight:700;color:var(--accent2)}
-.stat .l{font-size:.78rem;color:var(--fg-dim);margin-top:2px}
-.wsec{margin-bottom:30px}
-.wsec h2{font-size:1.2rem;margin-bottom:12px}
+/* ===== welcome（M2 首页改版：hero + 统计卡 + 分类卡片，视觉语言沿用 M1 tokens） ===== */
+#welcome{max-width:820px;margin:0 auto;padding:30px 48px 80px}
+.ico-svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+.hero{text-align:center;padding:22px 0 4px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;font-size:.74rem;color:var(--fg-dim);border:1px solid var(--border);background:var(--bg2);border-radius:30px;padding:5px 16px;margin-bottom:20px}
+.hero-badge .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,178,127,.45)}70%{box-shadow:0 0 0 9px rgba(63,178,127,0)}100%{box-shadow:0 0 0 0 rgba(63,178,127,0)}}
+.hero h1{font-size:clamp(1.95rem,4.5vw,2.7rem);font-weight:800;letter-spacing:1px;line-height:1.25;margin:0 0 12px}
+.hero h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{color:var(--fg-dim);font-size:.95rem;max-width:600px;margin:0 auto 18px}
+.hero-meta{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.hero-meta .hm{display:inline-flex;align-items:center;gap:6px;font-size:.7rem;font-family:var(--mono);color:var(--fg-faint);border:1px solid var(--border);background:var(--bg2);border-radius:9px;padding:3px 10px}
+.hero-meta .hm b{color:var(--fg-dim);font-weight:600}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:26px 0 38px}
+.stat{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:all var(--t-fast)}
+.stat::before{content:'';position:absolute;inset:0 0 auto 0;height:2px;background:var(--grad);opacity:.7}
+.stat:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.35);border-color:rgba(79,140,255,.4)}
+.stat .n{font-size:1.7rem;font-weight:700;line-height:1.2;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat .l{font-size:.78rem;color:var(--fg-dim);margin-top:3px}
+.stat>svg{position:absolute;right:13px;top:14px;width:17px;height:17px;color:var(--fg-faint);opacity:.55}
+.wsec{margin-bottom:36px}
+.wsec>h2{display:flex;align-items:center;gap:9px;font-size:1.2rem;margin-bottom:12px}
+.wsec>h2 svg{width:17px;height:17px;color:var(--accent2);flex-shrink:0}
 .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:16px}
+.cat{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;cursor:pointer;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:all var(--t-fast)}
+.cat::after{content:'';position:absolute;left:0;right:0;top:0;height:2.5px;background:linear-gradient(90deg,var(--sc),transparent 70%);opacity:0;transition:opacity var(--t-fast)}
+.cat:hover{transform:translateY(-2px);border-color:var(--sc-line,var(--accent));box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.cat:hover::after{opacity:1}
+.cat .top{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.cat .icochip{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--sc);background:var(--sc-soft);flex-shrink:0}
+.cat .icochip .ico-svg{width:17px;height:17px}
+.cat .top .nm{font-weight:700;font-size:.95rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat .cbadge{font-size:.68rem;color:var(--sc);background:var(--sc-soft);border-radius:12px;padding:1.5px 10px;flex-shrink:0;white-space:nowrap}
+.cat .d{font-size:.8rem;color:var(--fg-dim);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em}
+.cat .foot{display:flex;align-items:center;justify-content:space-between;margin-top:11px;font-size:.7rem;color:var(--fg-faint);font-family:var(--mono)}
+.cat .go{color:var(--sc);opacity:0;transform:translateX(-4px);transition:all var(--t-fast);font-family:inherit}
+.cat:hover .go{opacity:1;transform:none}
 .kcard{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;cursor:pointer;transition:all var(--t-fast);box-shadow:0 1px 2px rgba(0,0,0,.25)}
 .kcard:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .kcard .t{font-weight:600;font-size:.95rem;margin-bottom:4px;color:var(--fg)}
@@ -151,6 +188,9 @@ mark.sr{background:rgba(226,160,63,.45);color:inherit;border-radius:3px;padding:
   #mask.show{display:block;position:fixed;inset:52px 0 0 0;background:rgba(0,0,0,.5);z-index:140}
   #article,#welcome{padding:26px 20px 70px}
   #topbar .meta{display:none}
+  .hero{padding-top:10px}
+  .statgrid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+  .catgrid{gap:12px}
 }
 </style>
 </head>
@@ -160,7 +200,7 @@ mark.sr{background:rgba(226,160,63,.45);color:inherit;border-radius:3px;padding:
   <button id="burger" title="目录">☰</button>
   <div class="logo"><span class="em">◆</span> 个人知识库</div>
   <div id="searchbox">
-    <span class="icon">🔍</span>
+    <svg class="ico-svg icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
     <input id="search" type="search" placeholder="搜索标题与全文内容…  (Ctrl+K)" autocomplete="off">
     <button id="searchclear" title="清空">✕</button>
   </div>
@@ -190,6 +230,105 @@ const KB = __KB_DATA__;
 const COMMITS = __COMMITS__;
 const SYNC_INFO = { date:"__SYNC_DATE__", sha:"__HEAD_SHA__" };
 
+/* ============ SVG 图标体系（M2） ============
+ * 分区 emoji 由 kb_build_viewer.py 的 SECTIONS 元数据下发（脚本禁改），
+ * 这里以「分区 id → 内联 SVG」映射在渲染层覆盖：单色描边、stroke 继承分区色。
+ * 未登记 id 的分区回退到原 emoji，不引入外部图标字体或网络请求。 */
+const ICO = p => '<svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>';
+const SEC_ICON = {
+  esp:   ICO('<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1.5" x2="9" y2="4"/><line x1="15" y1="1.5" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22.5"/><line x1="15" y1="20" x2="15" y2="22.5"/><line x1="20" y1="9" x2="22.5" y2="9"/><line x1="20" y1="15" x2="22.5" y2="15"/><line x1="1.5" y1="9" x2="4" y2="9"/><line x1="1.5" y1="15" x2="4" y2="15"/>'),
+  imu:   ICO('<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>'),
+  stm32: ICO('<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'),
+  qt:    ICO('<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>'),
+  linux: ICO('<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>'),
+  proto: ICO('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>'),
+  kb:    ICO('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>')
+};
+const UI_ICON = {
+  search: ICO('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>'),
+  layers: ICO('<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/>'),
+  list:   ICO('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'),
+  tag:    ICO('<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/>'),
+  clock:  ICO('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>'),
+  file:   ICO('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'),
+  type:   ICO('<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'),
+  image:  ICO('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>')
+};
+function secIcon(sec){ return SEC_ICON[sec.id] || esc(sec.icon); } /* 未知分区回退 emoji */
+
+/* ============ 代码语法高亮（M2：零依赖轻量分词器） ============
+ * 覆盖库内常见语言：C/C++、JS/TS/QML、Python、Sh/Bash/PS、JSON，其余语言走通用规则
+ * （注释/字符串/数字），text、tex、mermaid 等纯文本类直接原样输出。配色见 .tk-* 主题。 */
+const HL_KW_SRC = {
+  c:   'alignas alignof auto bool break case char class const constexpr continue default do double else enum extern false float for goto if inline int int8_t int16_t int32_t int64_t long NULL nullptr private protected public register return short signed sizeof static struct switch template this true typedef typename union unsigned void volatile while uint8_t uint16_t uint32_t uint64_t size_t ssize_t ptrdiff_t wchar_t',
+  js:  'async await break case catch class const continue debugger default delete do else export extends false finally for from function get if import in instanceof let new null of return set static super switch this throw true undefined try typeof var void while with yield',
+  py:  'and as assert async await break class continue def del elif else except False finally for from global if import in is lambda None nonlocal not or pass raise return True self try while with yield',
+  sh:  'break case cd continue do done echo elif else esac exit export fi for function if in local return set source then unset until while',
+  json:'true false null'
+};
+const HL_DQ = '"(?:[^"\\\\\\n]|\\\\.)*"',   HL_DQ_U = '"[^"\\n]*';
+const HL_SQ = "'(?:[^'\\\\\\n]|\\\\.)*'",   HL_SQ_U = "'[^'\\n]*";
+const HL_BT = '`(?:[^`\\\\]|\\\\.)*`',      HL_BT_U = '`[\\s\\S]*';
+const HL_NUM = '\\b(?:0[xX][0-9a-fA-F]+|\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)[uUlLfF]*';
+const HL_ID  = '[A-Za-z_]\\w*';
+function HL_LINE(cm){ return [[cm + '[^\\n]*', 'c']]; }
+const HL_LANG_DEFS = {
+  c:   { kw:'c',   parts: [['/\\*[\\s\\S]*?(?:\\*/)|/\\*[\\s\\S]*', 'c']].concat(HL_LINE('//'),
+               [['^[ \\t]*#[^\\n]*', 'p']], [[HL_DQ,'s'],[HL_DQ_U,'s'],[HL_SQ,'s'],[HL_SQ_U,'s']],
+               [[HL_NUM,'n']], [[HL_ID,'id']]) },
+  js:  { kw:'js',  parts: [['/\\*[\\s\\S]*?(?:\\*/)|/\\*[\\s\\S]*', 'c']].concat(HL_LINE('//'),
+               [[HL_BT,'s'],[HL_BT_U,'s'],[HL_DQ,'s'],[HL_DQ_U,'s'],[HL_SQ,'s'],[HL_SQ_U,'s']],
+               [[HL_NUM,'n']], [[HL_ID,'id']]) },
+  py:  { kw:'py',  parts: [['"""[\\s\\S]*?"""|"""[\\s\\S]*|\'\'\'[\\s\\S]*?\'\'\'|\'\'\'[\\s\\S]*', 's']].concat(HL_LINE('#'),
+               [['^[ \\t]*@[\\w.]+', 'p']], [[HL_DQ,'s'],[HL_DQ_U,'s'],[HL_SQ,'s'],[HL_SQ_U,'s']],
+               [[HL_NUM,'n']], [[HL_ID,'id']]) },
+  sh:  { kw:'sh',  parts: HL_LINE('#').concat([[HL_DQ,'s'],[HL_DQ_U,'s'],[HL_SQ,'s'],[HL_SQ_U,'s']],
+               [['\\$\\{[^}\\n]*\\}|\\$[\\w?#@!*]+', 'p']], [[HL_NUM,'n']], [[HL_ID,'id']]) },
+  json:{ kw:'json',parts: [[HL_DQ,'s'],[HL_DQ_U,'s'],[HL_NUM,'n'],[HL_ID,'id']] },
+  generic:{ kw:null, parts: [['/\\*[\\s\\S]*?(?:\\*/)|/\\*[\\s\\S]*', 'c']].concat(HL_LINE('//'), HL_LINE('#'),
+               [[HL_DQ,'s'],[HL_DQ_U,'s'],[HL_SQ,'s'],[HL_SQ_U,'s']], [[HL_NUM,'n']], [[HL_ID,'id']]) }
+};
+const HL_MAP = { c:'c', h:'c', cpp:'c', 'c++':'c', cxx:'c', hpp:'c', cc:'c', ino:'c',
+  js:'js', javascript:'js', ts:'js', typescript:'js', jsx:'js', tsx:'js', qml:'js',
+  py:'py', python:'py', py3:'py',
+  sh:'sh', bash:'sh', shell:'sh', zsh:'sh', console:'sh', powershell:'sh', ps1:'sh',
+  json:'json' };
+const HL_PLAIN = new Set(['', 'text', 'plain', 'txt', 'tex', 'latex', 'md', 'markdown', 'mermaid', 'diff']);
+const HL_LANGS = {};
+Object.keys(HL_LANG_DEFS).forEach(k=>{
+  const def = HL_LANG_DEFS[k];
+  HL_LANGS[k] = {
+    ty: def.parts.map(p=>p[1]),
+    re: new RegExp(def.parts.map(p=>'(' + p[0] + ')').join('|'), 'gm'),
+    kw: def.kw ? new Set(HL_KW_SRC[def.kw].split(/\s+/)) : new Set()
+  };
+});
+function hlHighlight(src, langRaw){
+  const lang = String(langRaw || '').trim().split(/\s+/)[0].toLowerCase();
+  if(HL_PLAIN.has(lang)) return esc(src);
+  const L = HL_LANGS[HL_MAP[lang] || 'generic'];
+  const re = L.re; re.lastIndex = 0;
+  let out = '', last = 0, m;
+  while((m = re.exec(src)) !== null){
+    if(m.index > last) out += esc(src.slice(last, m.index));
+    let t = '';
+    for(let g = 1; g < m.length; g++) if(m[g] !== undefined){ t = L.ty[g-1]; break; }
+    if(t === 'id'){
+      if(L.kw.has(m[0])) t = 'k';
+      else {
+        let j = re.lastIndex;
+        while(j < src.length && (src[j] === ' ' || src[j] === '\t')) j++;
+        t = (src[j] === '(') ? 'f' : '';
+      }
+    }
+    out += t ? '<span class="tk-' + t + '">' + esc(m[0]) + '</span>' : esc(m[0]);
+    last = re.lastIndex;
+    if(m[0].length === 0) re.lastIndex++;   /* 防空匹配死循环 */
+  }
+  out += esc(src.slice(last));
+  return out;
+}
+
 /* ============ marked setup ============ */
 marked.setOptions({ gfm:true, breaks:false, headerIds:true, mangle:false });
 
@@ -200,9 +339,10 @@ renderer.link = function(href, title, text){
   return out;
 };
 renderer.code = function(code, lang){
-  const esc = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const id = 'c'+(renderer._ci=(renderer._ci||0)+1);
-  return '<div class="codewrap"><button class="copybtn" data-copy="'+id+'">复制</button><pre><code id="'+id+'">'+esc(code)+'</code></pre></div>';
+  /* M2: 语法着色（hlHighlight 内部完成转义；复制按钮读 textContent，不受 span 影响） */
+  const body = hlHighlight(code, lang);
+  return '<div class="codewrap"><button class="copybtn" data-copy="'+id+'">复制</button><pre><code id="'+id+'">'+body+'</code></pre></div>';
 };
 marked.use({renderer});
 
@@ -238,8 +378,8 @@ function buildNav(filter){
     el.dataset.sec = sec.id;
     el.style.setProperty('--sec', sec.color);
     el.style.setProperty('--sec-a12', sec.color+'1f');
-    const icoBg = sec.color;
-    el.innerHTML = '<div class="nav-sec-head"><span class="ico" style="background:'+icoBg+'22">'+sec.icon+'</span><span class="name">'+esc(sec.name)+'</span><span class="cnt">'+docs.length+'</span><span class="arrow">▶</span></div><div class="nav-items"></div>';
+    const icoHtml = secIcon(sec);   /* M2: SVG 线性图标覆盖 emoji（背景色由 --sec-a12 提供） */
+    el.innerHTML = '<div class="nav-sec-head"><span class="ico">'+icoHtml+'</span><span class="name">'+esc(sec.name)+'</span><span class="cnt">'+docs.length+'</span><span class="arrow">▶</span></div><div class="nav-items"></div>';
     const items = el.querySelector('.nav-items');
     if(docs.length===0){
       items.innerHTML = '<div class="empty-sec">暂无文档</div>';
@@ -336,30 +476,42 @@ function renderWelcome(){
   document.getElementById('article').style.display='none';
   document.getElementById('toc').classList.remove('show');
   const totalDocs = KB.sections.reduce((n,s)=>n+s.docs.length,0);
-  const totalBytes = KB.sections.reduce((n,s)=>n+s.bytes,0);
+  const totalChars = KB.sections.reduce((n,s)=>n+s.docs.reduce((m,d)=>m+stripFrontMatter(d.content).body.length,0),0);
+  const imgCount = Object.keys(KB.images||{}).length;
+  const fmtChars = totalChars>=10000 ? (totalChars/10000).toFixed(1).replace(/\.0$/,'')+'万' : String(totalChars);
   const tagCount = {};
   KB.sections.forEach(s=>s.docs.forEach(d=>(d.tags||[]).forEach(t=>tagCount[t]=(tagCount[t]||0)+1)));
   const topTags = Object.entries(tagCount).sort((a,b)=>b[1]-a[1]);
   const w = document.getElementById('welcome');
   w.innerHTML = `
-  <h1>📚 个人知识库</h1>
-  <div class="sub">嵌入式固件 · 上位机 · Linux 运维 — 静态可视化浏览（纯本地渲染，无服务端）</div>
-  <div class="statgrid">
-    <div class="stat"><div class="n">${KB.sections.length}</div><div class="l">知识分类</div></div>
-    <div class="stat"><div class="n">${totalDocs}</div><div class="l">文档总数</div></div>
-    <div class="stat"><div class="n">${(totalBytes/1024).toFixed(0)} KB</div><div class="l">Markdown 体积</div></div>
-    <div class="stat"><div class="n">${COMMITS.length}+</div><div class="l">提交记录（近）</div></div>
-    <div class="stat"><div class="n" style="color:var(--green)">✓</div><div class="l">同步 ${SYNC_INFO.date} · ${SYNC_INFO.sha}</div></div>
+  <div class="hero">
+    <div class="hero-badge"><span class="pulse"></span>离线单文件 · 纯本地渲染 · 无服务端</div>
+    <h1>个人<em>知识库</em></h1>
+    <div class="sub">嵌入式固件 · 上位机 · 协议 · Linux 运维 — 快速浏览与全文检索你的知识沉淀</div>
+    <div class="hero-meta">
+      <span class="hm">仓库 <b>YYM642443594/KnowledgeBase</b></span>
+      <span class="hm">分支 <b>develop</b></span>
+      <span class="hm">同步 <b>${SYNC_INFO.date}</b></span>
+      <span class="hm">HEAD <b>${SYNC_INFO.sha}</b></span>
+    </div>
   </div>
-  <div class="wsec"><h2>🗂 知识分类</h2><div class="cardgrid">${
-    KB.sections.map(s=>`
-      <div class="kcard" onclick="location.hash='#${s.docs[0]?s.docs[0].hash:''}'; if(!'${s.docs[0]?1:0}') return false;">
-        <div class="t">${s.icon} ${esc(s.name)}</div>
+  <div class="statgrid">
+    <div class="stat">${UI_ICON.layers}<div class="n">${KB.sections.length}</div><div class="l">知识分类</div></div>
+    <div class="stat">${UI_ICON.file}<div class="n">${totalDocs}</div><div class="l">文档总数</div></div>
+    <div class="stat">${UI_ICON.type}<div class="n">${fmtChars}</div><div class="l">总字数</div></div>
+    <div class="stat">${UI_ICON.image}<div class="n">${imgCount}</div><div class="l">内嵌图示</div></div>
+  </div>
+  <div class="wsec"><h2>${UI_ICON.layers}知识分类</h2><div class="catgrid">${
+    KB.sections.map(s=>{
+      const first = s.docs[0];
+      return `<div class="cat" style="--sc:${s.color};--sc-soft:${s.color}21;--sc-line:${s.color}59"${first?` onclick="location.hash='#${first.hash}'"`:''}>
+        <div class="top"><span class="icochip">${secIcon(s)}</span><span class="nm">${esc(s.name)}</span><span class="cbadge">${s.docs.length} 篇</span></div>
         <div class="d">${esc(s.desc)}</div>
-        <div class="m"><b>${s.docs.length}</b> 篇 · ${esc(s.dir)}</div>
-      </div>`).join('')
+        <div class="foot"><span>${esc(s.dir)}</span><span class="go">浏览 →</span></div>
+      </div>`;
+    }).join('')
   }</div></div>
-  <div class="wsec"><h2>📑 全部文档</h2><div class="cardgrid">${
+  <div class="wsec"><h2>${UI_ICON.list}全部文档</h2><div class="cardgrid">${
     KB.sections.flatMap(s=>s.docs.map(d=>`
       <div class="kcard" onclick="location.hash='#${d.hash}'">
         <div class="t">${esc(d.title)}</div>
@@ -367,10 +519,10 @@ function renderWelcome(){
         <div class="m">${esc(s.name)} · <b>${d.sizeKB}</b> KB</div>
       </div>`)).join('')
   }</div></div>
-  <div class="wsec"><h2>🏷 标签云</h2><div class="tagcloud">${
+  <div class="wsec"><h2>${UI_ICON.tag}标签云</h2><div class="tagcloud">${
     topTags.map(([t,n])=>`<span class="chip tag" onclick="doTagSearch('${esc(t)}')">#${esc(t)} <span style="opacity:.6">${n}</span></span>`).join('')
   }</div></div>
-  <div class="wsec"><h2>🕒 最近更新</h2>${
+  <div class="wsec"><h2>${UI_ICON.clock}最近更新</h2>${
     COMMITS.slice(0,10).map(c=>`<div class="commit-item" style="padding:8px 4px;border-bottom:1px solid var(--border);border-radius:0"><span class="cm" style="-webkit-line-clamp:1">${esc(c.msg)}</span><span class="cd"><b>${c.sha}</b> · ${c.date}</span></div>`).join('')
   }</div>`;
 }
