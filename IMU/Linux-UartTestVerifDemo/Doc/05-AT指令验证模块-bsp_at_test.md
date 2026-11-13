@@ -1,3 +1,11 @@
+---
+title: 05 AT 指令验证模块 bsp_at_test
+created: 2026-10-26
+updated: 2026-10-26
+tags: [IMU, Linux, 协议]
+source: 原创
+---
+
 # 05 AT 指令验证模块 bsp_at_test
 
 > 源码：[Code/bsp_at_test.c](../Code/bsp_at_test.c) / [Code/bsp_at_test.h](../Code/bsp_at_test.h)

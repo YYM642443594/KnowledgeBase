@@ -1,3 +1,11 @@
+---
+title: AT / HEX / CAN 指令集说明（2026-10-23）
+created: 2026-10-23
+updated: 2026-10-23
+tags: [IMU, GD32, 协议]
+source: 原创
+---
+
 # AT / HEX / CAN 指令集说明（2026-10-23）
 
 > 工程：IMU_303_351（GD32F303，共用 BSP_IMU.git 子仓库）

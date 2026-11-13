@@ -1,3 +1,11 @@
+---
+title: 04 协议层模块 bsp_uart_protocol
+created: 2026-10-26
+updated: 2026-10-26
+tags: [IMU, Linux, 串口, 协议]
+source: 原创
+---
+
 # 04 协议层模块 bsp_uart_protocol
 
 > 源码：[Code/bsp_uart_protocol.c](../Code/bsp_uart_protocol.c) / [Code/bsp_uart_protocol.h](../Code/bsp_uart_protocol.h)

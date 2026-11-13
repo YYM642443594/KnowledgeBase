@@ -1,3 +1,11 @@
+---
+title: 02 串口驱动模块 drv_serial
+created: 2026-10-26
+updated: 2026-10-26
+tags: [IMU, Linux, 串口]
+source: 原创
+---
+
 # 02 串口驱动模块 drv_serial
 
 > 源码：[Code/drv_serial.c](../Code/drv_serial.c) / [Code/drv_serial.h](../Code/drv_serial.h)

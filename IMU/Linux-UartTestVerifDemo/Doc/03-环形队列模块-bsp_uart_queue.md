@@ -1,3 +1,11 @@
+---
+title: 03 环形队列模块 bsp_uart_queue
+created: 2026-10-26
+updated: 2026-10-26
+tags: [IMU, Linux, 串口]
+source: 原创
+---
+
 # 03 环形队列模块 bsp_uart_queue
 
 > 源码：[Code/bsp_uart_queue.c](../Code/bsp_uart_queue.c) / [Code/bsp_uart_queue.h](../Code/bsp_uart_queue.h)

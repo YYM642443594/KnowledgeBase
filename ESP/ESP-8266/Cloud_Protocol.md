@@ -1,3 +1,11 @@
+---
+title: 物联网云平台接入协议速查
+created: 2026-09-23
+updated: 2026-10-26
+tags: [ESP8266, 协议]
+source: 原创
+---
+
 # 物联网云平台接入协议速查
 
 > 来源：巴法官方文档（cloud.bemfa.com/docs/src/）实测核实 + 阿里云/OneNET 官方签名规范。

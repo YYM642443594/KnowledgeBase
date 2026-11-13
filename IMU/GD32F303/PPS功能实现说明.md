@@ -1,3 +1,11 @@
+---
+title: PPS 功能实现说明（2026-10-23）
+created: 2026-10-23
+updated: 2026-10-23
+tags: [IMU, GD32, 嵌入式]
+source: 原创
+---
+
 # PPS 功能实现说明（2026-10-23）
 
 > 涉及文件：bsp_pps.h/c（驱动层）、bsp_parse.c（三接口配置）、bsp_data_interaction.c（推送分流）、

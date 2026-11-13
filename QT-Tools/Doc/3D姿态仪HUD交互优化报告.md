@@ -1,3 +1,11 @@
+---
+title: 3D姿态仪HUD交互优化报告
+created: 2026-11-09
+updated: 2026-11-09
+tags: [Qt, 上位机]
+source: 原创
+---
+
 # 3D姿态仪HUD交互优化报告
 
 > 日期：2026-11-09 ｜ 项目：QT-Tools/CommTools ｜ 页面：3D模型+姿态仪合并页

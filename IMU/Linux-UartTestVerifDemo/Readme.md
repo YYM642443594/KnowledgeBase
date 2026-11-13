@@ -1,3 +1,11 @@
+---
+title: `IMU Linux` 串口验证程序 (Linux-UartTestVerifDemo)
+created: 2026-10-26
+updated: 2026-10-26
+tags: [IMU, Linux, 串口]
+source: 原创
+---
+
 # `IMU Linux` 串口验证程序 (Linux-UartTestVerifDemo)
 
 > 2026-10-26 归档：源工程 `IMUDemo`（分支 `feature/LinuxUartTestVerifDemo`），Linux 上位机侧的志翔 IMU 示例 Demo 与自测试程序。单可执行 `imu_test`，参数选择三大功能。本目录整理**各模块的功能实现**（Doc/）并快照源码（Code/）。

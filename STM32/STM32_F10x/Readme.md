@@ -1,3 +1,11 @@
+---
+title: STM32_F10x
+created: 2026-10-27
+updated: 2026-10-28
+tags: [STM32, 架构规范]
+source: 原创
+---
+
 # STM32_F10x
 
 基于 STM32F10x 的嵌入式工程仓库，架构规范采用跨仓库通用模板 `Project_Level_Skill.md`（可直接复制到其他 MCU 工程复用）。

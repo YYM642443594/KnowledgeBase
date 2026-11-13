@@ -1,3 +1,11 @@
+---
+title: QT-Tools / CommTools 上位机
+created: 2026-10-10
+updated: 2026-11-10
+tags: [Qt, 上位机]
+source: 原创
+---
+
 # QT-Tools / CommTools 上位机
 
 志翔 IMU 上位机（Qt 6 / QML），串口调试 + Hex 指令 + 3D 姿态 + 固件升级一体工具。

@@ -1,3 +1,11 @@
+---
+title: HEXCommands 协议全量审计与 3D 轴标签重构报告（2026-11-10）
+created: 2026-11-10
+updated: 2026-11-10
+tags: [Qt, 协议, 排查]
+source: 原创
+---
+
 # HEXCommands 协议全量审计与 3D 轴标签重构报告（2026-11-10）
 
 工程仓提交：QT-Tools develop `a3f794a`（gitee）。本报告整理两项工作：HEXCommands 页与协议文档的全量对照审计，以及 3D 页 XYZ 轴尖标签从 2D 投影到场景内广告牌的重构。

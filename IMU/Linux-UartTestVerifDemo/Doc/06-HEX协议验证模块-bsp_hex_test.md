@@ -1,3 +1,11 @@
+---
+title: 06 HEX 协议验证模块 bsp_hex_test
+created: 2026-10-26
+updated: 2026-10-26
+tags: [IMU, Linux, 协议]
+source: 原创
+---
+
 # 06 HEX 协议验证模块 bsp_hex_test
 
 > 源码：[Code/bsp_hex_test.c](../Code/bsp_hex_test.c) / [Code/bsp_hex_test.h](../Code/bsp_hex_test.h)

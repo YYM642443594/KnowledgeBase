@@ -1,3 +1,11 @@
+---
+title: Linux 常用机脚本
+created: 2026-10-26
+updated: 2026-10-26
+tags: [Linux, 环境配置]
+source: 原创
+---
+
 # Linux 常用机脚本
 
 > 2026-10-26 建：备份自 `/home/yym/sda1/00.FTP` 的常用环境配置脚本。全部通过 `bash -n` 语法检查；带 `sudo` 需求的脚本请用 root 运行。

@@ -1,3 +1,11 @@
+---
+title: ESP32-WROOM-32 工程功能记录
+created: 2026-09-21
+updated: 2026-10-26
+tags: [ESP32, 透传, 嵌入式]
+source: 原创
+---
+
 # ESP32-WROOM-32 工程功能记录
 
 - **MCU**：ESP32-WROOM-32（SoC：ESP32-D0WDQ6，双核 Xtensa LX6 @ 240MHz，4MB Flash / 520KB SRAM）

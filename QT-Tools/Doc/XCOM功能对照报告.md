@@ -1,3 +1,11 @@
+---
+title: DebugPage 与 ATK-XCOM 功能对照报告（2026-10-10）
+created: 2026-10-10
+updated: 2026-10-10
+tags: [Qt, 上位机]
+source: 原创
+---
+
 # DebugPage 与 ATK-XCOM 功能对照报告（2026-10-10）
 
 对象：`Code/CommTools/View/Component/DebugPage.qml`（1212 行）+ `SerialPanel.qml` + Main/CommViewModel。

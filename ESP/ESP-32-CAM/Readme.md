@@ -1,3 +1,11 @@
+---
+title: ESP32-CAM 网页视频监控工程功能记录
+created: 2026-10-10
+updated: 2026-11-11
+tags: [ESP32, 视频监控, 嵌入式]
+source: 原创
+---
+
 # ESP32-CAM 网页视频监控工程功能记录
 
 - **板卡**:AI-Thinker ESP32-CAM(SoC:ESP32-D0WDQ6,双核 Xtensa LX6 @ 240MHz,4MB Flash / **实测板载 8MB PSRAM**--经典 ESP32 最多映射 4MB)
