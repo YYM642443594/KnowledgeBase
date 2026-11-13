@@ -143,5 +143,6 @@ def build(commits):
     return html
 
 if __name__ == "__main__":
-    commits = json.load(open(COMMITS_JSON, encoding="utf-8"))
+    doc = json.load(open(COMMITS_JSON, encoding="utf-8"))
+    commits = doc.get("commits") if isinstance(doc, dict) else doc
     build(commits)
