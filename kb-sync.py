@@ -112,8 +112,10 @@ def build_once():
                   f, ensure_ascii=False, indent=1)
     kb_build_viewer.build(commits)
     html = open(HTML, encoding="utf-8").read()
-    if "__KB_DATA__" in html or "__MARKED_JS__" in html or len(html) < 100000:
-        fail("BUILD_FAIL: placeholder left in output")
+    # KB 数据块按「确已插入」校验：文档正文可能合法含 __KB_DATA__ 字面量（如 M2 实现文档），
+    # 不能据其判失败；MARKED_JS 仍无文档字面量风险，保留原残留检查。
+    if '"sections":' not in html or "__MARKED_JS__" in html or len(html) < 100000:
+        fail("BUILD_FAIL: KB data not inserted / placeholder left in output")
 
 def commit_and_push(force=False):
     """Commit staged changes (if any) and push. True on success."""
