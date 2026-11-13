@@ -568,6 +568,7 @@ function renderWelcome(){
   document.getElementById('welcome').style.display='';
   document.getElementById('article').style.display='none';
   document.getElementById('toc').classList.remove('show');
+  clearTocEntry();   /* 评审返工：首页不残留上一篇文档的目录入口与陈旧列表 */
   const totalDocs = KB.sections.reduce((n,s)=>n+s.docs.length,0);
   const totalChars = KB.sections.reduce((n,s)=>n+s.docs.reduce((m,d)=>m+stripFrontMatter(d.content).body.length,0),0);
   const imgCount = Object.keys(KB.images||{}).length;
@@ -672,10 +673,15 @@ function buildTOC(container){
   const hs = [...container.querySelectorAll('h2,h3')];
   const tl = document.getElementById('toclist');
   const fab = document.getElementById('tocfab');
-  if(hs.length < 3){ document.getElementById('toc').classList.remove('show'); tl.innerHTML=''; fab.classList.remove('on'); return; }
+  if(hs.length < 3){ document.getElementById('toc').classList.remove('show'); clearTocEntry(); return; }
   document.getElementById('toc').classList.add('show');
   fab.classList.add('on');
   tl.innerHTML = hs.map(h=>'<a href="#'+h.id+'" class="lv'+h.tagName[1]+'">'+esc(h.textContent)+'</a>').join('');
+}
+/* M3 返工：清目录入口（FAB .on）与列表，防搜索结果页/首页残留上一篇文档的陈旧目录 */
+function clearTocEntry(){
+  document.getElementById('tocfab').classList.remove('on');
+  document.getElementById('toclist').innerHTML='';
 }
 /* ============ TOC 抽屉（M3：<1450px 的目录入口，与移动端侧栏同款遮罩模式） ============ */
 function openToc(){
@@ -731,6 +737,7 @@ function showSearchResults(q){
   document.getElementById('welcome').style.display='none';
   const art = document.getElementById('article'); art.style.display='';
   document.getElementById('toc').classList.remove('show');
+  clearTocEntry();   /* 评审返工：搜索结果页不残留上一篇文档的目录入口与陈旧列表 */
   document.getElementById('crumbs').innerHTML = '搜索 “'+esc(q)+'”';
   document.getElementById('docmeta').innerHTML='';
   const ql = q.toLowerCase();
