@@ -79,6 +79,8 @@ def build(commits):
                 dirs.sort()
                 for fn in sorted(files):
                     if not fn.lower().endswith((".md", ".markdown")): continue
+                    if sid == "kb" and fn == "README.md":
+                        continue  # 01~07 目录的占位 README（工程区为 Readme.md，不受影响）
                     p = os.path.join(root, fn)
                     rel = os.path.relpath(p, HERE)
                     md = read(p)
