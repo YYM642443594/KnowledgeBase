@@ -27,9 +27,13 @@ SECTIONS = [
     ("proto",  "Protocols",     "📜", "#9b6ce0", "志翔协议文档（同步自 WorkRecord@feature/zhixiang）：IMU 通讯协议与指令、坐标系示意、自动售水机通信协议（二进制帧 / MQTT JSON）"),
     ("kb",     ("00-索引", "01-技术笔记", "02-项目文档", "03-问题排查", "04-工具使用",
                 "05-读书笔记", "06-参考资料", "07-日常记录"),
-                               "📚", "#7a8b99", "规范沉淀区：按主题分类的跨平台知识文档（技术笔记、项目文档、问题排查、工具使用等）",
-               "00~07 目录"),
+                               "📚", "#7a8b99", "规范沉淀区：按主题分类的跨平台知识文档（技术笔记、项目文档、问题排查、工具使用等），含根目录登记文档（总规范 README、Agent 规范 AGENTS）",
+               "00~07+根规范"),
 ]
+
+# 根目录下已登记进 00-索引/索引.md 的文档（「规范与模板」分类），同样必须可在
+# 网页端检索（KNOWLEDGE-18 覆盖检查）；未登记的结构性占位 README 仍按约定跳过。
+ROOT_DOCS = ("README.md", "AGENTS.md")
 
 def read(p):
     with open(p, encoding="utf-8") as f: return f.read()
@@ -49,8 +53,19 @@ def front_meta(md):
 
 def plain_text(md):
     b = re.sub(r"^---\s*\n.*?\n---\s*\n?", "", md, flags=re.S)
-    b = re.sub(r"```.*?```", " ", b, flags=re.S)
-    b = re.sub(r"`[^`]*`", " ", b)
+    # 代码围栏按行配对剔除：旧写法 ```.*?```（非贪婪）在「```` 外层包裹 ``` 内层」的
+    # 嵌套示例（README.md 代码块章节）上错位配对，游离反引号再被行内代码规则吞掉
+    # 大片正文，导致那部分内容无法全文检索。
+    lines, fenced = [], False
+    for line in b.splitlines():
+        if re.match(r"^\s*`{3,}", line):
+            fenced = not fenced
+            lines.append(" ")
+            continue
+        if not fenced:
+            lines.append(line)
+    b = "\n".join(lines)
+    b = re.sub(r"`[^`\n]*`", " ", b)
     b = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", b)
     b = re.sub(r"^#{1,6}\s*", "", b, flags=re.M)
     b = re.sub(r"[*_>|#\[\]]", "", b)
@@ -64,6 +79,24 @@ def desc_of(meta, text):
         line = line.strip()
         if 20 < len(line) < 160: return line + "。"
     return text[:120] + "…"
+
+def make_doc(p):
+    rel = os.path.relpath(p, HERE)
+    md = read(p)
+    meta = front_meta(md)
+    title = meta.get("title") or os.path.basename(p).rsplit(".", 1)[0]
+    return {
+        "hash": rel.replace(os.sep, "/"),
+        "title": title,
+        "relPath": rel.replace(os.sep, "/"),
+        "desc": desc_of(meta, plain_text(md))[:150],
+        "created": meta.get("created", ""),
+        "updated": meta.get("updated", ""),
+        "tags": meta.get("tags", []) if isinstance(meta.get("tags"), list) else ([meta.get("tags")] if meta.get("tags") else []),
+        "sizeKB": round(os.path.getsize(p) / 1024, 1),
+        "_text": plain_text(md)[:60000],
+        "content": md,
+    }
 
 def build(commits):
     """Render viewer HTML for the given commits list. Returns the html string."""
@@ -81,23 +114,12 @@ def build(commits):
                     if not fn.lower().endswith((".md", ".markdown")): continue
                     if sid == "kb" and fn == "README.md":
                         continue  # 01~07 目录的占位 README（工程区为 Readme.md，不受影响）
-                    p = os.path.join(root, fn)
-                    rel = os.path.relpath(p, HERE)
-                    md = read(p)
-                    meta = front_meta(md)
-                    title = meta.get("title") or fn.rsplit(".", 1)[0]
-                    docs.append({
-                        "hash": rel.replace(os.sep, "/"),
-                        "title": title,
-                        "relPath": rel.replace(os.sep, "/"),
-                        "desc": desc_of(meta, plain_text(md))[:150],
-                        "created": meta.get("created", ""),
-                        "updated": meta.get("updated", ""),
-                        "tags": meta.get("tags", []) if isinstance(meta.get("tags"), list) else ([meta.get("tags")] if meta.get("tags") else []),
-                        "sizeKB": round(os.path.getsize(p) / 1024, 1),
-                        "_text": plain_text(md)[:6000],
-                        "content": md,
-                    })
+                    docs.append(make_doc(os.path.join(root, fn)))
+        if sid == "kb":
+            for fn in ROOT_DOCS:
+                p = os.path.join(HERE, fn)
+                if os.path.exists(p):
+                    docs.append(make_doc(p))
         data.append({"id": sid, "name": label, "dir": label + "/", "icon": icon, "color": color,
                      "desc": desc, "docs": docs, "bytes": sum(x["sizeKB"] * 1024 for x in docs)})
 

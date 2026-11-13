@@ -1,8 +1,23 @@
 {
  "_meta": {
-  "content_head": "aee55b01"
+  "content_head": "4661bcc1"
  },
  "commits": [
+  {
+   "sha": "4661bcc1",
+   "date": "2026-11-13 17:07",
+   "msg": "整理：修复 kb-sync 构建哨兵误判（KNOWLEDGE-14，YYM 2026-11-13 授权「修复哨兵冲突」）"
+  },
+  {
+   "sha": "53d38b42",
+   "date": "2026-11-13 16:10",
+   "msg": "整理：标签索引补登记 #设计规范、#编码规范"
+  },
+  {
+   "sha": "ee1bfb9c",
+   "date": "2026-11-13 19:38",
+   "msg": "更新：修复 kb_build_viewer.py 直跑 KeyError（成员授权）"
+  },
   {
    "sha": "aee55b01",
    "date": "2026-11-13 16:56",
@@ -137,21 +152,6 @@
    "sha": "d7c11424",
    "date": "2026-10-30 13:48",
    "msg": "Merge remote-tracking branch 'origin/develop' into develop"
-  },
-  {
-   "sha": "e4fefec6",
-   "date": "2026-10-30 13:48",
-   "msg": "Merge remote-tracking branch 'origin/main' into develop"
-  },
-  {
-   "sha": "2e36396f",
-   "date": "2026-10-30 13:45",
-   "msg": "【新增】增加一个ESP8266的bug;"
-  },
-  {
-   "sha": "4c727553",
-   "date": "2026-10-30 00:20",
-   "msg": "ESP-32-CAM: V1.4.2.10 第二轮自动巡检复测记录——8条bug全修复无新增,四向一致核验,重建产物md"
   }
  ]
 }
