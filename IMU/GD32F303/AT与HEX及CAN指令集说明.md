@@ -1,23 +1,23 @@
 ---
 title: AT / HEX / CAN 指令集说明（2026-10-23）
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-13
 tags: [IMU, GD32, 协议]
 source: 原创
 ---
 
 # AT / HEX / CAN 指令集说明（2026-10-23）
 
-> 工程：IMU_303_351（GD32F303，共用 BSP_IMU.git 子仓库）
+> 工程：IMU_303_351（351）与 GD32F303MCU（506/B06）共用（GD32F303 平台，共用 BSP_IMU.git 子仓库，指令表同源）
 > 源码：bsp_parse.c 三张指令表 `G_BSPATParseCMD` / `G_BSPHexParseCMD`（含 `G_BSPParseCMD` 生产标定区）/ `G_BSPCANParse`
-> 关联文档：《PPS功能实现说明.md》《参数页升级SN乱码与预留区扩展机制报告.md》
+> 关联文档：《PPS功能实现说明.md》《参数页升级SN乱码与预留区扩展机制报告.md》《506推送帧时间乱走排查与修复报告.md》；506 差异见文末第六节
 
 ## 一、AT 指令（串口文本，\r\n 结尾，回显式应答）
 
 | 指令 | 功能 | 备注 |
 |------|------|------|
 | `AT+VERSION?` | 查询固件版本 | 应答使用 `BspParseSendDataWait` 等发送缓冲空闲，防数据交织 |
-| `AT+BAUD=<n>` / `AT+BAUD?` | 设置/查询串口波特率 | 保存后重启生效 |
+| `AT+BAUD=<n>` / `AT+BAUD?` | 设置/查询串口波特率 | 保存后重启生效；上电初始化取 Flash 配置值（配置检查白名单纠正） |
 | `AT+SET=ON/OFF` / `AT+SET?` | AT 数据推送开关设置/查询 | 控制 `UserATDataPushCfg.PushStatus` |
 | `AT+PUSHFRQ=<ms>` | AT 数据推送频率 | 控制 `UserATDataPushCfg.DataPushFre` |
 | `AT+MSGID=<n>,<0/1>` | HEX 数据包订阅控制 | n=1/2/10/13/22 对应 0x0001/0002/0010/0013/0022 包；写 shadow+工作副本并落盘 |
@@ -59,7 +59,7 @@ AA 55 | CMD | ID | Op | LenL LenH | Data... | CRC16L CRC16H
 | 0x03 | `BspVersionGet_0003` | 版本查询（应答 8B） |
 | 0x04 | `BspPushFreSet_0004` | HEX 推送频率设置（PushStatus + DataPushFre，Op=0x01 仅写 shadow） |
 | 0x05 | `BspReviseBleName_0005` | 修改蓝牙名称（Data 16B） |
-| 0x06 | `BspAlgorithmMode_0006` | 算法模式设置/查询 |
+| 0x06 | `BspAlgorithmMode_0006` | 算法模式设置/查询（506/B06 支持 6 轴自研 + 9 轴自研，见第六节） |
 | 0x07 | `BspUserDataSwitch_0007` | HEX 推送总开关（`UserHexDataPushCfg.PushStatus`） |
 | 0x11 | `BspUserPushDataPackCtrl_0011` | 数据包订阅控制（包 ID 0x0001/0002/0010/0013/0022 逐包开关，即 HEX 侧 MSGID 控制） |
 | 0x12 | `BspPPSSwitchCtrl_0012` | PPS 控制（查询/开关/模式；开启置 `PPSSwitchType=2`） |
@@ -68,7 +68,7 @@ AA 55 | CMD | ID | Op | LenL LenH | Data... | CRC16L CRC16H
 | 0x16 | `BspUartRate_0016` | 串口波特率设置/查询 |
 | 0x17 | `BspCanRate_0017` | CAN 波特率设置/查询 |
 | 0x18 | `BspQuerySN_0018` | 查询 SN 号（应答 24B） |
-| 0x19 | `BspModificationDataTime_0019` | 修改数据时间（应答 8B） |
+| 0x19 | `BspModificationDataTime_0019` | 修改数据时间（应答 8B；506 设置真实日历时间的入口，写后即时生效） |
 | 0x20 | `BspZeroCalibration_0020` | 零偏校准 |
 | 0x21 | `BspYawReset_0021` | YAW 角归零重置（应答 9B） |
 | 0x22 | `BspHexScaleCfg_0022` | 加速度/角速度量程配置（应答 10B） |
@@ -103,7 +103,7 @@ AA 55 | CMD | ID | Op | LenL LenH | Data... | CRC16L CRC16H
 
 推送行为：各包按订阅位（`DataPacket0x00XX`）与 HEX 通道总开关（0x0004 PushStatus + DataPushFre）周期推送；PPS 模式 2 且 `PPSSwitchType=2` 时改由脉冲触发（详见《PPS功能实现说明.md》）。订阅位受 0x0011（HEX）、CAN 0x104、AT+MSGID 三处控制，推送判定读 shadow 运行态镜像（Op=0x01 即时生效）。
 
-另有主图 3D / 原始数据独立推送帧（SendCmd 0x04~0x07 系，`BspBuildRadioResponse` 组包），不受 HEX 包订阅控制，仅受各自 PushStatus/频率与 PPS 模式 1 时间戳校准影响。
+另有主图 3D / 原始数据独立推送帧（SendCmd 0x04~0x07 系，`BspBuildRadioResponse` 组包），不受 HEX 包订阅控制，仅受各自 PushStatus/频率与 PPS 模式 1 时间戳校准影响。推送帧内日历时间字段来源：`BspSystemTimeSync` 每拍把运行时间戳同步进日历（351 时基经 PPS 校准；506 无 PPS，见第六节）。
 
 ## 四、CAN 指令（CAN ID 0x100~0x115，8 字节数据）
 
@@ -120,7 +120,7 @@ AA 55 | CMD | ID | Op | LenL LenH | Data... | CRC16L CRC16H
 | 0x109 | `BspPPSCtrl_109` | PPS 控制（Playload[0]=模式 [1]=锁定 [2]=开关；开启置 `PPSSwitchType=3`） |
 | 0x110 | `BspDevRst_110` | 设备重启 |
 | 0x111 | `BspZeroBiasCalibration_111` | 零偏校准 |
-| 0x112 | `BspYawReset_112` | YAW 角归零重置 |
+| 0x112 | `BspYawReset_112` | YAW 角归零 |
 | 0x113 | `BspUARTCtrl_113` | UART 串口开关控制 |
 | 0x114 | `BspUserCanSimpDataPushCfg_114` | 精简数据流（原始数据）推送开关（仅开关；频率统一由 0x101 管理） |
 | 0x115 | `BspCanScaleCfg_115` | 加速度/角速度量程配置 |
@@ -136,3 +136,14 @@ AA 55 | CMD | ID | Op | LenL LenH | Data... | CRC16L CRC16H
 | 包订阅 | AT+MSGID | 0x0011 | 0x104 | DataPacket0x0001/0002/0010/0013/0022 |
 
 **通用规则**：设置类 Op=0x01（HEX）/未带保存标志（CAN）只写 shadow（运行态即时生效，掉电不保存）；Op=0x02 写 shadow+工作副本并 `BspProductInfoSaveToFlash()`（延迟落盘）；查询类 Op=0x00 回显 shadow 当前值。
+
+## 六、506 工程（产品 506 / 硬件 B06）差异说明
+
+指令表与 351 同源，语义差异如下：
+
+1. **算法模式（0x06）**：B06 硬件特性位图 = 6 轴自研 + 9 轴自研（351/C00 仅 6 轴自研）。506 为 SCH16T-K01 六轴 + RM3100 外置磁力计，9 轴模式由姿态链统一调用含磁接口（`updateAhrsFilter(dt,gyro,accel,mag)`）完成融合；超出位图的模式值被 `BspAlgoSupportCheck` 静默拒绝（设置不生效、查询仍返回当前值）
+2. **传感器配置**：六轴 SCH16T-K01（SPI，200Hz ODR）+ 外置磁力计 RM3100（SPI0，CMM 600Hz），无内置磁；1ms 轮询取数
+3. **PPS 类指令**（AT+PPS/AT+PPSMODE、HEX 0x0012、CAN 0x109、数据包 0x0013）：506 无 PPS 脉冲源硬件，指令可配置但无实际授时效果；推送帧时间戳为 SysTick+DWT 累加的运行时间，日历 = 1970 + 开机时长，经 HEX 0x0019 设置真实时间后按内部时基走时
+4. **量程配置**（AT+ACCSCALECFG/AT+GYROSCALECFG、HEX 0x22、CAN 0x115）：506 工程暂缓启用
+5. **波特率初始化**：串口/CAN 波特率上电均取 Flash 产品配置（`BspDefaultCfgCheck` 先于外设初始化完成合法性纠正）；修改后重启生效。波特率白名单外的值配置检查自动纠正（串口→921600，CAN→1000kbps）
+6. **常见误区**：`AT+FLASHINFO?` 是 **Loader 工程**指令，APP 固件 AT 表中不存在，发送无应答属正常；查询 Flash 配置请用 `AT+FLASHCFG`
