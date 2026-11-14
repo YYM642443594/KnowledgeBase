@@ -232,6 +232,51 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 .kcard .d{font-size:.8rem;color:var(--fg-dim);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .kcard .m{font-size:.72rem;color:var(--fg-faint);margin-top:8px}
 .kcard .m b{color:var(--orange);font-weight:600}
+/* ===== 项目总览（T2 / KNOWLEDGE-12：项目卡片驱动的默认首屏 + project 路由详情页） =====
+ * 配色沿用 .cat 的 --sc 三件套模式（主色/12%底/35%描边），深浅主题均走令牌不写死色值 */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.pcard{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;cursor:pointer;overflow:hidden;box-shadow:var(--shadow-sm);transition:all var(--t-fast)}
+.pcard::after{content:'';position:absolute;left:0;right:0;top:0;height:2.5px;background:linear-gradient(90deg,var(--pc),transparent 70%);opacity:0;transition:opacity var(--t-fast)}
+.pcard:hover{transform:translateY(-2px);border-color:var(--pc-line,var(--accent));box-shadow:var(--shadow-lg)}
+.pcard:hover::after{opacity:1}
+.pcard .top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pcard .icochip{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--pc);background:var(--pc-soft);flex-shrink:0}
+.pcard .icochip .ico-svg{width:17px;height:17px}
+.pcard .top .nm{font-weight:700;font-size:.95rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .top .cbadge{font-size:.68rem;color:var(--pc);background:var(--pc-soft);border-radius:12px;padding:1.5px 10px;flex-shrink:0;white-space:nowrap}
+.pcard .sum{font-size:.8rem;color:var(--fg-dim);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em;margin-bottom:10px}
+.pdims{display:flex;flex-direction:column;gap:4px}
+.pdim{display:flex;align-items:center;gap:8px;font-size:.74rem;min-height:24px}
+.pdim .lb{flex-shrink:0;width:42px;text-align:center;font-size:.66rem;border-radius:6px;padding:1.5px 0;color:var(--dcl,var(--fg-dim));background:var(--dcs,var(--bg3))}
+.pdim .it{flex:1;min-width:0;color:var(--fg-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pdim a.it{color:var(--fg-dim);text-decoration:none;transition:color var(--t-fast)}
+.pdim a.it:hover{color:var(--pc)}
+.pdim .it.bad{color:var(--red)}
+.pdim .it.empty{color:var(--fg-faint);font-style:italic}
+.pdim .ct{flex-shrink:0;font-family:var(--mono);font-size:.66rem;color:var(--fg-faint)}
+.pcard .foot{display:flex;align-items:center;justify-content:space-between;margin-top:11px;font-size:.7rem;color:var(--fg-faint);font-family:var(--mono)}
+.pcard .go{color:var(--pc);opacity:0;transform:translateX(-4px);transition:all var(--t-fast);font-family:inherit}
+.pcard:hover .go{opacity:1;transform:none}
+.pov-meta{font-size:.72rem;font-weight:400;color:var(--fg-faint);margin-left:10px}
+.pov-note{display:flex;align-items:center;gap:7px;font-size:.72rem;color:var(--fg-faint);margin-top:12px}
+.pov-note .ico-svg{width:13px;height:13px;flex-shrink:0}
+/* 项目详情页（project 路由渲染进 #content，复用 .md 排版与 TOC） */
+.pdetail h1{font-size:1.5rem;line-height:1.3;margin:0;padding:0;border:none}
+.phead{display:flex;align-items:center;gap:14px;margin:2px 0 16px}
+.phead .icochip{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.phead .icochip .ico-svg{width:22px;height:22px}
+.psum{font-size:.86rem;color:var(--fg-dim);line-height:1.6;margin-top:4px}
+.pcount{font-size:.72rem;font-family:var(--mono);font-weight:400;color:var(--fg-dim);background:var(--bg3);border-radius:10px;padding:1px 9px;margin-left:8px;vertical-align:2px}
+.pdetail h2{margin-top:28px}
+.pentries{display:flex;flex-direction:column;gap:6px;margin:0 0 8px}
+a.pentry{display:flex;align-items:baseline;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:8px 12px;text-decoration:none;color:var(--fg);transition:all var(--t-fast)}
+a.pentry:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.pentry .et{flex:1;min-width:0;font-size:.85rem;line-height:1.55}
+.pentry .es{flex-shrink:0;font-size:.68rem;font-family:var(--mono);color:var(--accent2);white-space:nowrap}
+.pentry.bad{cursor:default;border-color:rgba(224,92,92,.4)}
+.pentry.bad .es{color:var(--red)}
+.pempty{font-size:.8rem;color:var(--fg-faint);font-style:italic;padding:2px}
+.lnk{color:var(--accent);cursor:pointer}
 .tagcloud{display:flex;flex-wrap:wrap;gap:8px}
 .tagcloud .chip{cursor:pointer}
 
@@ -261,7 +306,7 @@ mark.sr{background:var(--mark-bg);color:inherit;border-radius:3px;padding:0 2px}
   #layout{padding-top:0;height:auto;display:block}
   #main{height:auto;overflow:visible}
   #article,#welcome{max-width:100%;padding:0}
-  .codewrap,.md pre,.md blockquote,.md img,.stat,.cat,.kcard{page-break-inside:avoid;break-inside:avoid}
+  .codewrap,.md pre,.md blockquote,.md img,.stat,.cat,.kcard,.pcard,.pentry{page-break-inside:avoid;break-inside:avoid}
   .md pre{background:#f5f6f8;border:1px solid #d8dce4;box-shadow:none}
   .md code{background:#f0f1f5;border-color:#d8dce4}
   .md th{background:#eef1f6}
@@ -271,8 +316,8 @@ mark.sr{background:var(--mark-bg);color:inherit;border-radius:3px;padding:0 2px}
   .md a{color:#1a4fb8;text-decoration:none}
   .md a[href^="http"]::after{content:" (" attr(href) ")";font-size:.85em;color:#777;word-break:break-all}
   mark.sr{background:#f3dd8f;color:#111}
-  .stat,.cat,.kcard{box-shadow:none;border-color:#d8dce4}
-  .cat:hover,.kcard:hover,.stat:hover{transform:none}
+  .stat,.cat,.kcard,.pcard,.pentry{box-shadow:none;border-color:#d8dce4}
+  .cat:hover,.kcard:hover,.stat:hover,.pcard:hover,.pentry:hover{transform:none}
   .hero-badge .pulse{animation:none}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
@@ -320,6 +365,43 @@ const SYNC_INFO = { date:"__SYNC_DATE__", sha:"__HEAD_SHA__" };
  * 取不到时回退现值；未来 kb_build_viewer.py 在 KB 上下发 repo/branch 即自动生效 */
 const REPO_META = { repo: KB.repo || 'YYM642443594/KnowledgeBase', branch: KB.branch || 'develop' };
 
+/* ============ 项目总览（T2 / KNOWLEDGE-12） ============
+ * 数据源：kb_build_viewer.py 内嵌的 00-索引/项目卡片.json（构建期已逐条校验相对链接，
+ * 失效条目带 bad 标记）。清单缺失时 PROJECTS 为空数组，视图自动回退为原首页内容。 */
+const PROJECTS = KB.projects || [];
+const PMETA = KB.projectsMeta || {};
+/* 四维度展示顺序与标签配色（低饱和、与分区色板同族；卡片主色另由 PROJ_COLORS 轮转） */
+const PROJ_DIMS = [
+  ['features', '功能', '#3fb27f'],
+  ['chips',    '芯片', '#4f8cff'],
+  ['commands', '指令', '#9b6ce0'],
+  ['issues',   '问题', '#e2a03f']
+];
+const PROJ_COLORS = ['#4f8cff','#22b8cf','#3fb27f','#e2a03f','#e05c5c','#9b6ce0','#5a9bd4','#c978e0'];
+/* 项目 id → 分区图标复用映射（工程知识区一个平台目录 = 一个工程）；未登记回退文件图标 */
+const PROJ_ICON = { 'ESP-32':'esp', 'ESP-32-CAM':'esp', 'ESP-8266':'esp',
+  'GD32F103':'imu', 'GD32F303':'imu', 'Linux-UartTestVerifDemo':'linux',
+  'STM32_F10x':'stm32', 'QT-Tools':'qt' };
+/* path → 文档记录索引（关键文档列表展示标题用） */
+const DOC_INDEX = {};
+KB.sections.forEach(s=>s.docs.forEach(d=>{ DOC_INDEX[d.relPath] = d; }));
+function projectById(id){ return PROJECTS.find(p=>p.id===id) || null; }
+function projColor(p){ const i = PROJECTS.indexOf(p); return PROJ_COLORS[(i<0?0:i) % PROJ_COLORS.length]; }
+function projIcon(p){ return SEC_ICON[PROJ_ICON[p.id]] || UI_ICON.file; }
+/* 条目链接解析：link（仓库存在但未收录→相对直链）优先，其次经 KB.byPath 走站内路由；bad 无链接 */
+function projEntryTarget(e){
+  if(e.bad) return null;
+  if(e.link) return e.link;
+  if(e.source && KB.byPath[e.source]) return '#'+e.source;
+  return null;
+}
+function projDocTarget(d){
+  const path = typeof d === 'string' ? d : d.p;
+  if(typeof d === 'string') return KB.byPath[path] ? '#'+path : null;
+  if(d.link) return d.link;
+  return null;
+}
+
 /* ============ SVG 图标体系（M2） ============
  * 分区 emoji 由 kb_build_viewer.py 的 SECTIONS 元数据下发（脚本禁改），
  * 这里以「分区 id → 内联 SVG」映射在渲染层覆盖：单色描边、stroke 继承分区色。
@@ -343,6 +425,7 @@ const UI_ICON = {
   file:   ICO('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'),
   type:   ICO('<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'),
   image:  ICO('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>'),
+  grid:   ICO('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
   /* M3: 主题切换（太阳=当前深色点击转浅色；月亮=当前浅色点击转深色） */
   sun:    ICO('<circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="3.5"/><line x1="12" y1="20.5" x2="12" y2="22.5"/><line x1="4.6" y1="4.6" x2="6" y2="6"/><line x1="18" y1="18" x2="19.4" y2="19.4"/><line x1="1.5" y1="12" x2="3.5" y2="12"/><line x1="20.5" y1="12" x2="22.5" y2="12"/><line x1="4.6" y1="19.4" x2="6" y2="18"/><line x1="18" y1="6" x2="19.4" y2="4.6"/>'),
   moon:   ICO('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>')
@@ -440,12 +523,18 @@ renderer.code = function(code, lang){
 marked.use({renderer});
 
 /* ============ state ============ */
-const state = { current:null, searchQ:"", navOpen:new Set() };
+const state = { current:null, searchQ:"", navOpen:new Set(['projects']) };
 
 /* ============ routing ============ */
 function parseHash(){
   const h = decodeURIComponent(location.hash.replace(/^#/,''));
-  return h || "";
+  /* 项目路由形如 project/<id>（地址栏写法 #/project/<id>，前导 / 在此归一化） */
+  return h.replace(/^\/+/,'') || "";
+}
+function isProjectHash(h){ return /^project\//.test(h); }
+function renderRoute(h){
+  if(isProjectHash(h)) return renderProject(h.slice('project/'.length));
+  renderDoc(h);
 }
 function docByHash(hash){
   for(const s of KB.sections) for(const d of s.docs) if(d.hash === hash) return {doc:d, sec:s};
@@ -458,6 +547,33 @@ function buildNav(filter){
   nav.innerHTML = '';
   let matchCount = 0;
   const q = (filter||"").toLowerCase();
+  /* 项目总览伪分区置顶（T2）：按名称/目录/简介过滤，点击进入 project 路由详情 */
+  if(PROJECTS.length){
+    const ps = PROJECTS.filter(p=>!q ||
+      (p.id+' '+p.name+' '+(p.dir||'')+' '+(p.summary||'')).toLowerCase().includes(q));
+    if(ps.length){
+      const el = document.createElement('div');
+      el.className = 'nav-sec'+(state.navOpen.has('projects')||q ? ' open':'');
+      el.dataset.sec = 'projects';
+      el.style.setProperty('--sec', '#4f8cff');
+      el.style.setProperty('--sec-a12', '#4f8cff1f');
+      el.innerHTML = '<div class="nav-sec-head"><span class="ico">'+UI_ICON.grid+'</span><span class="name">项目总览</span><span class="cnt">'+ps.length+'</span><span class="arrow">▶</span></div><div class="nav-items"></div>';
+      const items = el.querySelector('.nav-items');
+      ps.forEach(p=>{
+        const a = document.createElement('a');
+        a.className = 'nav-item'; a.dataset.hash = 'project/'+p.id;
+        const sm = p.summary || '';
+        a.innerHTML = esc(p.name) + '<span class="sub">'+esc(sm.slice(0,42))+(sm.length>42?'…':'')+'</span>';
+        a.onclick = ()=>{ location.hash = '#/project/'+p.id; if(window.innerWidth<900) closeSidebar(); };
+        items.appendChild(a);
+      });
+      el.querySelector('.nav-sec-head').onclick = ()=>{
+        const isOpen = el.classList.toggle('open');
+        if(isOpen) state.navOpen.add('projects'); else state.navOpen.delete('projects');
+      };
+      nav.appendChild(el);
+    }
+  }
   KB.sections.forEach(sec=>{
     const docs = sec.docs.filter(d=>{
       if(!q) return true;
@@ -514,11 +630,12 @@ function setActiveNav(){
   });
   document.querySelectorAll('.nav-sec.cur').forEach(el=>el.classList.remove('cur'));
   const found = state.current ? docByHash(state.current) : null;
-  if(found){
-    const el = document.querySelector('.nav-sec[data-sec="'+found.sec.id+'"]');
+  const secId = found ? found.sec.id : (state.current && isProjectHash(state.current) ? 'projects' : null);
+  if(secId){
+    const el = document.querySelector('.nav-sec[data-sec="'+secId+'"]');
     if(el){
       el.classList.add('cur');
-      if(!el.classList.contains('open')){ el.classList.add('open'); state.navOpen.add(found.sec.id); }
+      if(!el.classList.contains('open')){ el.classList.add('open'); state.navOpen.add(secId); }
     }
   }
 }
@@ -577,6 +694,35 @@ function renderWelcome(){
   KB.sections.forEach(s=>s.docs.forEach(d=>(d.tags||[]).forEach(t=>tagCount[t]=(tagCount[t]||0)+1)));
   const topTags = Object.entries(tagCount).sort((a,b)=>b[1]-a[1]);
   const w = document.getElementById('welcome');
+  /* T2 默认首屏「项目总览」：卡片网格（名称/一句话定位/四维度摘要），条目直达出处文档，
+   * 点击卡片进入 project 路由完整清单；清单缺失时整节省略，页面回退为原首页内容 */
+  const projSec = PROJECTS.length ? `
+  <div class="wsec"><h2>${UI_ICON.grid}项目总览<span class="pov-meta">${PROJECTS.length} 个工程 · 数据核对 ${esc(PMETA.updated||'—')}</span></h2>
+  <div class="pgrid">${PROJECTS.map(p=>{
+    const col = projColor(p);
+    const dims = PROJ_DIMS.map(([k,label,dc])=>{
+      const list = p[k]||[];
+      const first = list[0];
+      let it;
+      if(!first) it = '<span class="it empty">暂无记录</span>';
+      else {
+        const t = projEntryTarget(first);
+        it = t
+          ? '<a class="it" href="'+esc(t)+'" '+(t.startsWith('#')?'data-intlink="'+esc(t)+'"':'')+' title="'+esc(first.item)+'（点击阅读出处文档）">'+esc(first.item)+'</a>'
+          : '<span class="it bad" title="构建校验：出处文件不存在">'+esc(first.item)+'</span>';
+      }
+      return '<div class="pdim"><span class="lb" style="--dcl:'+dc+';--dcs:'+dc+'1f">'+label+'</span>'+it+'<span class="ct">'+(list.length?'×'+list.length:'')+'</span></div>';
+    }).join('');
+    return `<div class="pcard" data-proj="${esc(p.id)}" style="--pc:${col};--pc-soft:${col}21;--pc-line:${col}59">
+      <div class="top"><span class="icochip">${projIcon(p)}</span><span class="nm">${esc(p.name)}</span><span class="cbadge">${(p.features||[]).length} 功能</span></div>
+      <div class="sum">${esc(p.summary||'')}</div>
+      <div class="pdims">${dims}</div>
+      <div class="foot"><span>${esc(p.dir||p.id)}</span><span><span class="go">详情 →</span> ${esc(p.updated||'')}</span></div>
+    </div>`;
+  }).join('')}</div>
+  ${(PMETA.nonProject||[]).length ? '<div class="pov-note">'+UI_ICON.file+'<span>'+esc(PMETA.nonProject.map(x=>x.dir).join('、'))+' 为支撑资料，不设项目卡；入口见下方「知识分类」。</span></div>' : ''}
+  </div>` : '';
+  const projStat = PROJECTS.length ? `<div class="stat">${UI_ICON.grid}<div class="n">${PROJECTS.length}</div><div class="l">工程项目</div></div>` : '';
   w.innerHTML = `
   <div class="hero">
     <div class="hero-badge"><span class="pulse"></span>离线单文件 · 纯本地渲染 · 无服务端</div>
@@ -589,7 +735,9 @@ function renderWelcome(){
       <span class="hm">HEAD <b>${SYNC_INFO.sha}</b></span>
     </div>
   </div>
+  ${projSec}
   <div class="statgrid">
+    ${projStat}
     <div class="stat">${UI_ICON.layers}<div class="n">${KB.sections.length}</div><div class="l">知识分类</div></div>
     <div class="stat">${UI_ICON.file}<div class="n">${totalDocs}</div><div class="l">文档总数</div></div>
     <div class="stat">${UI_ICON.type}<div class="n">${fmtChars}</div><div class="l">总字数</div></div>
@@ -648,7 +796,13 @@ function renderDoc(hash){
   c.innerHTML = html;
   /* first h1 replaced by doc title context */
   window.buildNavClear = function(){ document.getElementById('search').value=''; onSearchInput(); };
-  /* heading ids */
+  wireArticle(c);
+  applySearchHighlight();
+  setActiveNav();
+  document.getElementById('main').scrollTop = 0;
+}
+/* 文章后处理（renderDoc 与 renderProject 共用）：标题锚点 id、TOC 构建、TOC 点击绑定 */
+function wireArticle(c){
   const used = {};
   c.querySelectorAll('h1,h2,h3,h4').forEach(h=>{
     let id = h.textContent.trim().replace(/[^\w\u4e00-\u9fa5]+/g,'-').toLowerCase();
@@ -656,18 +810,75 @@ function renderDoc(hash){
     h.id = 'h-'+id;
   });
   buildTOC(c);
+  const links = [...document.querySelectorAll('#toclist a')];
+  links.forEach(a=>a.addEventListener('click', e=>{
+    e.preventDefault();
+    const el = document.getElementById(a.getAttribute('href').slice(1));
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    closeToc();   /* 抽屉模式下点选后收起；桌面态无 .open，调用无副作用 */
+  }));
+}
+/* ============ 项目详情（T2：project 路由，四维度完整清单逐项链接出处文档） ============ */
+window.goHome = function(){ location.hash=''; };
+function projEntryHtml(e){
+  const t = projEntryTarget(e);
+  if(!t) return '<div class="pentry bad" title="构建校验未通过：出处文件在仓库中不存在或未登记出处"><span class="et">'+esc(e.item)+'</span><span class="es">出处缺失 ⚠</span></div>';
+  const a = t.startsWith('#') ? 'data-intlink="'+esc(t)+'"' : 'href="'+esc(t)+'"';
+  return '<a class="pentry" '+a+' title="打开出处文档"><span class="et">'+esc(e.item)+'</span><span class="es">出处 ↗</span></a>';
+}
+function projDocHtml(d){
+  const path = typeof d === 'string' ? d : d.p;
+  const t = projDocTarget(d);
+  const label = DOC_INDEX[path] ? DOC_INDEX[path].title : path;
+  if(!t) return '<div class="pentry bad" title="构建校验未通过：该文件在仓库中不存在"><span class="et">'+esc(label)+'</span><span class="es">链接失效 ⚠</span></div>';
+  const sub = DOC_INDEX[path] ? '<span class="es">'+esc(path)+'</span>' : '<span class="es">打开源文件 ↗</span>';
+  const a = t.startsWith('#') ? 'data-intlink="'+esc(t)+'"' : 'href="'+esc(t)+'"';
+  return '<a class="pentry" '+a+' title="打开文档"><span class="et">'+esc(label)+'</span>'+sub+'</a>';
+}
+function renderProject(id){
+  const p = projectById(id);
+  state.current = p ? 'project/'+id : null;
+  document.getElementById('welcome').style.display='none';
+  const art = document.getElementById('article'); art.style.display='';
+  document.getElementById('crumbs').innerHTML =
+    '<a onclick="goHome()">首页</a><span class="sep">/</span>' +
+    '<a onclick="goHome()">项目总览</a><span class="sep">/</span>' +
+    '<span class="path">'+esc(p ? p.id : id)+'</span>';
+  const c = document.getElementById('content');
+  if(!p){
+    document.getElementById('docmeta').innerHTML='';
+    document.getElementById('toc').classList.remove('show');
+    clearTocEntry();
+    c.innerHTML = '<h1>项目不存在</h1><p style="color:var(--fg-dim)">项目清单中没有 id 为 “'+esc(id)+'” 的项目卡，请从首页「项目总览」进入。</p><p><a class="lnk" onclick="goHome()">← 返回首页</a></p>';
+    setActiveNav();
+    document.getElementById('main').scrollTop = 0;
+    return;
+  }
+  const col = projColor(p);
+  const metas = [];
+  if(p.dir) metas.push('<span class="dm">目录 <b>'+esc(p.dir)+'</b></span>');
+  if(p.updated) metas.push('<span class="dm">数据核对 <b>'+esc(p.updated)+'</b></span>');
+  metas.push('<span class="dm">'+PROJ_DIMS.map(([k,label])=>label+' <b>'+((p[k]||[]).length)+'</b>').join(' · ')+'</span>');
+  document.getElementById('docmeta').innerHTML = metas.join('');
+  const dimSec = PROJ_DIMS.map(([k,label])=>{
+    const list = p[k]||[];
+    return '<h2>'+label+'<span class="pcount">'+list.length+'</span></h2><div class="pentries">'+
+      (list.length ? list.map(projEntryHtml).join('') : '<div class="pempty">暂无记录</div>')+'</div>';
+  }).join('');
+  const docs = p.docs||[];
+  const docsSec = '<h2>关键文档<span class="pcount">'+docs.length+'</span></h2><div class="pentries">'+
+    (docs.length ? docs.map(projDocHtml).join('') : '<div class="pempty">暂无记录</div>')+'</div>';
+  c.innerHTML = '<div class="pdetail">' +
+    '<div class="phead"><span class="icochip" style="color:'+col+';background:'+col+'21">'+projIcon(p)+'</span>' +
+    '<div><h1>'+esc(p.name)+'</h1><div class="psum">'+esc(p.summary||'')+'</div></div></div>' +
+    (p.note ? '<blockquote>'+esc(p.note)+'</blockquote>' : '') +
+    dimSec + docsSec +
+    '<div class="pov-note">'+UI_ICON.file+'<span>数据来源：'+esc(PMETA.source||'00-索引/项目卡片.json')+' · 核对 '+(esc(p.updated||PMETA.updated||'—'))+'；条目出处均为仓库内相对路径，点击即跳转对应文档。</span></div>' +
+    '</div>';
+  wireArticle(c);
   applySearchHighlight();
   setActiveNav();
   document.getElementById('main').scrollTop = 0;
-  const links = [...document.querySelectorAll('#toclist a')];
-  if(links.length){
-    links.forEach(a=>a.addEventListener('click', e=>{
-      e.preventDefault();
-      const el = document.getElementById(a.getAttribute('href').slice(1));
-      if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
-      closeToc();   /* 抽屉模式下点选后收起；桌面态无 .open，调用无副作用 */
-    }));
-  }
 }
 function buildTOC(container){
   const hs = [...container.querySelectorAll('h2,h3')];
@@ -730,7 +941,7 @@ function onSearchInput(){
   document.getElementById('searchclear').style.display = v ? 'block':'none';
   state.searchQ = v;
   buildNav(v);
-  if(v) showSearchResults(v); else { if(state.current) renderDoc(state.current); else renderWelcome(); }
+  if(v) showSearchResults(v); else { if(state.current) renderRoute(state.current); else renderWelcome(); }
 }
 function showSearchResults(q){
   state.current=null; setActiveNav();
@@ -793,6 +1004,9 @@ document.addEventListener('click', e=>{
   }
   const il = e.target.closest('a[data-intlink]');
   if(il){ e.preventDefault(); const h=il.getAttribute('data-intlink'); if(h.startsWith('#')) location.hash=h; return; }
+  /* T2: 项目卡片点击进入 project 路由详情；卡内条目链接（上一分支已处理）除外 */
+  const pc = e.target.closest('.pcard[data-proj]');
+  if(pc && !e.target.closest('a')){ location.hash = '#/project/'+pc.getAttribute('data-proj'); return; }
   const anc = e.target.closest('#content a[href^="#"]');
   if(anc){
     e.preventDefault();
@@ -838,11 +1052,12 @@ window.addEventListener('hashchange', ()=>{
   if(h.startsWith('h-')) return;          /* in-page heading anchor: native scroll, keep view */
   if(state.searchQ) return;
   if(docByHash(h)){ renderDoc(h); return; }
+  if(isProjectHash(h)){ renderRoute(h); return; }   /* T2: #/project/<id> 详情路由 */
   const el = document.getElementById('h-'+h) || document.getElementById(h);
   if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); return; }
   renderDoc(h);
 });
-if(parseHash()){ renderDoc(parseHash()); } else { renderWelcome(); }
+if(parseHash()){ renderRoute(parseHash()); } else { renderWelcome(); }
 buildNav("");   /* populate sidebar on boot */
 </script>
 </body>

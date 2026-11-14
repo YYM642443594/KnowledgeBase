@@ -10,6 +10,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "kb-viewer-template.html")
 MARKED = os.path.join(HERE, "marked.min.js")
 COMMITS_JSON = os.path.join(HERE, "kb-commits.json")
+CARDS_JSON = os.path.join(HERE, "00-索引", "项目卡片.json")
 OUT = os.path.join(HERE, "知识库.html")
 
 # When set (by kb-sync.py) the viewer header shows this content HEAD instead of
@@ -64,6 +65,111 @@ def desc_of(meta, text):
         line = line.strip()
         if 20 < len(line) < 160: return line + "。"
     return text[:120] + "…"
+
+# T2 (KNOWLEDGE-12): 00-索引/项目卡片.json → 查看器「项目总览」视图。
+# 只做解析 + 相对链接校验 + 内嵌，不改写清单内容；链接失效/清单缺失一律打印
+# WARNING（不静默跳过），构建继续进行，由人工按警告决定是否返工数据。
+DIM_KEYS = ("features", "chips", "commands", "issues")
+
+def _norm_rel(p):
+    return str(p).replace("\\", "/").strip()
+
+def _resolve_card_link(rel, by_path):
+    """校验卡片内相对链接。返回 (embed_extra, status):
+    - ("", "embedded") 指向查看器已收录文档 → 模板运行时经 KB.byPath 解析为站内路由；
+    - (rel, "external") 文件在仓库存在但未被查看器收录（如 .json 等）→ 下发 link 字段，
+      模板以相对路径直链（file:// 下有效，查看器位于仓库根目录）；
+    - ("", "missing") 文件不存在 → 下发 bad 标记，模板按失效条目渲染并注明。"""
+    rel = _norm_rel(rel)
+    if not rel:
+        return "", "missing"
+    if rel in by_path:
+        return "", "embedded"
+    if os.path.isfile(os.path.join(HERE, rel)):
+        return rel, "external"
+    return "", "missing"
+
+def load_project_cards(by_path):
+    """解析项目卡片清单，返回 (projects, meta) 供内嵌；所有异常路径都以 WARNING 呈现。"""
+    rel = os.path.relpath(CARDS_JSON, HERE)
+    if not os.path.isfile(CARDS_JSON):
+        print(f"WARNING: 项目卡片清单缺失: {rel}")
+        print("WARNING: 「项目总览」将渲染为空（模板回退为原首页），请检查 00-索引/项目卡片.json 是否存在")
+        return [], {}
+    try:
+        with open(CARDS_JSON, encoding="utf-8") as f:
+            raw = json.load(f)
+    except ValueError as e:
+        print(f"WARNING: 项目卡片清单解析失败（非合法 JSON）: {e}")
+        print("WARNING: 「项目总览」将渲染为空，请修复清单后重建")
+        return [], {}
+    projects_in = raw.get("projects")
+    meta_in = raw.get("meta") if isinstance(raw.get("meta"), dict) else {}
+    if not isinstance(projects_in, list) or not projects_in:
+        print("WARNING: 项目卡片清单缺少 projects 列表或为空，「项目总览」将渲染为空")
+        return [], {}
+    warnings = []
+    projects, n_entries, n_docs = [], 0, 0
+    for i, p in enumerate(projects_in, 1):
+        if not isinstance(p, dict) or not p.get("id") or not p.get("name"):
+            warnings.append(f"projects[{i}] 缺少 id/name 字段，该卡片无法渲染，已跳过")
+            continue
+        card = {k: p.get(k, "") for k in ("id", "name", "dir", "summary", "note", "updated")}
+        if p.get("dir") and not os.path.isdir(os.path.join(HERE, _norm_rel(p["dir"]))):
+            warnings.append(f"{p['id']}: dir 指向不存在的目录 {p['dir']}")
+        for key in DIM_KEYS:
+            entries = []
+            for e in (p.get(key) or []):
+                if not isinstance(e, dict) or not e.get("item"):
+                    warnings.append(f"{p['id']}.{key}: 存在缺少 item 的条目，已跳过")
+                    continue
+                ent = {"item": e["item"]}
+                if e.get("source"):
+                    ent["source"] = _norm_rel(e["source"])   # 运行时经 KB.byPath 解析为站内路由
+                    n_entries += 1
+                    extra, status = _resolve_card_link(e["source"], by_path)
+                    if status == "missing":
+                        ent["bad"] = 1
+                        warnings.append(f"{p['id']}.{key}: 「{str(e['item'])[:30]}…」出处链接失效: {e['source']}")
+                    elif status == "external":
+                        ent["link"] = extra
+                        warnings.append(f"{p['id']}.{key}: 出处未被查看器收录（已按相对路径直链）: {e['source']}")
+                else:
+                    ent["bad"] = 1
+                    warnings.append(f"{p['id']}.{key}: 「{str(e['item'])[:30]}…」未注明出处 source")
+                entries.append(ent)
+            card[key] = entries
+        docs = []
+        for d in (p.get("docs") or []):
+            path = d.get("p") if isinstance(d, dict) else d
+            if not path:
+                warnings.append(f"{p['id']}.docs: 存在空链接条目，已跳过")
+                continue
+            n_docs += 1
+            extra, status = _resolve_card_link(path, by_path)
+            if status == "embedded":
+                docs.append(path)                      # 运行时经 KB.byPath 解析
+            elif status == "external":
+                docs.append({"p": path, "link": extra})
+                warnings.append(f"{p['id']}.docs: 文档未被查看器收录（已按相对路径直链）: {path}")
+            else:
+                docs.append({"p": path, "bad": 1})
+                warnings.append(f"{p['id']}.docs: 链接失效: {path}")
+        card["docs"] = docs
+        projects.append(card)
+    meta = {
+        "updated": meta_in.get("updated", ""),
+        "source": rel.replace(os.sep, "/"),
+        "nonProject": [
+            {"dir": x.get("dir", ""), "reason": x.get("reason", "")}
+            for x in (meta_in.get("non_project_dirs") or []) if isinstance(x, dict)
+        ],
+    }
+    for w in warnings:
+        print("WARNING: 项目卡片 " + w)
+    tail = f"，{len(warnings)} 条警告（见上）" if warnings else "，无警告"
+    print(f"项目卡片: {len(projects)} 个项目 / {n_entries} 条四维度条目 / {n_docs} 条文档链接已校验{tail}")
+    return projects, meta
 
 def build(commits):
     """Render viewer HTML for the given commits list. Returns the html string."""
@@ -128,9 +234,16 @@ def build(commits):
     marked = read(MARKED)
     assert "</script" not in marked.lower(), "marked contains </script>!"
 
+    # T2: 项目卡片清单解析与链接校验（缺失/失效打 WARNING，不中断构建）
+    projects, projects_meta = load_project_cards(by_path)
+    kb_data = {"sections": data, "byPath": by_path, "images": images,
+               "projects": projects, "projectsMeta": projects_meta}
+    cards_dump = json.dumps({"projects": projects, "projectsMeta": projects_meta},
+                            ensure_ascii=False, separators=(",", ":"))
+    assert "</script" not in cards_dump.lower(), "project cards contain </script>!"
+
     html = tpl.replace("__MARKED_JS__", marked)
-    html = html.replace("__KB_DATA__", json.dumps(
-        {"sections": data, "byPath": by_path, "images": images}, ensure_ascii=False, separators=(",", ":")))
+    html = html.replace("__KB_DATA__", json.dumps(kb_data, ensure_ascii=False, separators=(",", ":")))
     html = html.replace("__COMMITS__", json.dumps(commits, ensure_ascii=False))
     html = html.replace("__SYNC_DATE__", commits[0]["date"][:10] if commits else "?")
     html = html.replace("__HEAD_SHA__", head)
