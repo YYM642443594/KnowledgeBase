@@ -17,7 +17,7 @@ source: 原创
 | [claude-setup.sh](claude-setup.sh) | Claude Code 一键安装配置（多平台） | 普通用户（链接环节可免 sudo） | 菜单 / 免交互均可 |
 | [openclaw-setup.sh](openclaw-setup.sh) | OpenClaw AI 助理网关一键安装配置 | 普通用户（链接环节可免 sudo） | 主菜单 / 免交互均可 |
 | [setup-ftp.sh](setup-ftp.sh) | vsftpd FTP 服务一键配置（共享 /mnt/sda1/00.FTP） | root | 无 |
-| [setup_ftp.sh](setup_ftp.sh) | vsftpd FTP 服务配置（U 盘目录旧版，含防火墙放行） | root | 无 |
+| [setup-ftp-legacy.sh](setup-ftp-legacy.sh) | vsftpd FTP 服务配置（U 盘目录旧版，含防火墙放行） | root | 无 |
 | [setup-hdd-mount.sh](setup-hdd-mount.sh) | 机械硬盘两分区 fstab 开机自动挂载 | root | 无 |
 | [cleanup-openclaw-game.sh](cleanup-openclaw-game.sh) | 卸载 OpenClaw 游戏编译所装的全部依赖 | root | 无 |
 
@@ -117,14 +117,14 @@ sudo bash setup-ftp.sh
 
 ---
 
-## 4. setup_ftp.sh — vsftpd FTP 服务配置（U 盘目录旧版）
+## 4. setup-ftp-legacy.sh — vsftpd FTP 服务配置（U 盘目录旧版）
 
 旧版配置：共享目录为 U 盘 `/media/yym/3326F555A9DAFEB8/00.FTP`（NTFS，777 权限）。与上一版差异：IPv6 监听、`userlist` 白名单只允许 yym 登录、**ufw 启用时自动放行 20/21/40000-40100 端口**。
 
 ### 用法
 
 ```bash
-sudo bash setup_ftp.sh
+sudo bash setup-ftp-legacy.sh
 ```
 
 无参数（脚本头部注释含历史用法示例）。要求 vsftpd 已安装（只改配置不装包）。

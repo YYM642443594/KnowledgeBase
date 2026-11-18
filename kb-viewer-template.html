@@ -330,7 +330,7 @@ mark.sr{background:var(--mark-bg);color:inherit;border-radius:3px;padding:0 2px}
   <div class="logo"><span class="em">◆</span> 个人知识库</div>
   <div id="searchbox">
     <svg class="ico-svg icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-    <input id="search" type="search" placeholder="搜索标题与全文内容…  (Ctrl+K)" autocomplete="off">
+    <input id="search" type="search" placeholder="搜索标题与全文内容…  (Ctrl+K 或 /)" autocomplete="off">
     <button id="searchclear" title="清空">✕</button>
   </div>
   <div class="meta">仓库：<b id="trepo">YYM642443594/KnowledgeBase</b> · <span id="tbranch">develop</span><br>同步：<b>__SYNC_DATE__</b> @ <span id="headsha">__HEAD_SHA__</span></div>
@@ -1045,6 +1045,8 @@ document.getElementById('search').addEventListener('input', onSearchInput);
 document.getElementById('searchclear').onclick = ()=>{ document.getElementById('search').value=''; onSearchInput(); };
 document.addEventListener('keydown', e=>{
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); document.getElementById('search').focus(); }
+  if(e.key==='/' && !(e.ctrlKey||e.metaKey||e.altKey) && document.activeElement!==document.getElementById('search')
+     && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement&&document.activeElement.tagName)||'')){ e.preventDefault(); document.getElementById('search').focus(); }
   if(e.key==='Escape' && document.activeElement===document.getElementById('search')){ document.getElementById('search').value=''; onSearchInput(); }
 });
 window.addEventListener('hashchange', ()=>{
