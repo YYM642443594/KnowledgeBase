@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "ee3961c5"
+  "content_head": "ca8db0aa"
  },
  "commits": [
+  {
+   "sha": "ca8db0aa",
+   "date": "2026-11-18 18:32",
+   "msg": "更新：重建知识库网页——收录零偏校准与参数页降级丢SN两篇新文档、索引补登记同步入页（KNOWLEDGE-37）"
+  },
   {
    "sha": "ee3961c5",
    "date": "2026-11-18 18:23",
@@ -147,11 +152,6 @@
    "sha": "f3dbdc85",
    "date": "2026-11-09 03:42",
    "msg": "ESP32-CAM踩坑34补实战数据: http_wdg累计自愈3次闭环成立(hangcnt=3), 并发status阻"
-  },
-  {
-   "sha": "14b45356",
-   "date": "2026-11-09 03:30",
-   "msg": "第七轮自动巡检: ESP32-CAM发现并修复HTTP应用层挂死新bug(V1.4.2.11 http_wdg回环探测自"
   }
  ]
 }
