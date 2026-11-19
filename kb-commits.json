@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "bcb08cbc"
+  "content_head": "cd49a26a"
  },
  "commits": [
+  {
+   "sha": "cd49a26a",
+   "date": "2026-11-19 19:13",
+   "msg": "更新：知识库网页增加常驻回首页入口——顶栏 logo 可点击 + 侧栏置顶首页项（KNOWLEDGE-47）"
+  },
   {
    "sha": "bcb08cbc",
    "date": "2026-11-19 12:36",
@@ -147,11 +152,6 @@
    "sha": "dbe8104f",
    "date": "2026-11-10 15:11",
    "msg": "【新增】QT-Tools HEXCommands协议全量审计与3D轴标签重构报告:串口协议逐条对照(0x00组20条+0"
-  },
-  {
-   "sha": "713801af",
-   "date": "2026-11-09 17:55",
-   "msg": "【新增】QT-Tools 3D姿态仪HUD交互优化报告:合并页HUD六个QML坑(父容器坐标拖拽/绑定打断裁切/min双"
   }
  ]
 }
