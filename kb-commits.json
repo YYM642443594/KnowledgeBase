@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "ca8db0aa"
+  "content_head": "bcb08cbc"
  },
  "commits": [
+  {
+   "sha": "bcb08cbc",
+   "date": "2026-11-19 12:36",
+   "msg": "docs: 生成知识库网页 2026-11-19——检索结果面板补齐标签/描述匹配（KNOWLEDGE-43 覆盖与检索"
+  },
   {
    "sha": "ca8db0aa",
    "date": "2026-11-18 18:32",
@@ -147,11 +152,6 @@
    "sha": "713801af",
    "date": "2026-11-09 17:55",
    "msg": "【新增】QT-Tools 3D姿态仪HUD交互优化报告:合并页HUD六个QML坑(父容器坐标拖拽/绑定打断裁切/min双"
-  },
-  {
-   "sha": "f3dbdc85",
-   "date": "2026-11-09 03:42",
-   "msg": "ESP32-CAM踩坑34补实战数据: http_wdg累计自愈3次闭环成立(hangcnt=3), 并发status阻"
   }
  ]
 }
