@@ -743,7 +743,7 @@ function showSearchResults(q){
   const ql = q.toLowerCase();
   const hits = [];
   KB.sections.forEach(s=>s.docs.forEach(d=>{
-    const t = (d.title+d.relPath).toLowerCase().includes(ql);
+    const t = (d.title+d.relPath+(d.desc||'')+(d.tags||[]).join(' ')).toLowerCase().includes(ql);
     const i = (d._text||'').toLowerCase().indexOf(ql);
     if(t || i>=0){
       let snip = '';
