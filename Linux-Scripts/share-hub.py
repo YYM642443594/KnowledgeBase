@@ -155,82 +155,103 @@ def build_zip(rp, label):
 
 # ---------------- 页面模板 ----------------
 CSS = """
-:root{--bg:#f4f5f7;--card:#ffffff;--text:#191c24;--muted:#6b7280;--line:#e5e7eb;--accent:#4f6bed;--accent-soft:rgba(79,107,237,.10);--danger:#dc2626}
-@media(prefers-color-scheme:dark){:root{--bg:#0e1014;--card:#171a21;--text:#e6e8ee;--muted:#8b92a1;--line:#272c37;--accent:#7b93ff;--accent-soft:rgba(123,147,255,.14);--danger:#f87171}}
+:root{--bg:#070b12;--card:rgba(15,23,42,.66);--card2:#0e1626;--text:#e2e8f0;--muted:#7e8cab;--line:rgba(103,232,249,.13);--line2:rgba(148,163,184,.10);--accent:#22d3ee;--accent2:#818cf8;--accent3:#c084fc;--soft:rgba(34,211,238,.10);--danger:#f87171;--grad:linear-gradient(120deg,#22d3ee,#818cf8 55%,#c084fc)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif}
+html{scrollbar-color:#243044 #070b12}
+body{margin:0;color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(900px 460px at 88% -12%,rgba(129,140,248,.16),transparent 60%),radial-gradient(760px 420px at -12% -6%,rgba(34,211,238,.12),transparent 55%),repeating-linear-gradient(0deg,rgba(148,163,184,.033) 0 1px,transparent 1px 46px),repeating-linear-gradient(90deg,rgba(148,163,184,.033) 0 1px,transparent 1px 46px),var(--bg);background-attachment:fixed}
 a{color:var(--accent)}
-.wrap{max-width:880px;margin:0 auto;padding:20px 16px 70px}
-.top{position:sticky;top:0;z-index:9;background:var(--bg);border-bottom:1px solid var(--line)}
-.top::before{content:"";display:block;height:3px;background:linear-gradient(90deg,var(--accent),#9f7bff)}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px 64px}
+.top{position:sticky;top:0;z-index:9;background:rgba(7,11,18,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top::before{content:"";display:block;height:2px;background:var(--grad);background-size:220% 100%;animation:sheen 7s linear infinite}
+@keyframes sheen{to{background-position:-220% 0}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.5)}55%{box-shadow:0 0 0 8px rgba(34,211,238,0)}}
 .top .wrap{padding:12px 16px 10px}
-.brand{display:flex;align-items:center;justify-content:space-between;gap:10px}
-h1{font-size:17px;margin:0;font-weight:700;display:flex;align-items:center;gap:8px;min-width:0}
-h1 .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex:none;box-shadow:0 0 0 4px var(--accent-soft)}
-.note{color:var(--muted);font-size:13px;margin-top:2px}
-.bar{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--accent);background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(192,132,252,.16));border:1px solid var(--line)}
+.logo svg{width:21px;height:21px}
+.bname{line-height:1.3;min-width:0}
+.bname h1{margin:0;font-size:17px;font-weight:800;letter-spacing:.5px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bname .sub{font-size:11px;color:var(--muted);letter-spacing:3px}
+.note{color:var(--muted);font-size:13px;margin-top:8px}
+.bar{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;padding-bottom:12px}
 .crumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:13.5px;color:var(--muted);min-width:0}
 .crumb a{color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:7px}
-.crumb a:hover{background:var(--accent-soft);color:var(--accent)}
-.crumb .cur{padding:3px 8px;border-radius:7px;background:var(--accent-soft);color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
-.crumb .sep{opacity:.5}
+.crumb a:hover{background:var(--soft);color:var(--accent)}
+.crumb .cur{padding:3px 8px;border-radius:7px;background:var(--soft);color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.crumb .sep{opacity:.45}
 .spacer{flex:1}
-.search{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:9px;padding:6px 12px;font-size:13.5px;width:150px;outline:none}
-.search:focus{border-color:var(--accent)}
-.btn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:7px 14px;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer}
-.btn:hover{filter:brightness(1.08)}
+.search{border:1px solid var(--line2);background:rgba(2,8,20,.6);color:var(--text);border-radius:9px;padding:6px 12px;font-size:13.5px;width:150px;outline:none;transition:.2s}
+.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
+.btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(120deg,#0891b2,#6366f1);color:#fff;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:7px 14px;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer;transition:.2s}
+.btn:hover{box-shadow:0 4px 18px rgba(56,189,248,.35);filter:brightness(1.08)}
 .btn svg{width:15px;height:15px}
-.btn.ghost{background:var(--card);color:var(--text);border:1px solid var(--line)}
-.btn.ghost:hover{border-color:var(--accent);color:var(--accent);filter:none}
-.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--line);padding:4px 10px;font-weight:500}
-.btn.danger:hover{border-color:var(--danger)}
-.list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
-.row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 14px;color:inherit;text-decoration:none;transition:.15s}
-a.row:hover,.row:hover{border-color:var(--accent);box-shadow:0 5px 16px rgba(0,0,0,.07);transform:translateY(-1px)}
+.btn.ghost{background:rgba(14,22,38,.75);color:var(--text);border:1px solid var(--line2)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;filter:none}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--line2);padding:4px 10px;font-weight:500;box-shadow:none}
+.btn.danger:hover{border-color:var(--danger);box-shadow:none}
+.list{display:flex;flex-direction:column;gap:9px;margin-top:18px}
+.row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line2);border-radius:13px;padding:11px 14px;color:inherit;text-decoration:none;transition:.18s;backdrop-filter:blur(6px)}
+a.row:hover,.row:hover{border-color:rgba(34,211,238,.5);box-shadow:0 6px 22px rgba(34,211,238,.10);transform:translateY(-1px)}
 a.fill{display:flex;align-items:center;gap:12px;flex:1;min-width:0;color:inherit;text-decoration:none}
 a.fill:hover b{color:var(--accent)}
-.ic{width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.ic{width:36px;height:36px;border-radius:10px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.14);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
 .ic svg{width:20px;height:20px}
 .nm{flex:1;min-width:0}
 .nm b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.meta{color:var(--muted);font-size:12.5px;display:flex;gap:14px;margin-top:1px}
+.meta{color:var(--muted);font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;display:flex;gap:14px;margin-top:2px}
 .dl{flex:none}
 .empty{text-align:center;color:var(--muted);padding:60px 0}
 .empty .ic{margin:0 auto 12px;width:52px;height:52px}
 .empty .ic svg{width:26px;height:26px}
-.foot{text-align:center;color:var(--muted);font-size:12.5px;margin-top:34px}
-.foot a{color:var(--muted)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;margin-top:20px;text-align:center}
+.foot{margin-top:40px;padding:18px 16px 0;border-top:1px solid var(--line2);text-align:center;color:var(--muted);font-size:12.5px;line-height:2}
+.foot .fb{font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.foot .fc{letter-spacing:.3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;margin-top:20px;text-align:center;backdrop-filter:blur(8px);box-shadow:0 10px 40px rgba(2,8,20,.5)}
 .card .ic{width:64px;height:64px;margin:0 auto 14px;border-radius:18px}
 .card .ic svg{width:30px;height:30px}
 .card h2{font-size:18px;margin:0 0 6px;word-break:break-all}
-.card .meta{justify-content:center}
+.card .meta{justify-content:center;font-family:inherit;font-size:13px}
 .card .btn{margin-top:18px;font-size:14.5px;padding:10px 22px}
-@media(max-width:640px){.meta .dt{display:none}.search{width:110px}}
+@media(max-width:640px){.meta .dt{display:none}.search{width:110px}.bname .sub{letter-spacing:2px}}
 /* admin */
 table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13.5px}
 th{color:var(--muted);text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
-td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
-td.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;word-break:break-all}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:16px}
+td{padding:10px;border-bottom:1px solid var(--line2);vertical-align:top}
+td.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;word-break:break-all}
+.panel{background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:20px;margin-top:16px;backdrop-filter:blur(6px)}
 .panel h3{margin:0 0 12px;font-size:15px}
 .frow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .frow label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);flex:1;min-width:170px}
-input[type=text],input[type=password]{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:9px;padding:8px 12px;font-size:14px;outline:none;width:100%}
-input:focus{border-color:var(--accent)}
-.msg{background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:13.5px}
+input[type=text],input[type=password]{border:1px solid var(--line2);background:rgba(2,8,20,.6);color:var(--text);border-radius:9px;padding:8px 12px;font-size:14px;outline:none;width:100%;transition:.2s}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
+.msg{background:var(--soft);color:var(--accent);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:13.5px}
 .login{max-width:360px;margin:12vh auto 0}
 """
 
+CHIP_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3"/></svg>'
+
+ICON_COLOR = {"folder": "#22d3ee", "text": "#94a3b8", "image": "#34d399", "video": "#f472b6",
+              "audio": "#fbbf24", "archive": "#fb923c", "code": "#4ade80", "package": "#60a5fa",
+              "file": "#94a3b8"}
+
+def brand():
+    try:
+        cfg = cfg_load()
+    except Exception:
+        cfg = {}
+    return (cfg.get("site_name") or "沐沐单片机",
+            cfg.get("contact_line") or "公众号：沐沐单片机 · 微信：YM646929594")
+
 def page(title, body, extra_head=""):
+    site, contact = brand()
     return f"""<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>{esc(title)}</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%A6%3C/text%3E%3C/svg%3E">
+<title>{esc(title)} · {esc(site)}</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round'%3E%3Crect x='7' y='7' width='10' height='10' rx='1.5'/%3E%3Cpath d='M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3'/%3E%3C/svg%3E">
 <style>{CSS}</style>{extra_head}</head>
-<body>{body}<div class="foot">share-hub · 只读下载页</div></body></html>"""
+<body>{body}<div class="foot"><span class="fb">{esc(site)}</span> · 资料下载站<br><span class="fc">{esc(contact)}</span><br><span style="opacity:.5">READ-ONLY · 只读下载</span></div></body></html>"""
 
 def crumb_html(tok, link_name, rel_parts):
     parts = [f'<a href="/s/{tok}/b/">🏠 {esc(link_name)}</a>']
@@ -250,10 +271,12 @@ def render_browse(tok, link, rel_parts, rp):
     if is_file:
         st = os.stat(rp)
         name = os.path.basename(rp)
-        row = f'''<div class="row" style="cursor:default"><div class="ic">{icon_svg(name, False)}</div>
+        row = f'''<div class="row" style="cursor:default"><div class="ic" style="color:{ICON_COLOR.get(icon_key(name, False), ICON_COLOR["file"])}">{icon_svg(name, False)}</div>
         <div class="nm"><b>{esc(name)}</b><div class="meta"><span>{fmt_size(st.st_size)}</span><span class="dt">{fmt_time(st.st_mtime)}</span></div></div>
         <a class="btn dl" href="{base}/f/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["download"]}</svg>下载</a></div>'''
-        body = f'''<div class="wrap"><div class="top"><div class="wrap"><div class="brand"><h1><span class="dot"></span>{esc(link["name"])}</h1></div>
+        site, _ = brand()
+        body = f'''<div class="wrap"><div class="top"><div class="wrap">
+        <div class="brand"><div class="logo">{CHIP_SVG}</div><div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div></div>
         {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
         <div class="bar"><div class="crumb">{crumb_html(tok, link["name"], rel_parts[:-1])}</div></div></div></div>
         <div class="list">{row}</div></div>'''
@@ -266,7 +289,7 @@ def render_browse(tok, link, rel_parts, rp):
         acc2 = (rel_acc + "/" + d) if rel_acc else d
         href = f"{base}/b/{quote(acc2, safe='')}"
         zip_href = f"{base}/z/{quote(acc2, safe='')}"
-        rows.append(f'''<div class="row"><a class="fill" href="{href}"><div class="ic">{icon_svg(d, True)}</div>
+        rows.append(f'''<div class="row"><a class="fill" href="{href}"><div class="ic" style="color:{ICON_COLOR["folder"]}">{icon_svg(d, True)}</div>
         <div class="nm"><b>{esc(d)}</b><div class="meta"><span>文件夹</span></div></div></a>
         <a class="btn ghost dl" href="{zip_href}" title="下载此文件夹（自动打包为 zip，大文件夹首次点击需稍等）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["download"]}</svg>下载</a></div>''')
     for f in files:
@@ -274,20 +297,20 @@ def render_browse(tok, link, rel_parts, rp):
         try: st = os.stat(os.path.join(rp, f))
         except OSError: continue
         href = f"{base}/f/{quote(acc2, safe='')}"
-        rows.append(f'''<a class="row" data-name="{esc(f.lower())}" href="{href}"><div class="ic">{icon_svg(f, False)}</div>
+        rows.append(f'''<a class="row" data-name="{esc(f.lower())}" href="{href}"><div class="ic" style="color:{ICON_COLOR.get(icon_key(f, False), ICON_COLOR["file"])}">{icon_svg(f, False)}</div>
         <div class="nm"><b>{esc(f)}</b><div class="meta"><span>{fmt_size(st.st_size)}</span><span class="dt">{fmt_time(st.st_mtime)}</span></div></div>
         <span class="btn ghost dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["download"]}</svg>下载</span></a>''')
     if not rows:
-        rows.append('<div class="empty"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' + SVG_ICONS["folder"] + '</svg></div>这个文件夹是空的</div>')
+        rows.append('<div class="empty"><div class="ic" style="color:' + ICON_COLOR["folder"] + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' + SVG_ICONS["folder"] + '</svg></div>这个文件夹是空的</div>')
 
+    site, _ = brand()
     cur = rel_parts[-1] if rel_parts else link["name"]
     crumb = crumb_html(tok, link["name"], rel_parts)
     zip_href = f"{base}/z/{quote('/'.join(rel_parts), safe='')}"
     search = '<input class="search" id="q" type="text" placeholder="筛选文件…" onkeyup="flt()">'
     js = '<script>function flt(){var v=document.getElementById("q").value.toLowerCase();document.querySelectorAll("[data-name]").forEach(function(r){r.style.display=r.dataset.name.indexOf(v)>=0?"":"none"})}</script>'
-    head = extra_head = ""
     body = f'''<div class="wrap"><div class="top"><div class="wrap">
-    <div class="brand"><h1><span class="dot"></span>{esc(link["name"])}</h1></div>
+    <div class="brand"><div class="logo">{CHIP_SVG}</div><div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div></div>
     {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
     <div class="bar"><div class="crumb">{crumb}</div><div class="spacer"></div>{search}
     <a class="btn" href="{zip_href}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["archive"]}</svg>打包下载</a></div>
@@ -295,10 +318,11 @@ def render_browse(tok, link, rel_parts, rp):
     return page(cur, body, js)
 
 def neutral_page(msg):
-    body = f'''<div class="wrap" style="max-width:420px;margin-top:14vh">
-    <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["package"]}</svg></div>
-    <h2>share-hub</h2><div class="meta"><span>{esc(msg)}</span></div></div></div>'''
-    return page("share-hub", body)
+    site, _ = brand()
+    body = f'''<div class="wrap" style="max-width:420px;margin-top:16vh">
+    <div class="card"><div class="ic" style="color:{ICON_COLOR["package"]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["package"]}</svg></div>
+    <h2>{esc(site)}</h2><div class="meta"><span>{esc(msg)}</span></div></div></div>'''
+    return page(site, body)
 
 def render_pw_form(tok, link, err=""):
     body = f'''<div class="wrap" style="max-width:360px;margin-top:13vh"><div class="card">
@@ -357,8 +381,9 @@ def render_admin(cfg, base_url, msg="", err=""):
 
     options = "".join(f'<option value="{esc(p)}">{esc(p)}</option>' for p in scan_dirs())
     msg_html = f'<div class="msg">{esc(msg)}</div>' if msg else ""
+    site_name = cfg.get("site_name") or "沐沐单片机"
     body = f'''<div class="wrap">
-    <div class="top"><div class="wrap"><div class="brand"><h1><span class="dot"></span>⚙️ share-hub 管理后台</h1>
+    <div class="top"><div class="wrap"><div class="brand"><div class="logo">{CHIP_SVG}</div><div class="bname"><h1>{esc(site_name)} · 管理后台</h1><div class="sub">SHARE-HUB ADMIN</div></div></div><div class="spacer"></div>
     <form method="post" action="/admin"><input type="hidden" name="action" value="logout"><button class="btn ghost" style="padding:5px 12px">退出</button></form></div></div></div>
     {msg_html}{('<div class="msg">' + esc(err) + '</div>') if err else ''}
     <div class="panel"><h3>我的分享链接</h3>{table}</div>
