@@ -1,0 +1,11 @@
+[Unit]
+Description=share-hub per-friend isolated download pages
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/yym/.local/share/share-hub/share-hub.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
