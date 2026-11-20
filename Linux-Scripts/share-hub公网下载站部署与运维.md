@@ -134,6 +134,11 @@ systemctl --user disable --now share-hub         # 彻底下线服务
 **Q：重启电脑后还在吗？**
 在。systemd 用户服务 + Linger=yes 开机自启；Funnel 映射由 tailscaled 持久化。
 
+**Q：最多能建多少条分享链接？**
+代码无上限：链接就是 links.json 里的字典条目，token 空间 72 bit（约 4.7×10²¹ 组合，碰撞概率可忽略）。
+2026-11-20 实测：1 万条链接时单请求总耗时 53~85ms（配置解析约 31ms），完全可用；
+日常几十条毫无压力。唯一会随数量变慢的是管理后台（全量渲染表格），数千条以上如需顺畅可加分页/搜索。
+
 **Q：以后想加链接有效期/下载次数/独立域名？**
 有效期与计数：改 `share-hub.py`（`links.json` 加字段 + 下载计数逻辑）；独立域名：换 Cloudflare Tunnel 替代 Funnel，服务层不用动。
 
