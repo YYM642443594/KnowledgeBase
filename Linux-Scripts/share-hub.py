@@ -186,7 +186,9 @@ h1 .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex:non
 .btn.danger:hover{border-color:var(--danger)}
 .list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 14px;color:inherit;text-decoration:none;transition:.15s}
-a.row:hover{border-color:var(--accent);box-shadow:0 5px 16px rgba(0,0,0,.07);transform:translateY(-1px)}
+a.row:hover,.row:hover{border-color:var(--accent);box-shadow:0 5px 16px rgba(0,0,0,.07);transform:translateY(-1px)}
+a.fill{display:flex;align-items:center;gap:12px;flex:1;min-width:0;color:inherit;text-decoration:none}
+a.fill:hover b{color:var(--accent)}
 .ic{width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
 .ic svg{width:20px;height:20px}
 .nm{flex:1;min-width:0}
@@ -263,8 +265,10 @@ def render_browse(tok, link, rel_parts, rp):
     for d in dirs:
         acc2 = (rel_acc + "/" + d) if rel_acc else d
         href = f"{base}/b/{quote(acc2, safe='')}"
-        rows.append(f'''<a class="row" href="{href}"><div class="ic">{icon_svg(d, True)}</div>
-        <div class="nm"><b>{esc(d)}</b><div class="meta"><span>文件夹</span></div></div></a>''')
+        zip_href = f"{base}/z/{quote(acc2, safe='')}"
+        rows.append(f'''<div class="row"><a class="fill" href="{href}"><div class="ic">{icon_svg(d, True)}</div>
+        <div class="nm"><b>{esc(d)}</b><div class="meta"><span>文件夹</span></div></div></a>
+        <a class="btn ghost dl" href="{zip_href}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["archive"]}</svg>打包</a></div>''')
     for f in files:
         acc2 = (rel_acc + "/" + f) if rel_acc else f
         try: st = os.stat(os.path.join(rp, f))
