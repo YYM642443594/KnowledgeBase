@@ -268,7 +268,7 @@ def render_browse(tok, link, rel_parts, rp):
         zip_href = f"{base}/z/{quote(acc2, safe='')}"
         rows.append(f'''<div class="row"><a class="fill" href="{href}"><div class="ic">{icon_svg(d, True)}</div>
         <div class="nm"><b>{esc(d)}</b><div class="meta"><span>文件夹</span></div></div></a>
-        <a class="btn ghost dl" href="{zip_href}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["archive"]}</svg>打包</a></div>''')
+        <a class="btn ghost dl" href="{zip_href}" title="下载此文件夹（自动打包为 zip，大文件夹首次点击需稍等）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["download"]}</svg>下载</a></div>''')
     for f in files:
         acc2 = (rel_acc + "/" + f) if rel_acc else f
         try: st = os.stat(os.path.join(rp, f))
