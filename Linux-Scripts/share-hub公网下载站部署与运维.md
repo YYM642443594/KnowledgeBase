@@ -51,7 +51,7 @@ share-hub（只监听 127.0.0.1:8080，局域网亦不可直接访问）
 
 | 入口 | 地址/位置 |
 |------|-----------|
-| 管理后台 | `https://yym-2.tailb9678d.ts.net/admin` |
+| 管理后台 | `https://yym-2.tailb9678d.ts.net/admin` —— 新建/删除分享链接、上传站点图标（页头+favicon，PNG/JPG/GIF/WEBP/SVG ≤2MB，可恢复默认芯片图标）、改公网地址与管理密码 |
 | 管理密码 | 本机 `~/.config/share-hub/links.json` 的 `admin_password` 字段（**仓库公开，密码绝不入库**） |
 | 链接清单 | 后台登录后可见全部；或看 `links.json` 的 `links` 键 |
 | 本机健康检查 | `curl http://127.0.0.1:8080/healthz` 返回 `ok` |
