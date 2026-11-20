@@ -155,19 +155,18 @@ def build_zip(rp, label):
 
 # ---------------- 页面模板 ----------------
 CSS = """
-:root{--bg:#070b12;--card:rgba(15,23,42,.66);--card2:#0e1626;--text:#e2e8f0;--muted:#7e8cab;--line:rgba(103,232,249,.13);--line2:rgba(148,163,184,.10);--accent:#22d3ee;--accent2:#818cf8;--accent3:#c084fc;--soft:rgba(34,211,238,.10);--danger:#f87171;--grad:linear-gradient(120deg,#22d3ee,#818cf8 55%,#c084fc)}
+:root{--bg:#f4f7fb;--card:rgba(255,255,255,.78);--card2:#ffffff;--text:#0f172a;--muted:#5b6b84;--line:rgba(8,145,178,.18);--line2:rgba(15,23,42,.08);--accent:#0891b2;--accent2:#6366f1;--accent3:#a855f7;--soft:rgba(8,145,178,.08);--danger:#dc2626;--grad:linear-gradient(120deg,#0891b2,#6366f1 55%,#a855f7)}
 *{box-sizing:border-box}
-html{scrollbar-color:#243044 #070b12}
-body{margin:0;color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(900px 460px at 88% -12%,rgba(129,140,248,.16),transparent 60%),radial-gradient(760px 420px at -12% -6%,rgba(34,211,238,.12),transparent 55%),repeating-linear-gradient(0deg,rgba(148,163,184,.033) 0 1px,transparent 1px 46px),repeating-linear-gradient(90deg,rgba(148,163,184,.033) 0 1px,transparent 1px 46px),var(--bg);background-attachment:fixed}
+html{scrollbar-color:#c3cfdd #f4f7fb}
+body{margin:0;color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(900px 460px at 88% -12%,rgba(99,102,241,.10),transparent 60%),radial-gradient(760px 420px at -12% -6%,rgba(8,145,178,.10),transparent 55%),repeating-linear-gradient(0deg,rgba(71,85,105,.045) 0 1px,transparent 1px 46px),repeating-linear-gradient(90deg,rgba(71,85,105,.045) 0 1px,transparent 1px 46px),var(--bg);background-attachment:fixed}
 a{color:var(--accent)}
 .wrap{max-width:900px;margin:0 auto;padding:0 16px 64px}
-.top{position:sticky;top:0;z-index:9;background:rgba(7,11,18,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top{position:sticky;top:0;z-index:9;background:rgba(247,250,253,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line2)}
 .top::before{content:"";display:block;height:2px;background:var(--grad);background-size:220% 100%;animation:sheen 7s linear infinite}
 @keyframes sheen{to{background-position:-220% 0}}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.5)}55%{box-shadow:0 0 0 8px rgba(34,211,238,0)}}
 .top .wrap{padding:12px 16px 10px}
 .brand{display:flex;align-items:center;gap:11px}
-.logo{width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--accent);background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(192,132,252,.16));border:1px solid var(--line)}
+.logo{width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--accent);background:linear-gradient(135deg,rgba(8,145,178,.10),rgba(168,85,247,.10));border:1px solid var(--line)}
 .logo svg{width:21px;height:21px}
 .bname{line-height:1.3;min-width:0}
 .bname h1{margin:0;font-size:17px;font-weight:800;letter-spacing:.5px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -180,21 +179,21 @@ a{color:var(--accent)}
 .crumb .cur{padding:3px 8px;border-radius:7px;background:var(--soft);color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
 .crumb .sep{opacity:.45}
 .spacer{flex:1}
-.search{border:1px solid var(--line2);background:rgba(2,8,20,.6);color:var(--text);border-radius:9px;padding:6px 12px;font-size:13.5px;width:150px;outline:none;transition:.2s}
-.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
-.btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(120deg,#0891b2,#6366f1);color:#fff;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:7px 14px;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer;transition:.2s}
-.btn:hover{box-shadow:0 4px 18px rgba(56,189,248,.35);filter:brightness(1.08)}
+.search{border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:9px;padding:6px 12px;font-size:13.5px;width:150px;outline:none;transition:.2s}
+.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(8,145,178,.12)}
+.btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(120deg,#0891b2,#6366f1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:9px;padding:7px 14px;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer;transition:.2s}
+.btn:hover{box-shadow:0 4px 16px rgba(8,145,178,.3);filter:brightness(1.05)}
 .btn svg{width:15px;height:15px}
-.btn.ghost{background:rgba(14,22,38,.75);color:var(--text);border:1px solid var(--line2)}
+.btn.ghost{background:#fff;color:var(--text);border:1px solid var(--line2)}
 .btn.ghost:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;filter:none}
 .btn.danger{background:transparent;color:var(--danger);border:1px solid var(--line2);padding:4px 10px;font-weight:500;box-shadow:none}
 .btn.danger:hover{border-color:var(--danger);box-shadow:none}
 .list{display:flex;flex-direction:column;gap:9px;margin-top:18px}
 .row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line2);border-radius:13px;padding:11px 14px;color:inherit;text-decoration:none;transition:.18s;backdrop-filter:blur(6px)}
-a.row:hover,.row:hover{border-color:rgba(34,211,238,.5);box-shadow:0 6px 22px rgba(34,211,238,.10);transform:translateY(-1px)}
+a.row:hover,.row:hover{border-color:rgba(8,145,178,.45);box-shadow:0 6px 20px rgba(8,145,178,.12);transform:translateY(-1px)}
 a.fill{display:flex;align-items:center;gap:12px;flex:1;min-width:0;color:inherit;text-decoration:none}
 a.fill:hover b{color:var(--accent)}
-.ic{width:36px;height:36px;border-radius:10px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.14);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.ic{width:36px;height:36px;border-radius:10px;background:var(--soft);border:1px solid rgba(8,145,178,.14);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
 .ic svg{width:20px;height:20px}
 .nm{flex:1;min-width:0}
 .nm b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -206,7 +205,7 @@ a.fill:hover b{color:var(--accent)}
 .foot{margin-top:40px;padding:18px 16px 0;border-top:1px solid var(--line2);text-align:center;color:var(--muted);font-size:12.5px;line-height:2}
 .foot .fb{font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .foot .fc{letter-spacing:.3px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;margin-top:20px;text-align:center;backdrop-filter:blur(8px);box-shadow:0 10px 40px rgba(2,8,20,.5)}
+.card{background:var(--card);border:1px solid var(--line2);border-radius:18px;padding:28px;margin-top:20px;text-align:center;backdrop-filter:blur(8px);box-shadow:0 10px 32px rgba(15,23,42,.08)}
 .card .ic{width:64px;height:64px;margin:0 auto 14px;border-radius:18px}
 .card .ic svg{width:30px;height:30px}
 .card h2{font-size:18px;margin:0 0 6px;word-break:break-all}
@@ -222,17 +221,17 @@ td.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-si
 .panel h3{margin:0 0 12px;font-size:15px}
 .frow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .frow label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);flex:1;min-width:170px}
-input[type=text],input[type=password]{border:1px solid var(--line2);background:rgba(2,8,20,.6);color:var(--text);border-radius:9px;padding:8px 12px;font-size:14px;outline:none;width:100%;transition:.2s}
-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
-.msg{background:var(--soft);color:var(--accent);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:13.5px}
+input[type=text],input[type=password]{border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:9px;padding:8px 12px;font-size:14px;outline:none;width:100%;transition:.2s}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(8,145,178,.12)}
+.msg{background:var(--soft);color:#0e7490;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:13.5px}
 .login{max-width:360px;margin:12vh auto 0}
 """
 
 CHIP_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3"/></svg>'
 
-ICON_COLOR = {"folder": "#22d3ee", "text": "#94a3b8", "image": "#34d399", "video": "#f472b6",
-              "audio": "#fbbf24", "archive": "#fb923c", "code": "#4ade80", "package": "#60a5fa",
-              "file": "#94a3b8"}
+ICON_COLOR = {"folder": "#0891b2", "text": "#64748b", "image": "#059669", "video": "#db2777",
+              "audio": "#d97706", "archive": "#ea580c", "code": "#16a34a", "package": "#2563eb",
+              "file": "#64748b"}
 
 def brand():
     try:
@@ -249,7 +248,7 @@ def page(title, body, extra_head=""):
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>{esc(title)} · {esc(site)}</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round'%3E%3Crect x='7' y='7' width='10' height='10' rx='1.5'/%3E%3Cpath d='M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230891b2' stroke-width='2' stroke-linecap='round'%3E%3Crect x='7' y='7' width='10' height='10' rx='1.5'/%3E%3Cpath d='M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3'/%3E%3C/svg%3E">
 <style>{CSS}</style>{extra_head}</head>
 <body>{body}<div class="foot"><span class="fb">{esc(site)}</span> · 资料下载站<br><span class="fc">{esc(contact)}</span><br><span style="opacity:.5">READ-ONLY · 只读下载</span></div></body></html>"""
 
