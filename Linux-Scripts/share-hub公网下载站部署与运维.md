@@ -139,6 +139,13 @@ systemctl --user disable --now share-hub         # 彻底下线服务
 
 ### 10. 换机从零部署清单（新机器重建）
 
+> **一键脚本**：`Linux-Scripts/setup-share-hub.sh` 可自动完成本节第 1~8 步（幂等，支持
+> `--yes` 免交互与 `--skip-sudo`；用法见 [Readme.md](Readme.md) 第 7 节）。以下为手动等价
+> 步骤与原理说明。
+
+> 前提：Ubuntu/Debian 系 Linux，Python ≥ 3.7（本机实测 3.10），机器常开在线；
+> Tailscale 客户端任意近期版本均可（本机实测 1.104.6）。
+
 > 前提：Ubuntu/Debian 系 Linux，Python ≥ 3.7（本机实测 3.10），机器常开在线；
 > Tailscale 客户端任意近期版本均可（本机实测 1.104.6）。
 

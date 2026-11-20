@@ -20,6 +20,7 @@ source: 原创
 | [setup-ftp-legacy.sh](setup-ftp-legacy.sh) | vsftpd FTP 服务配置（U 盘目录旧版，含防火墙放行） | root | 无 |
 | [setup-hdd-mount.sh](setup-hdd-mount.sh) | 机械硬盘两分区 fstab 开机自动挂载 | root | 无 |
 | [cleanup-openclaw-game.sh](cleanup-openclaw-game.sh) | 卸载 OpenClaw 游戏编译所装的全部依赖 | root | 无 |
+| [setup-share-hub.sh](setup-share-hub.sh) | share-hub 公网下载站一键部署（Tailscale/Funnel/服务/配置全自动，配合随附的 share-hub.py 与 share-hub.service） | 普通用户（Tailscale 安装/登录、operator、Linger 三处需 sudo） | 参数 / `--yes` 免交互 / `--skip-sudo` |
 
 ---
 
@@ -173,3 +174,39 @@ sudo bash cleanup-openclaw-game.sh
 ```
 
 无参数。**注意**：会连带卸载 `build-essential` 与 `cmake`，若系统其他开发工作依赖它们请先确认。
+
+---
+
+## 7. setup-share-hub.sh — share-hub 公网下载站一键部署
+
+从零在常用机上部署「公网资料下载站」（share-hub + Tailscale Funnel，按朋友隔离链接）。
+三件套须在同一目录：本脚本 + `share-hub.py`（服务源码备份）+ `share-hub.service`（服务单元备份）。
+部署原理、手动等价步骤与踩坑见 [share-hub公网下载站部署与运维.md](share-hub公网下载站部署与运维.md)。
+
+### 用法
+
+```bash
+bash setup-share-hub.sh                     # 全流程（交互确认）
+bash setup-share-hub.sh -y                  # 免交互，全部取默认值
+bash setup-share-hub.sh --share-dir /mnt/sda1/00.FTP/99.公开分享 -y
+                                            # 部署完顺手为首条分享目录建链接
+bash setup-share-hub.sh --skip-sudo -y      # 跳过 sudo 步骤（已在别处完成时）
+```
+
+### 参数
+
+| 参数 | 作用 |
+|------|------|
+| `--scan-root <目录>` | 数据盘根，写入代码 `SCAN_ROOT` 常量（默认 `/mnt/sda1/00.FTP`） |
+| `--tmp-dir <目录>` | zip 临时目录，写入代码 `TMP_DIR` 常量（默认 `/mnt/sda1/share-hub-tmp`） |
+| `--port <端口>` | 服务端口（默认 8080） |
+| `--share-dir <目录>` | 可选：部署完成后为首条分享链接指向的目录 |
+| `-y`, `--yes` | 免确认 |
+| `--skip-sudo` | 跳过需要 sudo 的步骤（Tailscale 安装/登录、operator、Linger） |
+
+### 说明
+
+- **幂等**：重复运行只补缺失步骤（已有配置不覆盖、已开通的 Funnel 不重复授权），可随时中断后重跑续上
+- 流程：Python 检查 → Tailscale 安装/登录 → operator 免 sudo → 放置文件并 sed 适配路径 → 生成 `links.json`（管理密码只显示一次）→ Linger → systemd 用户服务 → Funnel 映射（未开通时打印授权链接并自动等待）→ 健康验证
+- **换机注意**：新机器 `*.ts.net` 域名必变，旧链接全部失效，需后台重建分发（详见运维文档第 10 节）
+- 踩坑记录：Funnel 判断勿用 `serve status | grep -q` 管道（`pipefail` + SIGPIPE 竞态会把已开启误判为未开启），先捕获输出再匹配
