@@ -137,6 +137,52 @@ systemctl --user disable --now share-hub         # 彻底下线服务
 **Q：以后想加链接有效期/下载次数/独立域名？**
 有效期与计数：改 `share-hub.py`（`links.json` 加字段 + 下载计数逻辑）；独立域名：换 Cloudflare Tunnel 替代 Funnel，服务层不用动。
 
+### 10. 换机从零部署清单（新机器重建）
+
+> 前提：Ubuntu/Debian 系 Linux，Python ≥ 3.7（本机实测 3.10），机器常开在线；
+> Tailscale 客户端任意近期版本均可（本机实测 1.104.6）。
+
+1. **装并登录 Tailscale**（同一账号）：
+   ```bash
+   curl -fsSL https://tailscale.com/install.sh | sh
+   sudo tailscale up
+   ```
+2. **授权 CLI**（免 sudo）：`sudo tailscale set --operator=$USER`
+3. **开通 Funnel**：随便执行一次 `tailscale funnel --bg 8080`，它会打印一条
+   `https://login.tailscale.com/f/funnel?node=…` 授权链接，由账号本人在浏览器点击开通
+   （管理台需开启 MagicDNS 与 HTTPS Certificates，链接页会引导）。
+4. **放置文件**（源：本仓库 `Linux-Scripts/`）：
+   ```bash
+   mkdir -p ~/.local/share/share-hub
+   cp Linux-Scripts/share-hub.py ~/.local/share/share-hub/
+   cp Linux-Scripts/share-hub.service ~/.config/systemd/user/   # 目录不存在先建
+   ```
+5. **改适配本机的常量**（都集中在 `share-hub.py` 文件头部）：
+   - `TMP_DIR`（zip 临时目录，指向空间足够的盘）
+   - `SCAN_ROOT`（后台目录下拉的扫描根，如新机器的数据盘根）
+   - `HOST/PORT`（一般不用改：127.0.0.1:8080）
+   - `share-hub.service` 的 `ExecStart` 里分享根目录路径同步改；
+6. **开 Linger**（否则重启后用户服务不启动，下载站失联）：
+   `sudo loginctl enable-linger $USER`
+7. **建配置**：
+   ```bash
+   mkdir -p ~/.config/share-hub
+   # 按第 4 节格式手写 links.json；admin_password 用
+   # python3 -c "import secrets;print(secrets.token_urlsafe(9))" 生成
+   # public_base_url 填新机器的 https://<新主机名>.<tailnet域名>.ts.net
+   ```
+8. **启动**：
+   ```bash
+   systemctl --user daemon-reload
+   systemctl --user enable --now share-hub
+   tailscale funnel --bg 8080
+   ```
+9. **验证**：`curl http://127.0.0.1:8080/healthz` 返回 `ok` →
+   `tailscale serve status` 显示 443→8080 → 浏览器打开公网链接能列出文件 →
+   走一遍第 7 节的关键测试（下载/打包/隔离/穿越 404）。
+
+⚠️ **换机迁移注意**：新机器的 `*.ts.net` 主机名必然不同，**旧机器发出去的所有朋友链接全部失效**——需在新机器后台按 `links.json` 重建同名目录与链接后重新分发给朋友；确认新机正常后再对旧机器执行 `tailscale funnel --https=443 off` 与 `systemctl --user disable --now share-hub` 下线。
+
 ## 总结
 
 方案最终形态：share-hub（单文件只读下载站，按朋友隔离链接）+ Tailscale Funnel（公网入口）+ systemd 用户服务（开机自启）。运维只需记三件事：后台建链发链接、`systemctl --user` 管服务、`tailscale serve status` 查公网映射。后续如需自定义域名，迁移路径为 Cloudflare Tunnel。
