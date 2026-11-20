@@ -23,7 +23,7 @@ SECTIONS = [
     ("imu",    "IMU",           "🧭", "#3fb27f", "GD32F103 / GD32F303 两个 MCU 平台的 IMU 固件知识：串口丢字节、参数页迁移、指令集、PPS 功能"),
     ("stm32",  "STM32",         "🔧", "#5a9bd4", "STM32_F10x 工程知识：MAX7219 点阵显示、四层改三层架构重构、跨仓库工程架构规范"),
     ("qt",     "QT-Tools",      "🖥", "#e2a03f", "志翔 IMU 上位机（Qt 6 / QML）：Hex 指令、蓝牙、波形与页面性能优化、协议开发规范"),
-    ("linux",  "Linux-Scripts", "🐧", "#e05c5c", "常用机环境脚本：Claude Code / OpenClaw 安装配置、FTP 服务、硬盘挂载、依赖清理"),
+    ("linux",  "Linux-Scripts", "🐧", "#e05c5c", "常用机环境脚本：Claude Code / OpenClaw 安装配置、FTP 服务、硬盘挂载、依赖清理、share-hub 公网下载站部署与运维（Tailscale Funnel）"),
     ("proto",  "Protocols",     "📜", "#9b6ce0", "志翔协议文档（同步自 WorkRecord@feature/zhixiang）：IMU 通讯协议与指令、坐标系示意、自动售水机通信协议（二进制帧 / MQTT JSON）"),
     ("kb",     ("00-索引", "01-技术笔记", "02-项目文档", "03-问题排查", "04-工具使用",
                 "05-读书笔记", "06-参考资料", "07-日常记录"),
