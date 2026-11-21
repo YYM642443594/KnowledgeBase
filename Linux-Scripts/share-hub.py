@@ -385,9 +385,9 @@ def render_browse(tok, link, rel_parts, rp):
         <a class="btn dl" href="{base}/f/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["download"]}</svg>下载</a></div>'''
         site, _, iu = brand()
         body = f'''<div class="wrap"><div class="top"><div class="wrap">
-        <div class="brand">{logo_img(iu)}<div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div></div>
+        <div class="brand">{logo_img(iu)}<div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div><div class="spacer"></div>{TBTN}</div>
         {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
-        <div class="bar"><div class="crumb">{crumb_html(tok, link["name"], rel_parts[:-1])}</div><div class="spacer"></div>{TBTN}</div></div></div>
+        <div class="bar"><div class="crumb">{crumb_html(tok, link["name"], rel_parts[:-1])}</div></div></div>
         {ad_block()}<div class="list">{row}</div></div>'''
         return page(link["name"], body)
 
@@ -415,14 +415,12 @@ def render_browse(tok, link, rel_parts, rp):
     site, _, iu = brand()
     cur = rel_parts[-1] if rel_parts else link["name"]
     crumb = crumb_html(tok, link["name"], rel_parts)
-    zip_href = f"{base}/z/{quote('/'.join(rel_parts), safe='')}"
     search = '<input class="search" id="q" type="text" placeholder="筛选文件…" onkeyup="flt()">'
     js = '<script>function flt(){var v=document.getElementById("q").value.toLowerCase();document.querySelectorAll("[data-name]").forEach(function(r){r.style.display=r.dataset.name.indexOf(v)>=0?"":"none"})}</script>'
     body = f'''<div class="wrap"><div class="top"><div class="wrap">
-    <div class="brand">{logo_img(iu)}<div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div></div>
+    <div class="brand">{logo_img(iu)}<div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div><div class="spacer"></div>{TBTN}</div>
     {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
-    <div class="bar"><div class="crumb">{crumb}</div><div class="spacer"></div>{search}{TBTN}
-    <a class="btn" href="{zip_href}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["archive"]}</svg>打包下载</a></div>
+    <div class="bar"><div class="crumb">{crumb}</div><div class="spacer"></div>{search}</div>
     </div></div>{ad_block()}<div class="list">{''.join(rows)}</div></div>'''
     return page(cur, body, js)
 
