@@ -361,6 +361,12 @@ def gallery_images():
     return sorted(n for n in names if re.match(r"^p-\d+-\d+\.(png|jpg|gif|webp|svg)$", n))
 
 def gallery_block():
+    try:
+        cfg = cfg_load()
+        if not cfg.get("gallery_enabled", True):
+            return ""
+    except Exception:
+        pass
     imgs = gallery_images()
     if not imgs:
         return ""
@@ -391,6 +397,8 @@ def ad_block():
     """站点广告横幅（后台"广告文案"留空则不显示）"""
     try:
         cfg = cfg_load()
+        if not cfg.get("ad_enabled", True):
+            return ""
     except Exception:
         return ""
     text = (cfg.get("ad_text") or "").strip()
@@ -560,6 +568,8 @@ def render_admin(cfg, base_url, msg="", err=""):
     msg_html = f'<div class="msg">{esc(msg)}</div>' if msg else ""
     site_name = cfg.get("site_name") or "沐沐工作室"
     iu_admin = f"/logo?v={icon_mtime()}" if (cfg.get("site_icon") and icon_mtime()) else ""
+    ad_on = cfg.get("ad_enabled", True)
+    g_on = cfg.get("gallery_enabled", True)
     thumbs = ""
     for nm in gallery_images():
         thumbs += (f'<div class="gthumb"><img src="/gallery/{quote(nm)}" alt="{esc(nm)}">'
@@ -603,6 +613,12 @@ def render_admin(cfg, base_url, msg="", err=""):
     <input type="hidden" name="action" value="reset_icon">
     <button class="btn ghost">恢复默认芯片图标</button></form></div>
     <div class="panel"><h3>🖼 产品图库（{len(gallery_images())}/{MAX_GALLERY}）</h3>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13.5px;flex-wrap:wrap">
+    <b>轮播开关：</b>
+    <span style="color:{'var(--accent)' if g_on else 'var(--danger)'};font-weight:600">{'显示中' if g_on else '已隐藏'}</span>
+    <form method="post" action="/admin" style="display:inline"><input type="hidden" name="action" value="toggle_gallery"><button class="btn ghost">{'一键隐藏' if g_on else '一键显示'}</button></form>
+    <span style="color:var(--muted);font-size:12px">隐藏后图片保留，随时可再显示</span>
+    </div>
     <div style="color:var(--muted);font-size:12.5px;margin-bottom:10px">图片以轮播形式展示在下载页广告栏下方，建议横向照片（自动裁切为统一高度）。</div>
     <div class="gthumbs">{thumbs}</div>
     <form method="post" action="/admin" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
@@ -611,6 +627,12 @@ def render_admin(cfg, base_url, msg="", err=""):
     <button class="btn">上传图片（可多选）</button></form></div>
     <div class="panel"><h3>🔧 设置</h3>
     <form method="post" action="/admin"><input type="hidden" name="action" value="settings">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:13.5px;flex-wrap:wrap">
+    <b>广告栏：</b>
+    <span style="color:{'var(--accent)' if ad_on else 'var(--danger)'};font-weight:600">{'显示中' if ad_on else '已隐藏'}</span>
+    <form method="post" action="/admin" style="display:inline"><input type="hidden" name="action" value="toggle_ad"><button class="btn ghost">{'一键隐藏' if ad_on else '一键显示'}</button></form>
+    <span style="color:var(--muted);font-size:12px">隐藏后文案保留，随时可再显示</span>
+    </div>
     <div class="frow">
     <label>广告标题（可选，默认"专业单片机设计开发 · 承接项目"）<input type="text" name="adtitle" value="{esc(cfg.get("ad_title", ""))}"></label>
     </div>
@@ -970,6 +992,12 @@ class Handler(BaseHTTPRequestHandler):
                 cfg["sessions"] = [x for x in cfg.get("sessions", []) if x != s]
                 cfg_save(cfg)
                 self.redirect("/admin", [("Set-Cookie", "admin_sess=; Path=/; Max-Age=0")])
+                return
+            if action in ("toggle_ad", "toggle_gallery"):
+                key = "ad_enabled" if action == "toggle_ad" else "gallery_enabled"
+                cfg[key] = not cfg.get(key, True)
+                cfg_save(cfg)
+                self.redirect("/admin")
                 return
             if action == "create":
                 name = form.get("name", "").strip()[:60]
