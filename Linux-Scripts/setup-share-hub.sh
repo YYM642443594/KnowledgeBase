@@ -135,7 +135,7 @@ share_dir = sys.argv[1] if len(sys.argv) > 1 else ""
 cfg = {
     "admin_password": os.environ["ADMIN_PW"],
     "public_base_url": os.environ["PUBLIC_URL"],
-    "site_name": "沐沐单片机",
+    "site_name": "沐沐工作室",
     "contact_line": "公众号：沐沐单片机 · 微信：YM646929594",
     "sessions": [],
     "links": {},
