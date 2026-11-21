@@ -76,7 +76,7 @@ share-hub（只监听 127.0.0.1:8080，局域网亦不可直接访问）
 {
   "admin_password": "只在本机",
   "public_base_url": "https://yym-2.tailb9678d.ts.net",
-  "site_name": "沐沐单片机（页头/页脚/标题品牌名）",
+  "site_name": "沐沐工作室（页头/页脚/标题品牌名）",
   "contact_line": "页脚联系方式，如：公众号：沐沐单片机 · 微信：YM…",
   "ad_title": "广告栏标题（可选）",
   "ad_text": "广告文案，每行一条，显示在文件列表上方；留空不显示",
