@@ -261,6 +261,14 @@ html.dark .tbtn .moon{display:none}
 .empty{text-align:center;color:var(--muted);padding:60px 0}
 .empty .ic{margin:0 auto 12px;width:52px;height:52px}
 .empty .ic svg{width:26px;height:26px}
+.ad{margin-top:16px;background:linear-gradient(135deg,rgba(8,145,178,.07),rgba(168,85,247,.07));border:1px solid var(--line);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden}
+.ad::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--grad)}
+.ad h4{margin:0 0 8px;font-size:14.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ad .tag{font-size:10.5px;padding:1px 7px;border-radius:5px;background:var(--grad);color:#fff;letter-spacing:2px;font-weight:700}
+.ad .line{font-size:13.5px;color:var(--text);display:flex;gap:8px;padding:2.5px 0;line-height:1.55}
+.ad .line::before{content:"✦";color:var(--accent);flex:none;font-size:12px;line-height:1.7}
+.ad .adcontact{margin-top:8px;font-size:12.5px;color:var(--muted)}
+.dark .ad{background:linear-gradient(135deg,rgba(34,211,238,.06),rgba(192,132,252,.06))}
 .foot{margin-top:40px;padding:18px 16px 0;border-top:1px solid var(--line2);text-align:center;color:var(--muted);font-size:12.5px;line-height:2}
 .foot .fb{font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .foot .fc{letter-spacing:.3px}
@@ -325,6 +333,22 @@ def brand():
     iu = f"/logo?v={icon_mtime()}" if (cfg.get("site_icon") and icon_mtime()) else ""
     return site, contact, iu
 
+def ad_block():
+    """站点广告横幅（后台"广告文案"留空则不显示）"""
+    try:
+        cfg = cfg_load()
+    except Exception:
+        return ""
+    text = (cfg.get("ad_text") or "").strip()
+    if not text:
+        return ""
+    title = (cfg.get("ad_title") or "").strip() or "专业单片机设计开发 · 承接项目"
+    _, contact, _ = brand()
+    lines = "".join(f'<div class="line">{esc(x.strip())}</div>'
+                    for x in text.splitlines() if x.strip())
+    return (f'<div class="ad"><h4>{esc(title)}<span class="tag">服务</span></h4>{lines}'
+            f'<div class="adcontact">洽询：{esc(contact)}</div></div>')
+
 def page(title, body, extra_head=""):
     site, contact, iu = brand()
     icon_link = (f'<link rel="icon" href="{iu}">' if iu else
@@ -364,7 +388,7 @@ def render_browse(tok, link, rel_parts, rp):
         <div class="brand">{logo_img(iu)}<div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div></div>
         {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
         <div class="bar"><div class="crumb">{crumb_html(tok, link["name"], rel_parts[:-1])}</div><div class="spacer"></div>{TBTN}</div></div></div>
-        <div class="list">{row}</div></div>'''
+        {ad_block()}<div class="list">{row}</div></div>'''
         return page(link["name"], body)
 
     dirs, files = list_entries(rp)
@@ -399,7 +423,7 @@ def render_browse(tok, link, rel_parts, rp):
     {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
     <div class="bar"><div class="crumb">{crumb}</div><div class="spacer"></div>{search}{TBTN}
     <a class="btn" href="{zip_href}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["archive"]}</svg>打包下载</a></div>
-    </div></div><div class="list">{''.join(rows)}</div></div>'''
+    </div></div>{ad_block()}<div class="list">{''.join(rows)}</div></div>'''
     return page(cur, body, js)
 
 def neutral_page(msg):
@@ -520,6 +544,12 @@ def render_admin(cfg, base_url, msg="", err=""):
     <button class="btn ghost">恢复默认芯片图标</button></form></div>
     <div class="panel"><h3>🔧 设置</h3>
     <form method="post" action="/admin"><input type="hidden" name="action" value="settings">
+    <div class="frow">
+    <label>广告标题（可选，默认"专业单片机设计开发 · 承接项目"）<input type="text" name="adtitle" value="{esc(cfg.get("ad_title", ""))}"></label>
+    </div>
+    <div class="frow">
+    <label>广告文案（每行一条，显示在下载页文件列表上方；留空 = 不显示广告栏）<textarea name="adtext" rows="6" placeholder="每行一条业务介绍…">{esc(cfg.get("ad_text", ""))}</textarea></label>
+    </div>
     <div class="frow">
     <label>公网地址（⚠️ 仅显示前缀，勿改——真实公网入口由 Tailscale Funnel 决定，改错只会让复制的链接打不开）<input type="text" name="baseurl" value="{esc(cfg.get("public_base_url", ""))}" placeholder="https://….ts.net"></label>
     <label>修改管理密码（留空=不变）<input type="text" name="newpw" placeholder="新管理密码"></label>
@@ -892,6 +922,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.redirect("/admin")
                 return
             if action == "settings":
+                cfg["ad_title"] = form.get("adtitle", "").strip()[:80]
+                cfg["ad_text"] = form.get("adtext", "").strip()[:2000]
                 if form.get("baseurl", "").strip():
                     cfg["public_base_url"] = form["baseurl"].strip().rstrip("/")
                 if form.get("newpw", "").strip():
