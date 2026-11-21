@@ -29,6 +29,7 @@ def cfg_save(cfg):
 def ensure_config():
     os.makedirs(CONFIG_DIR, exist_ok=True)
     os.makedirs(TMP_DIR, exist_ok=True)
+    os.makedirs(GALLERY_DIR, exist_ok=True)
     if not os.path.exists(CONFIG_FILE):
         cfg_save({
             "admin_password": secrets.token_urlsafe(9),
@@ -269,6 +270,23 @@ html.dark .tbtn .moon{display:none}
 .ad .line::before{content:"✦";color:var(--accent);flex:none;font-size:12px;line-height:1.7}
 .ad .adcontact{margin-top:8px;font-size:12.5px;color:var(--muted)}
 .dark .ad{background:linear-gradient(135deg,rgba(34,211,238,.06),rgba(192,132,252,.06))}
+.gal{margin-top:16px;position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line2);background:var(--card2)}
+.gal-strip{display:flex;height:260px;transition:transform .5s ease}
+.gal-item{flex:0 0 100%;height:260px;object-fit:cover;display:block}
+.gal-btn{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:rgba(255,255,255,.88);color:var(--text);font-size:19px;line-height:1;cursor:pointer;z-index:2;padding:0}
+.gal-btn:hover{color:var(--accent);border-color:var(--accent)}
+.gal-prev{left:10px}.gal-next{right:10px}
+.gal-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:6px;z-index:2}
+.gal-dot{width:8px;height:8px;border-radius:50%;background:rgba(127,140,170,.55);cursor:pointer}
+.gal-dot.on{background:var(--accent)}
+.gal-count{position:absolute;top:10px;right:12px;font-size:11.5px;color:#fff;background:rgba(15,23,42,.45);border-radius:6px;padding:1px 8px}
+.gthumbs{display:flex;gap:8px;flex-wrap:wrap}
+.gthumb{position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid var(--line2)}
+.gthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.gdel{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(220,38,38,.85);color:#fff;cursor:pointer;font-size:12px;line-height:1;padding:0}
+textarea{border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:9px;padding:8px 12px;font-size:13.5px;font-family:inherit;line-height:1.6;outline:none;width:100%;resize:vertical;transition:.2s}
+textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(8,145,178,.12)}
+.dark textarea{background:rgba(2,8,20,.6)}
 .foot{margin-top:40px;padding:18px 16px 0;border-top:1px solid var(--line2);text-align:center;color:var(--muted);font-size:12.5px;line-height:2}
 .foot .fb{font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .foot .fc{letter-spacing:.3px}
@@ -297,6 +315,8 @@ input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(8,145,178,.12)}
 CHIP_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3"/></svg>'
 
 ICON_FILE = os.path.join(CONFIG_DIR, "logo.img")   # 上传的站点图标
+GALLERY_DIR = os.path.join(CONFIG_DIR, "gallery")  # 产品图库目录
+MAX_GALLERY = 15
 
 def sniff_image(b):
     """按魔数识别图片类型，返回 (kind, mime) 或 (None, None)"""
@@ -328,10 +348,44 @@ def brand():
         cfg = cfg_load()
     except Exception:
         cfg = {}
-    site = cfg.get("site_name") or "沐沐单片机"
+    site = cfg.get("site_name") or "沐沐工作室"
     contact = cfg.get("contact_line") or "公众号：沐沐单片机 · 微信：YM646929594"
     iu = f"/logo?v={icon_mtime()}" if (cfg.get("site_icon") and icon_mtime()) else ""
     return site, contact, iu
+
+def gallery_images():
+    try:
+        names = os.listdir(GALLERY_DIR)
+    except OSError:
+        return []
+    return sorted(n for n in names if re.match(r"^p-\d+-\d+\.(png|jpg|gif|webp|svg)$", n))
+
+def gallery_block():
+    imgs = gallery_images()
+    if not imgs:
+        return ""
+    n = len(imgs)
+    items = "".join('<img class="gal-item" src="/gallery/%s" alt="产品图 %d">' % (quote(nm), i + 1)
+                    for i, nm in enumerate(imgs))
+    dots = "".join('<span class="gal-dot" onclick="ggo(%d)"></span>' % i for i in range(n))
+    controls = ('<button class="gal-btn gal-prev" onclick="gmove(-1)">&lsaquo;</button>'
+                '<button class="gal-btn gal-next" onclick="gmove(1)">&rsaquo;</button>'
+                '<div class="gal-dots">%s</div>'
+                '<div class="gal-count" id="galcount"></div>') % dots
+    js = ('<script>var gn=%d,gi=0;'
+          'function gshow(){var s=document.getElementById("galstrip");'
+          's.style.transform="translateX(-"+(gi*100/gn)+"%%)";'
+          'var ds=document.querySelectorAll(".gal-dot");'
+          'for(var i=0;i<ds.length;i++)ds[i].classList.toggle("on",i===gi);'
+          'var c=document.getElementById("galcount");if(c)c.textContent=(gi+1)+"/"+gn;}'
+          'function ggo(i){gi=(i+gn)%%gn;gshow()}'
+          'function gmove(d){ggo(gi+d)}'
+          'var gt=setInterval(function(){gmove(1)},4000);'
+          'var gb=document.getElementById("galbox");'
+          'gb.addEventListener("mouseenter",function(){clearInterval(gt)});'
+          'gb.addEventListener("mouseleave",function(){gt=setInterval(function(){gmove(1)},4000)});'
+          'gshow();</script>') % (n,)
+    return ('<div class="gal" id="galbox"><div class="gal-strip" id="galstrip">%s</div>%s</div>%s') % (items, controls, js)
 
 def ad_block():
     """站点广告横幅（后台"广告文案"留空则不显示）"""
@@ -388,7 +442,7 @@ def render_browse(tok, link, rel_parts, rp):
         <div class="brand">{logo_img(iu)}<div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div><div class="spacer"></div>{TBTN}</div>
         {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
         <div class="bar"><div class="crumb">{crumb_html(tok, link["name"], rel_parts[:-1])}</div></div></div>
-        {ad_block()}<div class="list">{row}</div></div>'''
+        {ad_block()}{gallery_block()}<div class="list">{row}</div></div>'''
         return page(link["name"], body)
 
     dirs, files = list_entries(rp)
@@ -421,7 +475,7 @@ def render_browse(tok, link, rel_parts, rp):
     <div class="brand">{logo_img(iu)}<div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div><div class="spacer"></div>{TBTN}</div>
     {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
     <div class="bar"><div class="crumb">{crumb}</div><div class="spacer"></div>{search}</div>
-    </div></div>{ad_block()}<div class="list">{''.join(rows)}</div></div>'''
+    </div></div>{ad_block()}{gallery_block()}<div class="list">{''.join(rows)}</div></div>'''
     return page(cur, body, js)
 
 def neutral_page(msg):
@@ -504,8 +558,16 @@ def render_admin(cfg, base_url, msg="", err=""):
 
     options = "".join(f'<option value="{esc(p)}">{esc(p)}</option>' for p in scan_dirs())
     msg_html = f'<div class="msg">{esc(msg)}</div>' if msg else ""
-    site_name = cfg.get("site_name") or "沐沐单片机"
+    site_name = cfg.get("site_name") or "沐沐工作室"
     iu_admin = f"/logo?v={icon_mtime()}" if (cfg.get("site_icon") and icon_mtime()) else ""
+    thumbs = ""
+    for nm in gallery_images():
+        thumbs += (f'<div class="gthumb"><img src="/gallery/{quote(nm)}" alt="{esc(nm)}">'
+                   f'<form method="post" action="/admin"><input type="hidden" name="action" value="del_gallery_img">'
+                   f'<input type="hidden" name="fname" value="{esc(nm)}">'
+                   f'<button class="gdel" title="删除">×</button></form></div>')
+    if not thumbs:
+        thumbs = '<span style="color:var(--muted);font-size:12.5px">还没有图片，上传后将在下载页轮播展示</span>'''
     body = f'''<div class="wrap">
     <div class="top"><div class="wrap"><div class="brand">{logo_img(iu_admin)}<div class="bname"><h1>{esc(site_name)} · 管理后台</h1><div class="sub">SHARE-HUB ADMIN</div></div></div><div class="spacer"></div>
     <form method="post" action="/admin"><input type="hidden" name="action" value="logout"><button class="btn ghost" style="padding:5px 12px">退出</button></form></div></div></div>
@@ -540,6 +602,13 @@ def render_admin(cfg, base_url, msg="", err=""):
     <form method="post" action="/admin" style="margin-top:8px">
     <input type="hidden" name="action" value="reset_icon">
     <button class="btn ghost">恢复默认芯片图标</button></form></div>
+    <div class="panel"><h3>🖼 产品图库（{len(gallery_images())}/{MAX_GALLERY}）</h3>
+    <div style="color:var(--muted);font-size:12.5px;margin-bottom:10px">图片以轮播形式展示在下载页广告栏下方，建议横向照片（自动裁切为统一高度）。</div>
+    <div class="gthumbs">{thumbs}</div>
+    <form method="post" action="/admin" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+    <input type="hidden" name="action" value="upload_gallery">
+    <input type="file" name="imgs" accept="image/*" multiple required style="font-size:13px">
+    <button class="btn">上传图片（可多选）</button></form></div>
     <div class="panel"><h3>🔧 设置</h3>
     <form method="post" action="/admin"><input type="hidden" name="action" value="settings">
     <div class="frow">
@@ -597,7 +666,7 @@ class Handler(BaseHTTPRequestHandler):
         return dict(parse_qsl(body, keep_blank_values=True))
 
     def read_multipart(self):
-        """解析 multipart/form-data，返回 {字段名: (文件名, 字节)}；上限 3MB"""
+        """解析 multipart/form-data，返回 {字段名: [(文件名, 字节), ...]}；总上限 16MB"""
         import email
         ctype = self.headers.get("Content-Type", "")
         if "multipart/form-data" not in ctype:
@@ -606,7 +675,7 @@ class Handler(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length", 0))
         except ValueError:
             n = 0
-        if n <= 0 or n > 3_000_000:
+        if n <= 0 or n > 16_000_000:
             return {}
         body = self.rfile.read(n)
         msg = b"Content-Type: " + ctype.encode("latin-1") + b"\r\nMIME-Version: 1.0\r\n\r\n" + body
@@ -617,8 +686,30 @@ class Handler(BaseHTTPRequestHandler):
                 continue
             name = part.get_param("name", header="content-disposition")
             if name:
-                out[str(name)] = (part.get_filename(), part.get_payload(decode=True) or b"")
+                out.setdefault(str(name), []).append((part.get_filename(), part.get_payload(decode=True) or b""))
         return out
+
+    def send_gallery_file(self, fname):
+        if not re.match(r"^p-\d+-\d+\.(png|jpg|gif|webp|svg)$", fname):
+            self.send_html(neutral_page("404 页面不存在"), 404)
+            return
+        fp = os.path.join(GALLERY_DIR, fname)
+        try:
+            with open(fp, "rb") as f:
+                data = f.read()
+        except OSError:
+            data = b""
+        kind, mime = sniff_image(data) if data else (None, None)
+        if not kind:
+            self.send_html(neutral_page("404 页面不存在"), 404)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(data)
 
     def send_logo(self):
         data = b""
@@ -664,6 +755,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.handle_admin(method)
             elif path == "/logo":
                 self.send_logo()
+            elif path.startswith("/gallery/"):
+                self.send_gallery_file(unquote(path[len("/gallery/"):]))
             elif path.startswith("/s/"):
                 self.handle_share(path, method)
             elif path == "/healthz":
@@ -807,11 +900,34 @@ class Handler(BaseHTTPRequestHandler):
         if method == "POST":
             if "multipart/form-data" in (self.headers.get("Content-Type") or ""):
                 parts = self.read_multipart()
-                action = (parts.get("action") or (None, b""))[1].decode("utf-8", "replace")
-                if action != "upload_icon" or not authed:
+                action = (parts.get("action") or [(None, b"")])[0][1].decode("utf-8", "replace")
+                if action not in ("upload_icon", "upload_gallery") or not authed:
                     self.redirect("/admin")
                     return
-                data = (parts.get("icon") or (None, b""))[1]
+                if action == "upload_gallery":
+                    errs, saved = [], 0
+                    room = MAX_GALLERY - len(gallery_images())
+                    for _fname, data in parts.get("imgs", []):
+                        if not data:
+                            continue
+                        kind = sniff_image(data)[0]
+                        if not kind:
+                            errs.append("跳过不支持的图片格式")
+                        elif len(data) > 2_000_000:
+                            errs.append("跳过超过 2MB 的图片")
+                        elif saved >= room:
+                            errs.append("图库最多 %d 张，超出部分未保存" % MAX_GALLERY)
+                        else:
+                            with open(os.path.join(GALLERY_DIR, "p-%d-%d.%s" % (int(time.time() * 1000), saved, kind)), "wb") as fp:
+                                fp.write(data)
+                            saved += 1
+                    if errs:
+                        cfg["_authed"] = True
+                        self.send_html(render_admin(cfg, cfg.get("public_base_url", ""), err="；".join(errs)))
+                        return
+                    self.redirect("/admin")
+                    return
+                data = (parts.get("icon") or [(None, b"")])[0][1]
                 errtxt = ""
                 if not data:
                     errtxt = "未选择文件"
@@ -901,6 +1017,15 @@ class Handler(BaseHTTPRequestHandler):
                 if tok in cfg.get("links", {}):
                     del cfg["links"][tok]
                     cfg_save(cfg)
+                self.redirect("/admin")
+                return
+            if action == "del_gallery_img":
+                fname = form.get("fname", "")
+                if re.match(r"^p-\d+-\d+\.(png|jpg|gif|webp|svg)$", fname):
+                    try:
+                        os.remove(os.path.join(GALLERY_DIR, fname))
+                    except OSError:
+                        pass
                 self.redirect("/admin")
                 return
             if action == "reset_dl":

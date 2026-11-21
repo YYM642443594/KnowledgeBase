@@ -53,7 +53,7 @@ share-hub（只监听 127.0.0.1:8080，局域网亦不可直接访问）
 
 | 入口 | 地址/位置 |
 |------|-----------|
-| 管理后台 | `https://yym-2.tailb9678d.ts.net/admin` —— 新建/删除分享链接、上传站点图标（页头+favicon，PNG/JPG/GIF/WEBP/SVG ≤2MB，可恢复默认芯片图标）、编辑广告文案、改公网地址与管理密码 |
+| 管理后台 | `https://yym-2.tailb9678d.ts.net/admin` —— 新建/删除分享链接、上传站点图标（页头+favicon，PNG/JPG/GIF/WEBP/SVG ≤2MB，可恢复默认芯片图标）、编辑广告文案、管理产品图库（多选上传 ≤15 张，下载页自动轮播：4秒/张、箭头/圆点/计数角标、悬停暂停、单张删除）、改公网地址与管理密码 |
 | 管理密码 | 本机 `~/.config/share-hub/links.json` 的 `admin_password` 字段（**仓库公开，密码绝不入库**） |
 | 链接清单 | 后台登录后可见全部；或看 `links.json` 的 `links` 键 |
 | 本机健康检查 | `curl http://127.0.0.1:8080/healthz` 返回 `ok` |
@@ -68,6 +68,7 @@ share-hub（只监听 127.0.0.1:8080，局域网亦不可直接访问）
 | 配置文件 | `~/.config/share-hub/links.json`（链接表/管理密码/公网地址） |
 | Funnel 映射 | tailscaled 内置持久化（443 → 8080，重启自动恢复） |
 | zip 打包临时目录 | `/mnt/sda1/share-hub-tmp`（超过 2 小时自动清理） |
+| 产品图库目录 | `~/.config/share-hub/gallery/`（上限 15 张，每张 ≤2MB） |
 | tailscale operator | 已设为 yym（`sudo tailscale set --operator=yym` 一次性），CLI 免 sudo |
 
 配置文件格式（`links.json`）：
@@ -151,6 +152,12 @@ systemctl --user disable --now share-hub         # 彻底下线服务
 后台对应行标红并注明"已失效（过期/超限）"；朋友访问返回"链接已失效"
 提示页（HTTP 410）。过期需删除重建链接重新分发；仅计数达限时点"清零"
 按钮即可恢复下载。
+
+**Q：产品图库怎么用？**
+后台上传图片（可多选，≤15 张、单张 ≤2MB）后自动出现在下载页广告栏
+下方轮播：4 秒/张自动播放，左右箭头/圆点/计数角标，鼠标悬停暂停；
+缩略图右角 × 可单张删除。图片存于 `~/.config/share-hub/gallery/`，
+清空后轮播自动隐藏。
 
 **Q：下载页的广告栏怎么改？**
 后台 🔧 设置 → "广告标题 / 广告文案"：文案每行一条，逐行显示在
