@@ -12,7 +12,7 @@ TMP_DIR = "/mnt/sda1/share-hub-tmp"
 SCAN_ROOT = "/mnt/sda1/00.FTP"
 
 import threading
-_lock = threading.Lock()
+_lock = threading.RLock()   # 可重入：count_dl 持锁调用 cfg_save 会二次加锁
 
 # ---------------- 配置 ----------------
 def cfg_load():
@@ -153,13 +153,47 @@ def build_zip(rp, label):
                 z.writestr(os.path.join(base_arc, "(空目录).txt"), "此文件夹为空")
     return out
 
+def link_state(lk):
+    """返回 "过期" / "超限" / ""（正常）"""
+    exp = (lk.get("expires") or "").strip()
+    if exp:
+        try:
+            y, m, d = (int(x) for x in exp.split("-"))
+            if time.localtime()[:3] > (y, m, d):
+                return "过期"
+        except ValueError:
+            pass
+    mx = int(lk.get("max_downloads", 0) or 0)
+    if mx and int(lk.get("downloads", 0) or 0) >= mx:
+        return "超限"
+    return ""
+
+def count_dl(tok):
+    try:
+        with _lock:
+            cfg = cfg_load()
+            lk = cfg.get("links", {}).get(tok)
+            if lk is not None:
+                lk["downloads"] = int(lk.get("downloads", 0) or 0) + 1
+                cfg_save(cfg)
+    except Exception:
+        pass
+
 # ---------------- 页面模板 ----------------
 CSS = """
 :root{--bg:#f4f7fb;--card:rgba(255,255,255,.78);--card2:#ffffff;--text:#0f172a;--muted:#5b6b84;--line:rgba(8,145,178,.18);--line2:rgba(15,23,42,.08);--accent:#0891b2;--accent2:#6366f1;--accent3:#a855f7;--soft:rgba(8,145,178,.08);--danger:#dc2626;--grad:linear-gradient(120deg,#0891b2,#6366f1 55%,#a855f7)}
+html.dark{--bg:#070b12;--card:rgba(15,23,42,.66);--card2:#0e1626;--text:#e2e8f0;--muted:#8b93a7;--line:rgba(103,232,249,.13);--line2:rgba(148,163,184,.10);--accent:#22d3ee;--soft:rgba(34,211,238,.10);--danger:#f87171;--grad:linear-gradient(120deg,#22d3ee,#818cf8 55%,#c084fc)}
 *{box-sizing:border-box}
 html{scrollbar-color:#c3cfdd #f4f7fb}
 body{margin:0;color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(900px 460px at 88% -12%,rgba(99,102,241,.10),transparent 60%),radial-gradient(760px 420px at -12% -6%,rgba(8,145,178,.10),transparent 55%),repeating-linear-gradient(0deg,rgba(71,85,105,.045) 0 1px,transparent 1px 46px),repeating-linear-gradient(90deg,rgba(71,85,105,.045) 0 1px,transparent 1px 46px),var(--bg);background-attachment:fixed}
 a{color:var(--accent)}
+html.dark{scrollbar-color:#243044 #070b12}
+html.dark body{background:radial-gradient(900px 460px at 88% -12%,rgba(129,140,248,.16),transparent 60%),radial-gradient(760px 420px at -12% -6%,rgba(34,211,238,.12),transparent 55%),repeating-linear-gradient(0deg,rgba(148,163,184,.033) 0 1px,transparent 1px 46px),repeating-linear-gradient(90deg,rgba(148,163,184,.033) 0 1px,transparent 1px 46px),#070b12}
+.dark .top{background:rgba(7,11,18,.72);border-bottom-color:var(--line)}
+.dark .search,.dark input[type=text],.dark input[type=password],.dark input[type=date],.dark input[type=number]{background:rgba(2,8,20,.6)}
+.dark .btn.ghost{background:rgba(14,22,38,.75);color:var(--text)}
+.dark .row:hover{box-shadow:0 6px 22px rgba(34,211,238,.10)}
+.dark .card{box-shadow:0 10px 40px rgba(0,0,0,.45)}
 .wrap{max-width:900px;margin:0 auto;padding:0 16px 64px}
 .top{position:sticky;top:0;z-index:9;background:rgba(247,250,253,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line2)}
 .top::before{content:"";display:block;height:2px;background:var(--grad);background-size:220% 100%;animation:sheen 7s linear infinite}
@@ -196,6 +230,30 @@ a.fill{display:flex;align-items:center;gap:12px;flex:1;min-width:0;color:inherit
 a.fill:hover b{color:var(--accent)}
 .ic{width:36px;height:36px;border-radius:10px;background:var(--soft);border:1px solid rgba(8,145,178,.14);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
 .ic svg{width:20px;height:20px}
+.ic[data-ic=folder]{color:#0891b2}
+html.dark .ic[data-ic=folder]{color:#22d3ee}
+.ic[data-ic=text]{color:#64748b}
+html.dark .ic[data-ic=text]{color:#94a3b8}
+.ic[data-ic=image]{color:#059669}
+html.dark .ic[data-ic=image]{color:#34d399}
+.ic[data-ic=video]{color:#db2777}
+html.dark .ic[data-ic=video]{color:#f472b6}
+.ic[data-ic=audio]{color:#d97706}
+html.dark .ic[data-ic=audio]{color:#fbbf24}
+.ic[data-ic=archive]{color:#ea580c}
+html.dark .ic[data-ic=archive]{color:#fb923c}
+.ic[data-ic=code]{color:#16a34a}
+html.dark .ic[data-ic=code]{color:#4ade80}
+.ic[data-ic=package]{color:#2563eb}
+html.dark .ic[data-ic=package]{color:#60a5fa}
+.ic[data-ic=file]{color:#64748b}
+html.dark .ic[data-ic=file]{color:#94a3b8}
+.tbtn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9px;border:1px solid var(--line2);background:var(--card2);color:var(--muted);cursor:pointer;transition:.2s;padding:0}
+.tbtn:hover{color:var(--accent);border-color:var(--accent)}
+.tbtn svg{width:16px;height:16px}
+.tbtn .sun{display:none}
+html.dark .tbtn .sun{display:block}
+html.dark .tbtn .moon{display:none}
 .nm{flex:1;min-width:0}
 .nm b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meta{color:var(--muted);font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;display:flex;gap:14px;margin-top:2px}
@@ -222,7 +280,7 @@ td.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-si
 .panel h3{margin:0 0 12px;font-size:15px}
 .frow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .frow label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);flex:1;min-width:170px}
-input[type=text],input[type=password]{border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:9px;padding:8px 12px;font-size:14px;outline:none;width:100%;transition:.2s}
+input[type=text],input[type=password],input[type=date],input[type=number]{border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:9px;padding:8px 12px;font-size:14px;outline:none;width:100%;transition:.2s}
 input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(8,145,178,.12)}
 .msg{background:var(--soft);color:#0e7490;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:13.5px}
 .login{max-width:360px;margin:12vh auto 0}
@@ -252,9 +310,10 @@ def logo_img(iu, extra=""):
     inner = f'<img src="{iu}" alt="站点图标">' if iu else CHIP_SVG
     return f'<div class="logo"{extra}>{inner}</div>'
 
-ICON_COLOR = {"folder": "#0891b2", "text": "#64748b", "image": "#059669", "video": "#db2777",
-              "audio": "#d97706", "archive": "#ea580c", "code": "#16a34a", "package": "#2563eb",
-              "file": "#64748b"}
+SUN_SVG = '<svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg>'
+MOON_SVG = '<svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.4 13.2A8.5 8.5 0 1 1 10.8 3.6a7 7 0 0 0 9.6 9.6z"/></svg>'
+TBTN = ('<button class="tbtn" onclick="tgl()" title="切换深浅色">'
+        + SUN_SVG + MOON_SVG + '</button>')
 
 def brand():
     try:
@@ -276,7 +335,7 @@ def page(title, body, extra_head=""):
 <meta name="robots" content="noindex,nofollow">
 <title>{esc(title)} · {esc(site)}</title>
 {icon_link}
-<style>{CSS}</style>{extra_head}</head>
+<style>{CSS}</style>{extra_head}<script>function tgl(){{var r=document.documentElement;var d=r.classList.toggle("dark");try{{localStorage.setItem("sh-theme",d?"dark":"light")}}catch(e){{}}}}(function(){{try{{if(localStorage.getItem("sh-theme")==="dark")document.documentElement.classList.add("dark")}}catch(e){{}}}})();</script></head>
 <body>{body}<div class="foot"><span class="fb">{esc(site)}</span> · 资料下载站<br><span class="fc">{esc(contact)}</span><br><span style="opacity:.5">READ-ONLY · 只读下载</span></div></body></html>"""
 
 def crumb_html(tok, link_name, rel_parts):
@@ -297,14 +356,14 @@ def render_browse(tok, link, rel_parts, rp):
     if is_file:
         st = os.stat(rp)
         name = os.path.basename(rp)
-        row = f'''<div class="row" style="cursor:default"><div class="ic" style="color:{ICON_COLOR.get(icon_key(name, False), ICON_COLOR["file"])}">{icon_svg(name, False)}</div>
+        row = f'''<div class="row" style="cursor:default"><div class="ic" data-ic="{icon_key(name, False)}">{icon_svg(name, False)}</div>
         <div class="nm"><b>{esc(name)}</b><div class="meta"><span>{fmt_size(st.st_size)}</span><span class="dt">{fmt_time(st.st_mtime)}</span></div></div>
         <a class="btn dl" href="{base}/f/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["download"]}</svg>下载</a></div>'''
         site, _, iu = brand()
         body = f'''<div class="wrap"><div class="top"><div class="wrap">
         <div class="brand">{logo_img(iu)}<div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div></div>
         {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
-        <div class="bar"><div class="crumb">{crumb_html(tok, link["name"], rel_parts[:-1])}</div></div></div></div>
+        <div class="bar"><div class="crumb">{crumb_html(tok, link["name"], rel_parts[:-1])}</div><div class="spacer"></div>{TBTN}</div></div></div>
         <div class="list">{row}</div></div>'''
         return page(link["name"], body)
 
@@ -315,7 +374,7 @@ def render_browse(tok, link, rel_parts, rp):
         acc2 = (rel_acc + "/" + d) if rel_acc else d
         href = f"{base}/b/{quote(acc2, safe='')}"
         zip_href = f"{base}/z/{quote(acc2, safe='')}"
-        rows.append(f'''<div class="row"><a class="fill" href="{href}"><div class="ic" style="color:{ICON_COLOR["folder"]}">{icon_svg(d, True)}</div>
+        rows.append(f'''<div class="row"><a class="fill" href="{href}"><div class="ic" data-ic="folder">{icon_svg(d, True)}</div>
         <div class="nm"><b>{esc(d)}</b><div class="meta"><span>文件夹</span></div></div></a>
         <a class="btn ghost dl" href="{zip_href}" title="下载此文件夹（自动打包为 zip，大文件夹首次点击需稍等）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["download"]}</svg>下载</a></div>''')
     for f in files:
@@ -323,11 +382,11 @@ def render_browse(tok, link, rel_parts, rp):
         try: st = os.stat(os.path.join(rp, f))
         except OSError: continue
         href = f"{base}/f/{quote(acc2, safe='')}"
-        rows.append(f'''<a class="row" data-name="{esc(f.lower())}" href="{href}"><div class="ic" style="color:{ICON_COLOR.get(icon_key(f, False), ICON_COLOR["file"])}">{icon_svg(f, False)}</div>
+        rows.append(f'''<a class="row" data-name="{esc(f.lower())}" href="{href}"><div class="ic" data-ic="{icon_key(f, False)}">{icon_svg(f, False)}</div>
         <div class="nm"><b>{esc(f)}</b><div class="meta"><span>{fmt_size(st.st_size)}</span><span class="dt">{fmt_time(st.st_mtime)}</span></div></div>
         <span class="btn ghost dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["download"]}</svg>下载</span></a>''')
     if not rows:
-        rows.append('<div class="empty"><div class="ic" style="color:' + ICON_COLOR["folder"] + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' + SVG_ICONS["folder"] + '</svg></div>这个文件夹是空的</div>')
+        rows.append('<div class="empty"><div class="ic" data-ic="folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' + SVG_ICONS["folder"] + '</svg></div>这个文件夹是空的</div>')
 
     site, _, iu = brand()
     cur = rel_parts[-1] if rel_parts else link["name"]
@@ -338,7 +397,7 @@ def render_browse(tok, link, rel_parts, rp):
     body = f'''<div class="wrap"><div class="top"><div class="wrap">
     <div class="brand">{logo_img(iu)}<div class="bname"><h1>{esc(site)}</h1><div class="sub">资料下载站 · READ-ONLY</div></div></div>
     {("<div class='note'>" + esc(link.get("note", "")) + "</div>") if link.get("note") else ""}
-    <div class="bar"><div class="crumb">{crumb}</div><div class="spacer"></div>{search}
+    <div class="bar"><div class="crumb">{crumb}</div><div class="spacer"></div>{search}{TBTN}
     <a class="btn" href="{zip_href}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["archive"]}</svg>打包下载</a></div>
     </div></div><div class="list">{''.join(rows)}</div></div>'''
     return page(cur, body, js)
@@ -346,7 +405,7 @@ def render_browse(tok, link, rel_parts, rp):
 def neutral_page(msg):
     site, _, iu = brand()
     body = f'''<div class="wrap" style="max-width:420px;margin-top:16vh">
-    <div class="card"><div class="ic" style="color:{ICON_COLOR["package"]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["package"]}</svg></div>
+    <div class="card"><div class="ic" data-ic="package"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{SVG_ICONS["package"]}</svg></div>
     <h2>{esc(site)}</h2><div class="meta"><span>{esc(msg)}</span></div></div></div>'''
     return page(site, body)
 
@@ -394,15 +453,31 @@ def render_admin(cfg, base_url, msg="", err=""):
     for tok, lk in cfg.get("links", {}).items():
         url = f"{base_url}/s/{tok}"
         pw = "🔒 有" if lk.get("pw_hash") else "—"
-        rows.append(f'''<tr><td><b>{esc(lk["name"])}</b>{('<div class="meta"><span>' + esc(lk.get("note", "")) + '</span></div>') if lk.get("note") else ''}</td>
+        state = link_state(lk)
+        name_html = f'<b style="color:var(--danger)">{esc(lk["name"])}</b>' if state else f'<b>{esc(lk["name"])}</b>'
+        if state:
+            name_html += f'<div class="meta"><span style="color:var(--danger)">已失效（{state}）</span></div>'
+        elif lk.get("note"):
+            name_html += f'<div class="meta"><span>{esc(lk["note"])}</span></div>'
+        exp_disp = esc(lk.get("expires") or "永久")
+        if state == "过期":
+            exp_disp = f'<span style="color:var(--danger)">{exp_disp}</span>'
+        dl = int(lk.get("downloads", 0) or 0)
+        mx = int(lk.get("max_downloads", 0) or 0)
+        dl_disp = f"{dl} / {mx if mx else '∞'}"
+        if state == "超限":
+            dl_disp = f'<span style="color:var(--danger)">{dl} / {mx}</span>'
+        rows.append(f'''<tr><td>{name_html}</td>
         <td class="code">{esc(lk["path"])}</td>
         <td class="code"><a href="{esc(url)}" target="_blank">{esc(url)}</a>
         <button class="btn ghost" style="padding:3px 8px;font-size:12px;margin-top:4px" onclick="cp(this)" data-u="{esc(url)}">复制</button></td>
         <td>{pw}</td>
+        <td>{exp_disp}</td>
+        <td>{dl_disp} <form style="display:inline" method="post" action="/admin"><input type="hidden" name="action" value="reset_dl"><input type="hidden" name="tok" value="{esc(tok)}"><button class="btn danger" style="padding:2px 8px;font-size:11.5px">清零</button></form></td>
         <td><form method="post" action="/admin" onsubmit="return confirm('确定删除分享「{esc(lk["name"])}」？链接将立即失效。')">
         <input type="hidden" name="action" value="delete"><input type="hidden" name="tok" value="{esc(tok)}">
         <button class="btn danger">删除</button></form></td></tr>''')
-    table = ('<table><tr><th>名称</th><th>目录</th><th>访问链接</th><th>密码</th><th></th></tr>' + ''.join(rows) + '</table>') if rows else \
+    table = ('<table><tr><th>名称</th><th>目录</th><th>访问链接</th><th>密码</th><th>有效期</th><th>下载</th><th></th></tr>' + ''.join(rows) + '</table>') if rows else \
         '<div class="empty">还没有创建任何分享链接</div>'
 
     options = "".join(f'<option value="{esc(p)}">{esc(p)}</option>' for p in scan_dirs())
@@ -425,6 +500,10 @@ def render_admin(cfg, base_url, msg="", err=""):
     <div class="frow">
     <label>访问密码（可选，留空=仅凭链接访问）<input type="text" name="password" placeholder="留空则不需要密码"></label>
     <label>备注（可选，仅显示给朋友）<input type="text" name="note" placeholder="例如：PX4 教程+固件，有问题联系我"></label>
+    </div>
+    <div class="frow">
+    <label>有效期至（可选，留空=永久）<input type="date" name="expires"></label>
+    <label>下载次数上限（可选，留空或 0 =不限）<input type="number" name="maxdl" min="0" placeholder="不限"></label>
     </div>
     <button class="btn">创建分享链接</button></form></div>
     <div class="panel"><h3>🖼 站点图标</h3>
@@ -587,6 +666,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         link = links[match]
 
+        # 有效期与下载次数限制
+        if link_state(link):
+            self.send_html(neutral_page("链接已失效（已过期或下载次数达上限），请联系分享者"), 410)
+            return
+
         # 密码保护
         if link.get("pw_hash"):
             ck = self.cookies().get(f"acc_{match}", "")
@@ -618,6 +702,7 @@ class Handler(BaseHTTPRequestHandler):
             if os.path.isdir(rp):
                 self.send_html(neutral_page("这是文件夹，请使用打包下载"), 400)
                 return
+            count_dl(match)
             self.send_file(rp, method)
         elif kind == "z":
             if os.path.isfile(rp):
@@ -625,6 +710,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             label = segs[-1] if (segs and segs[-1]) else link["name"]
             zpath = build_zip(rp, label)
+            count_dl(match)
             try:
                 self.send_file(zpath, method, download_name=f"{label}.zip", delete_after=True)
             finally:
@@ -746,10 +832,27 @@ class Handler(BaseHTTPRequestHandler):
                 path = form.get("path", "").strip()
                 password = form.get("password", "").strip()
                 note = form.get("note", "").strip()[:120]
+                expires = form.get("expires", "").strip()
+                maxdl_s = form.get("maxdl", "").strip()
+                err = ""
+                maxdl = 0
+                if expires:
+                    try:
+                        time.strptime(expires, "%Y-%m-%d")
+                    except ValueError:
+                        err = "有效期日期格式应为 YYYY-MM-DD"
+                try:
+                    maxdl = int(maxdl_s) if maxdl_s else 0
+                    if maxdl < 0:
+                        raise ValueError
+                except ValueError:
+                    err = err or "下载次数上限应为非负整数"
                 rp = os.path.realpath(path) if path else ""
-                if not name or not rp or not os.path.exists(rp):
+                if not err and (not name or not rp or not os.path.exists(rp)):
+                    err = "名称或路径无效（路径必须真实存在）"
+                if err:
                     cfg["_authed"] = True
-                    self.send_html(render_admin(cfg, cfg.get("public_base_url", ""), err="名称或路径无效（路径必须真实存在）"))
+                    self.send_html(render_admin(cfg, cfg.get("public_base_url", ""), err=err))
                     return
                 tok = secrets.token_urlsafe(9)
                 while tok in cfg.get("links", {}):
@@ -757,6 +860,7 @@ class Handler(BaseHTTPRequestHandler):
                 cfg.setdefault("links", {})[tok] = {
                     "name": name, "path": rp, "note": note,
                     "pw_hash": hashlib.sha256(password.encode()).hexdigest() if password else "",
+                    "expires": expires, "max_downloads": maxdl, "downloads": 0,
                     "created": time.strftime("%Y-%m-%d"),
                 }
                 cfg_save(cfg)
@@ -768,6 +872,13 @@ class Handler(BaseHTTPRequestHandler):
                 tok = form.get("tok", "")
                 if tok in cfg.get("links", {}):
                     del cfg["links"][tok]
+                    cfg_save(cfg)
+                self.redirect("/admin")
+                return
+            if action == "reset_dl":
+                lk = cfg.get("links", {}).get(form.get("tok", ""))
+                if lk is not None:
+                    lk["downloads"] = 0
                     cfg_save(cfg)
                 self.redirect("/admin")
                 return
