@@ -46,7 +46,7 @@ ESP/
 |----------|------|------|
 | ESP-32 | [Readme.md](ESP-32/Readme.md) | 全模块 HAL/BSP/APP 功能记录、硬件资源表、8 条数据通路、回显/按键/配网/蓝牙/NAT/转发验证手册、MCU 移植提示 |
 | ESP-32 | [Project_Level_Skill.md](ESP-32/Project_Level_Skill.md) | ESP-IDF 四层架构规范（命名/裁剪开关/分层依赖/移植规则） |
-| ESP-32-CAM | [Readme.md](ESP-32-CAM/Readme.md) | 摄像头监控全记录（hal_cam/SD 录像/检测/邮件/场景联动）+ 31 条踩坑 + 遗留 Bug 表 + 版本历史 |
+| ESP-32-CAM | [Readme.md](ESP-32-CAM/Readme.md) | 摄像头监控全记录（hal_cam/SD 录像/检测/邮件/场景联动）+ 36 条踩坑 + 遗留 Bug 表 + 版本历史 |
 | ESP-8266 | [Readme.md](ESP-8266/Readme.md) | XCOM 全记录（透传/转发/五云桥/GPIO 闹钟/防克隆）+ 7 条数据通路 + 踩坑表 + 版本修改史 |
 | ESP-8266 | [Project_Level_Skill.md](ESP-8266/Project_Level_Skill.md) | Arduino 单仓分层规范（形态B：HAL 在 01.HAL/，BSP/APP 在 modules/） |
 | ESP-8266 | [Cloud_Protocol.md](ESP-8266/Cloud_Protocol.md) | 阿里/OneNET/巴法/腾讯/华为五云平台指令表、签名格式、主题语义 |
@@ -71,7 +71,7 @@ ESP/
 | WS 网页终端 | :81 端口二进制通道广播串口数据；慢客户端处理：ESP-32 登记表+合批缓冲（30ms 合帧），ESP-8266 心跳剔除僵尸+逐客户端发送 | ESP-32 bsp_web；ESP-8266 V1.0.5.19 补丁 |
 | 阻塞 connect 卡主循环 | 建链前置校验（凭据/NTP 门控）+ 非阻塞退避，DNS/TCP 同步阻塞会冻结轮询数秒 | ESP-8266 V1.0.2.7 / V1.0.5.1；ESP-32 转发用非阻塞 connect+select |
 | Mesh/多 AP 同名 | STA 钉住 BSSID+信道免扫描重连（扫描期间 SoftAP 停发信标），8 次失败解锁重扫 | ESP-32-CAM 踩坑 26（V1.3.0.6） |
-| 烧录口纪律 | Linux YYM 机：ESP32-CAM=/dev/ttyUSB1、ESP8266=/dev/ttyUSB0，均 115200（460800 失联）；烧录前后检查 serial_sim.py 存活；ESP32-CAM 构建/烧录须 `export IDF_TOOLS_PATH=/home/yym/sda1/espressif`（配置在 /mnt/sda1 会被拒：python_env 实际在 /home/yym/sda1，双目录易混） | ESP-32-CAM 硬件表/踩坑 22/版本历史 V1.4.2.10 复测行 |
+| 烧录口纪律 | Linux YYM 机：ESP32-CAM 烧录口随 udev 枚举漂移（10-26=/dev/ttyUSB1，11-23=/dev/ttyUSB2），以「打开即复位+ov3660 banner」定向认定当轮实际口，均 115200（460800 失联）；ESP32-CAM 构建须 `export IDF_TOOLS_PATH=/home/yym/sda1/espressif`（配置在 /mnt/sda1 会被拒：python_env 实际在 /home/yym/sda1，双目录易混；/home/yym/sda1 为 /mnt/sda1 软链，同树）；烧录后同一轮重建串口常驻监听 | ESP-32-CAM 硬件表/踩坑 22/35/版本历史 V1.4.2.14 复测行 |
 
 ## 归档规则
 
