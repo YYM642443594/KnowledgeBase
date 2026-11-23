@@ -1,7 +1,7 @@
 ---
 title: IMU 知识库
 created: 2026-10-23
-updated: 2026-11-13
+updated: 2026-11-23
 tags: [IMU, GD32, 嵌入式]
 source: 原创
 ---
@@ -11,6 +11,7 @@ source: 原创
 > 2026-10-23 重组：原 IMU_103_303_333、IMU_303_351 两个工程目录合并至本知识库，**按 MCU 型号划分目录**（一个 MCU 目录 = 一个固件工程），不再按产品号建目录。
 > 产品归属记录在各 MCU 目录 Readme 中；所有 IMU 共用本知识库。
 > 2026-11-13 新增：GD32F303 平台并入 506 工程（GD32F303MCU，产品 506/硬件 B06），同目录双工程共存，详见该目录 Readme。
+> 2026-11-23 新增：GD32F470ZGT6 平台（工程 GD32F4xxMCU + GD32F4xx_Loader 升级框架），详见该目录 Readme。
 
 ## MCU 目录与工程映射
 
@@ -18,6 +19,7 @@ source: 原创
 |------------------|----------|-----------|----------|
 | [GD32F103/](GD32F103/) | IMU_103_303_333 | Cortex-M3 @ 108MHz（量产 Loader 布局实测 GD32F103T8） | 303、333 |
 | [GD32F303/](GD32F303/) | IMU_303_351；GD32F303MCU（506Custom，子仓 BSP_IMU `develop` + 主仓 `feature/506Custom`） | Cortex-M4 @ 120MHz（351:GD32F303CB / 506:GD32F303CGT6） | 351、506 |
+| [GD32F470/](GD32F470/) | GD32F4xxMCU（BSP_501_PROJECT，分支 `feature/IMUProject`）+ GD32F4xx_Loader（升级框架，分支 `feature/upgrade`） | Cortex-M4 @ 200MHz（GD32F470ZGT6，1MB Flash 非均匀扇区） | 新平台 |
 
 > 工程名规则解读：`IMU_{MCU}_{产品...}`。新工程 = 新 MCU 平台时，在映射表登记并新建同名目录；同平台新增产品只更新对应目录 Readme 的「服务产品」，不新建目录。
 
@@ -28,6 +30,7 @@ IMU/
 ├── Readme.md      ← 本索引（工程映射、文档索引、知识链、归档规则）
 ├── GD32F103/      ← 工程 IMU_103_303_333（产品 303、333）
 ├── GD32F303/      ← 工程 IMU_303_351（产品 351）+ GD32F303MCU（产品 506/B06）
+├── GD32F470/      ← 工程 GD32F4xxMCU（BSP_501_PROJECT）+ GD32F4xx_Loader 升级框架
 └── Linux-UartTestVerifDemo/ ← 上位机测试工具（Linux 串口验证程序 imu_test）
 ```
 
@@ -50,6 +53,7 @@ IMU/
 | GD32F303 | [串口丢字节修复报告](GD32F303/串口丢字节修复报告.md) | SysTick 内 64 位软件除法拖长最高优先级中断致 ORE 丢字节，修复为 32 位硬件除法 |
 | GD32F303 | [506推送帧时间乱走排查与修复报告](GD32F303/506推送帧时间乱走排查与修复报告.md) | 506 推送帧时间乱走三层排查：DWT 时基源丢失增量基准更新（真根因，二次方膨胀）、64 位撕裂读、复位源诊断 |
 | GD32F303 | [506工程GD32F303CB升级CGT6迁移报告](GD32F303/506工程GD32F303CB升级CGT6迁移报告.md) | HD/XD 子系列宏互斥双定义致 1320 错误、启动文件迁移、Flash 特性核对与资源核算 |
+| GD32F470 | [GD32F470串口Bootloader非均匀扇区分区设计与跳转失败修复报告](GD32F470/GD32F470串口Bootloader非均匀扇区分区设计与跳转失败修复报告.md) | 占位配置落入 1KB 页规划致擦参数毁 APP 向量表、非均匀扇区元数据独立扇区设计、APP_END 上界与固件总长校验、换基址三处同步、烧录恢复纪律 |
 | Linux-UartTestVerifDemo | [模块文档 01~07](Linux-UartTestVerifDemo/Doc/01-架构与线程模型.md) | 三层架构与线程模型 / termios 驱动 / SPSC 无锁队列 / 帧同步+CRC16+统计 / AT·HEX 验证器（混流容错、自动还原、压力模式）/ 构建运行与排障 |
 
 ## 跨平台知识链（串口丢字节，全平台通用）
