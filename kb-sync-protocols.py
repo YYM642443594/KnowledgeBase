@@ -39,14 +39,14 @@ def main():
     if not os.path.isdir(os.path.join(CLONE, ".git")):
         fail(f"WorkRecord clone missing at {CLONE}")
     head = None
-    for attempt in (1, 2, 3):           # gitee SSH 偶发瞬时失败（11-19/11-23 凌晨各一次），重试规避
+    for attempt in (1, 2, 3, 4, 5):     # gitee SSH 偶发瞬时失败（11-19/11-23 凌晨各一次），3连败后改5次+指数退避20/40/80/160s
         r = sh(f"git fetch origin {BRANCH}", cwd=CLONE)
         if r.returncode == 0:
             head = sh("git rev-parse origin/" + BRANCH, cwd=CLONE).stdout.strip()
             if head:
                 break
-        if attempt < 3:
-            import time; time.sleep(20)
+        if attempt < 5:
+            import time; time.sleep(20 * (2 ** (attempt - 1)))
     if not head:
         fail("gitee fetch failed: " + (r.stderr or r.stdout)[:200])
     old = {}
