@@ -9,14 +9,15 @@ source: 原创
 # GD32F470 平台知识库
 
 > 2026-11-23 新建：GD32F470ZGT6 平台（1MB Flash / 25MHz 晶振 / 200MHz 主频）并入知识库。
-> 固件工程 GD32F4xxMCU（BSP_501_PROJECT / HARDWARE_501_D00）+ 配套 GD32F4xx_Loader（升级框架
-> bsp_loader 子仓库）。串口升级三通道 USART0/1/2（921600），分区设计与跳转失败修复见文档索引。
+> 固件工程 GD32F4xxMCU（BSP_507_PROJECT / HARDWARE_507_D00，接入自量产 501 同路径）+
+> 配套 GD32F4xx_Loader（升级框架 bsp_loader 子仓库）。串口升级三通道 USART0/1/2（921600），
+> 分区设计与跳转失败修复见文档索引。507 初期暂无算法计算（指令/配置/推送框架先行）。
 
 ## 固件工程与产品映射
 
 | 工程 | 仓库/分支 | 芯片 | 说明 |
 |------|-----------|------|------|
-| GD32F4xxMCU（APP） | GD32F4xxMCU.git，分支 `feature/IMUProject` | GD32F470ZGT6 | APP 链接基址 0x0800C000，BSP_501_PROJECT |
+| GD32F4xxMCU（APP） | GD32F4xxMCU.git，分支 `feature/IMUProject` | GD32F470ZGT6 | APP 链接基址 0x0800C000，BSP_507_PROJECT（暂无算法链） |
 | GD32F4xx_Loader（Loader） | GD32F4xx_Loader.git，分支 `feature/upgrade`（内嵌 bsp_loader 子仓库） | GD32F470ZGT6 | Loader 0x08000000，升级框架多平台共用 |
 
 ## Flash 分区速查（GD32F470ZGT6, 1MB）
@@ -35,3 +36,5 @@ source: 原创
 | 文档 | 主题 |
 |------|------|
 | [GD32F470串口Bootloader非均匀扇区分区设计与跳转失败修复报告](GD32F470串口Bootloader非均匀扇区分区设计与跳转失败修复报告.md) | 占位配置落入 1KB 页规划致擦参数毁 APP 向量表、非均匀扇区元数据独立扇区设计、APP_END 上界与固件总长校验、APP 三处地址同步、烧录恢复纪律 |
+| [507-APP工程接入与指令参数存储升级链路报告](507-APP工程接入与指令参数存储升级链路报告.md) | BSP_507_PROJECT 并列 guard 接入模式与算法链摘除边界、发送链漏分支静默丢帧教训、A/B 双页 F4 扇区布局约束与保存停顿、0604 升级链路（标志三方对齐/纯字编程接口/首烧陷阱）、ROM<80KB 约束 |
+| [507-推送时间戳DWT实测us时基修复报告](507-推送时间戳DWT实测us时基修复报告.md) | 名义 1ms 累加 vs DWT 实测增量根因、时基源注册契约（回绕安全差分/预热基准/禁重复清 CYCCNT）、dwt.h 冻结符号差异陷阱、验证方法 |
