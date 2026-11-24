@@ -255,7 +255,7 @@ def build(commits):
         for root_dir in (d if isinstance(d, tuple) else (d,)):
             imgdir = os.path.join(HERE, root_dir, "00.Image")
             if not os.path.isdir(imgdir): continue
-            for fn in os.listdir(imgdir):
+            for fn in sorted(os.listdir(imgdir)):
                 if not fn.lower().endswith((".png", ".jpg", ".jpeg", ".gif")): continue
                 ext = fn.rsplit(".", 1)[1].lower()
                 mime = "image/png" if ext == "png" else ("image/gif" if ext == "gif" else "image/jpeg")
