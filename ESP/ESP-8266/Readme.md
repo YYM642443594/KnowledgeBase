@@ -1,7 +1,7 @@
 ---
 title: ESP8266-XCOM 串口 WiFi 透传器 工程功能记录
 created: 2026-09-23
-updated: 2026-11-11
+updated: 2026-11-24
 tags: [ESP8266, 透传, 嵌入式]
 source: 原创
 ---
