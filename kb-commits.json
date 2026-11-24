@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "33076e0b"
+  "content_head": "aa3c013b"
  },
  "commits": [
+  {
+   "sha": "aa3c013b",
+   "date": "2026-11-24 22:00",
+   "msg": "ESP32-CAM 第十四轮巡检(11-24晚): rawrst=5(ESP_RST_TASK_WDT)实锤第四种复位形"
+  },
   {
    "sha": "33076e0b",
    "date": "2026-11-24 16:00",
@@ -147,11 +152,6 @@
    "sha": "afc1dfc2",
    "date": "2026-11-20 17:23",
    "msg": "更新：新增 share-hub 一键部署脚本 setup-share-hub.sh"
-  },
-  {
-   "sha": "ae429e0b",
-   "date": "2026-11-20 17:10",
-   "msg": "更新：share-hub 文档补充「换机从零部署清单」"
   }
  ]
 }
