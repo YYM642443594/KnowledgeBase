@@ -1,7 +1,7 @@
 ---
 title: ESP 知识库
 created: 2026-10-26
-updated: 2026-10-31
+updated: 2026-11-23
 tags: [ESP32, ESP8266, 嵌入式]
 source: 原创
 ---

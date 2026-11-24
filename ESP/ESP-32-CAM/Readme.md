@@ -1,7 +1,7 @@
 ---
 title: ESP32-CAM 网页视频监控工程功能记录
 created: 2026-10-10
-updated: 2026-11-23
+updated: 2026-11-24
 tags: [ESP32, 视频监控, 嵌入式]
 source: 原创
 ---
