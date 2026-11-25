@@ -1,7 +1,7 @@
 ---
 title: GD32F303 平台（工程 IMU_303_351 / GD32F303MCU）
 created: 2026-10-23
-updated: 2026-11-13
+updated: 2026-11-25
 tags: [IMU, GD32, 嵌入式]
 source: 原创
 ---
