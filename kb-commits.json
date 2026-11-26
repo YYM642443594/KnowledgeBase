@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "912606e0"
+  "content_head": "3d41cbba"
  },
  "commits": [
+  {
+   "sha": "3d41cbba",
+   "date": "2026-11-27 00:08",
+   "msg": "整理：落地 KNOWLEDGE-107 已评审的登记滞后修正并同步 README 工程区描述（2026-11-27 巡检"
+  },
   {
    "sha": "912606e0",
    "date": "2026-11-26 06:22",
@@ -147,11 +152,6 @@
    "sha": "f99bdbdf",
    "date": "2026-11-21 14:27",
    "msg": "merge: 合入 T2 查看器「项目总览」实现（KNOWLEDGE-12）"
-  },
-  {
-   "sha": "12d5cee3",
-   "date": "2026-11-21 14:25",
-   "msg": "merge: 合入 T1 项目卡片数据落库（KNOWLEDGE-11）"
   }
  ]
 }
