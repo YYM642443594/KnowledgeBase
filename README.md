@@ -92,7 +92,7 @@ KnowledgeBase/
 │   ── 工程知识区（按芯片/工具平台组织，一个平台目录 = 一个工程）──
 │
 ├── ESP/                       # ESP32 / ESP-32-CAM / ESP-8266 固件工程（文档 + 板级代码）
-├── IMU/                       # GD32F103 / GD32F303 IMU 固件与排查报告、Linux 串口验证工程
+├── IMU/                       # GD32F103 / GD32F303 / GD32F470 IMU 固件与排查报告、Linux 串口验证工程
 ├── STM32/                     # STM32_F10x 工程知识
 ├── QT-Tools/                  # 志翔 IMU 上位机（Qt 6 / QML）项目文档
 ├── Linux-Scripts/             # Linux 常用机环境脚本

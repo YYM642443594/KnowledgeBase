@@ -1,7 +1,7 @@
 ---
 title: 参数页升级 SN 乱码与预留区扩展机制报告（2026-10-23）
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-18
 tags: [IMU, GD32, 排查]
 source: 原创
 ---
