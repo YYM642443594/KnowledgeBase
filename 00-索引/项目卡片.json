@@ -1,8 +1,8 @@
 {
   "meta": {
     "name": "知识库项目卡片清单",
-    "updated": "2026-11-13",
-    "description": "知识库工程知识区 8 个项目的结构化清单：每个项目按「功能 / 芯片 / 指令 / 问题」四个维度登记，条目均注明出处文档（仓库内相对路径）。供网页查看器「项目总览」视图与文档导航消费。",
+    "updated": "2026-11-27",
+    "description": "知识库工程知识区 9 个项目的结构化清单：每个项目按「功能 / 芯片 / 指令 / 问题」四个维度登记，条目均注明出处文档（仓库内相对路径）。供网页查看器「项目总览」视图与文档导航消费。",
     "provenance": "由知识库整理助手基于仓库文档逐篇盘点生成（KNOWLEDGE-11 T1）；只收录能在仓库文档中找到出处的信息，未在文档中出现的内容不录入。",
     "schema": {
       "id": "稳定标识（与工程目录名一致）",
@@ -199,6 +199,41 @@
       "docs": ["IMU/GD32F303/Readme.md", "IMU/GD32F303/AT与HEX及CAN指令集说明.md", "IMU/GD32F303/PPS功能实现说明.md", "IMU/GD32F303/0x091时间戳抖动修复报告.md", "IMU/GD32F303/串口丢字节修复报告.md", "IMU/GD32F303/参数页升级SN乱码与预留区扩展机制报告.md", "IMU/GD32F303/506推送帧时间乱走排查与修复报告.md", "IMU/GD32F303/506工程GD32F303CB升级CGT6迁移报告.md", "IMU/Readme.md"],
       "note": "",
       "updated": "2026-11-13"
+    },
+    {
+      "id": "GD32F470",
+      "name": "GD32F470 平台 IMU 固件（GD32F4xxMCU / GD32F4xx_Loader）",
+      "dir": "IMU/GD32F470",
+      "summary": "GD32F470ZGT6 平台固件工程 GD32F4xxMCU（BSP_507_PROJECT，服务产品 507，初期暂无算法链）+ GD32F4xx_Loader 串口升级框架：非均匀扇区分区、A/B 双页参数存储、指令/配置/推送框架、PPS 授时与 DWT us 时基接入。",
+      "features": [
+        { "item": "APP/Loader 双工程：GD32F4xxMCU（APP 基址 0x0800C000，BSP_507_PROJECT）+ GD32F4xx_Loader（升级框架 bsp_loader 子仓），串口升级三通道 USART0/1/2（921600）", "source": "IMU/GD32F470/Readme.md" },
+        { "item": "AT/HEX 双指令协议层直接继承可用（协议层无 501/507 专属 guard，507 走通用路径与量产 501 同路径）", "source": "IMU/GD32F470/507-APP工程接入与指令参数存储升级链路报告.md" },
+        { "item": "参数存储 A/B 双页（与 506 共用双页冗余机制），GD32F470 无小页放独立扇区 sector5/6（0x08020000/0x08040000），升级擦除不波及", "source": "IMU/GD32F470/507-APP工程接入与指令参数存储升级链路报告.md" },
+        { "item": "PPS 输入捕获授时（PA2/EXTI2 + 50ms 消抖；模式 1 校准内部时间戳、模式 2 每脉冲触发一帧 0x0013；上电从配置恢复开关/模式，2s 无脉冲自动失锁）", "source": "IMU/GD32F470/507-PPS输入捕获功能接入报告.md" },
+        { "item": "推送时间戳 DWT 实测 us 时基（SysTick 1ms 节拍按注册时基源实测增量锁存，32 位回绕安全差分，替代名义 1ms 累加过渡方案）", "source": "IMU/GD32F470/507-推送时间戳DWT实测us时基修复报告.md" },
+        { "item": "AT+PUSH4K 4kHz 高帧率推送调试通道（us 级旁路调度 250µs 固定步进，RAM 态开关不落盘；ON 前置校验波特率 ≥2M；已编译通过尚未实机验证）", "source": "IMU/GD32F470/507-串口推送带宽预算与4kHz高帧率推送设计分析.md" },
+        { "item": "串口升级（0604）：置 AppToLoaderFlag 常驻待升级 → 上位机 921600 三通道发固件 → 按扇区擦 APP 区 → 完成后置回 Flag + 刷版本日期 → 按 APP 标志跳新固件", "source": "IMU/GD32F470/507-升级进不去与Flash假成功双根因修复报告.md" }
+      ],
+      "chips": [
+        { "item": "GD32F470ZGT6（1MB Flash 单 Bank 12 扇区，非均匀扇区 4×16KB + 64KB + 7×128KB，最小擦除粒度 16KB，晶振 25MHz / 主频 200MHz）", "source": "IMU/GD32F470/GD32F470串口Bootloader非均匀扇区分区设计与跳转失败修复报告.md" },
+        { "item": "固件工程 GD32F4xxMCU（分支 feature/IMUProject）+ GD32F4xx_Loader（分支 feature/upgrade，内嵌 bsp_loader 子仓库），服务产品 507", "source": "IMU/GD32F470/Readme.md" }
+      ],
+      "commands": [
+        { "item": "AT/HEX 指令框架继承共用协议层（0x0603 查询信息等）；0604 升级指令：ACK → 参数强制落盘 → 置 AppToLoaderFlag=0x01（0x08008000，重算 CRC8 擦 sector2 整区写回）→ 复位进常驻待升级", "source": "IMU/GD32F470/507-升级进不去与Flash假成功双根因修复报告.md" },
+        { "item": "HEX 0x0012 PPS 开关/模式查询设置；0x0013 PPS 报文推送（Timestamp=校准时间/PPSStatus/PPSMode/日历时间，周期订阅+触发双入口）", "source": "IMU/GD32F470/507-PPS输入捕获功能接入报告.md" },
+        { "item": "AT+PUSH4K=ON/OFF/?（4kHz 推送开关，ON 校验已配置波特率 ≥2M，921600 装 40B 帧必然失败前置拦截）；配合 AT+BAUD=2000000（重启生效）", "source": "IMU/GD32F470/507-串口推送带宽预算与4kHz高帧率推送设计分析.md" },
+        { "item": "卡 Loader 诊断：AT+FLASHINFO? 看 AppExist → 查 APP hex 首行链接地址是否等于 APP_START → 查旧 BootCount=3 残留（升级完成指令 CMD 0x05 可清）", "source": "IMU/GD32F470/GD32F470串口Bootloader非均匀扇区分区设计与跳转失败修复报告.md" }
+      ],
+      "issues": [
+        { "item": "0x0603 指令回复静默丢帧（发送条件链只有 351/303_333/335/506 四分支，507 不在链中，最后发送调用为空操作）→ 发送链并列加 #elif BSP_507_PROJECT 分支 + 0603 版本字节 guard；教训：新增产品宏后凡 #if 产品A || 产品B 条件链都要排查「漏我」", "source": "IMU/GD32F470/507-APP工程接入与指令参数存储升级链路报告.md" },
+        { "item": "Loader 跳转失败永留待升级（GD32F470 分支缺失落入 1KB 页擦除占位配置，参数区 0x08004000 与 APP 基址 0x08006000 在 F4 上同驻扇区1，整扇区擦除连 APP 向量表一起毁，BootCount 3 次永久待升级）→ v3 布局元数据独立扇区 + APP_END 上界固件总长校验 + 换基址三处同步（VTOR/IROM1/--ro-base）", "source": "IMU/GD32F470/GD32F470串口Bootloader非均匀扇区分区设计与跳转失败修复报告.md" },
+        { "item": "升级进不去双根因：清 APP 存在标志进不了升级（loader 真实机制 = AppToLoaderFlag==0x01 常驻待升级，清标志反被拒绝跳转卡死 loader）+ FMC 未解锁致全部 Flash 写/擦假成功（参数存储实际从未落盘）→ 0604 改置 Flag（读出→改→重算 CRC8→擦 sector2→24B 整区写回）+ drv_flash.c 三入口补 Unlock/Lock；教训：跨仓库接口必须对读对方判断代码", "source": "IMU/GD32F470/507-升级进不去与Flash假成功双根因修复报告.md" },
+        { "item": "推送时间戳「过于完美」恒 +20000µs 无抖动（算法链摘除后过渡方案 SysTick 每拍固定累加名义 1ms，粒度钳 1ms 不携带真实时刻）→ DWT 实测 us 时基源注册（回绕安全差分/预热基准/禁重复清 CYCCNT；dwt.h 冻结符号差异，照抄旧平台段会链接失败）", "source": "IMU/GD32F470/507-推送时间戳DWT实测us时基修复报告.md" },
+        { "item": "参数保存每次擦 128KB 扇区 CPU 停顿约 1~2s（中断与推送冻结，期间高速数据流入可能溢出 1024B 接收队列）→ 低频操作可接受，属需知悉约束", "source": "IMU/GD32F470/507-APP工程接入与指令参数存储升级链路报告.md" }
+      ],
+      "docs": ["IMU/GD32F470/Readme.md", "IMU/GD32F470/GD32F470串口Bootloader非均匀扇区分区设计与跳转失败修复报告.md", "IMU/GD32F470/507-APP工程接入与指令参数存储升级链路报告.md", "IMU/GD32F470/507-推送时间戳DWT实测us时基修复报告.md", "IMU/GD32F470/507-PPS输入捕获功能接入报告.md", "IMU/GD32F470/507-升级进不去与Flash假成功双根因修复报告.md", "IMU/GD32F470/507-串口推送带宽预算与4kHz高帧率推送设计分析.md", "IMU/Readme.md"],
+      "note": "507 初期暂无算法计算（传感器+算法库不初始化，推送数据内容为 0），指令/配置/推送框架先行；AT+PUSH4K 已编译通过尚未实机验证，921600 专用精简帧格式三选一未定稿；NMEA 串口（GNSS 语句，配 bsp_gps）未从 F1 移植。",
+      "updated": "2026-11-27"
     },
     {
       "id": "Linux-UartTestVerifDemo",
