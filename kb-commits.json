@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "780567ba"
+  "content_head": "912606e0"
  },
  "commits": [
+  {
+   "sha": "912606e0",
+   "date": "2026-11-26 06:22",
+   "msg": "docs: 知识库网页检索修复——查询侧归一化支持 snake_case 标识符(KNOWLEDGE-105 返工)"
+  },
   {
    "sha": "780567ba",
    "date": "2026-11-26 00:09",
@@ -147,11 +152,6 @@
    "sha": "12d5cee3",
    "date": "2026-11-21 14:25",
    "msg": "merge: 合入 T1 项目卡片数据落库（KNOWLEDGE-11）"
-  },
-  {
-   "sha": "1ccf7a39",
-   "date": "2026-11-21 12:15",
-   "msg": "整理：索引登记同步本轮 share-hub 更新（KNOWLEDGE-63）"
   }
  ]
 }
