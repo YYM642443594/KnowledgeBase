@@ -1,7 +1,7 @@
 ---
 title: Linux 常用机脚本
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-11-20
 tags: [Linux, 环境配置]
 source: 原创
 ---
