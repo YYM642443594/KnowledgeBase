@@ -1,8 +1,13 @@
 {
  "_meta": {
-  "content_head": "912606e0"
+  "content_head": "1007b86f"
  },
  "commits": [
+  {
+   "sha": "1007b86f",
+   "date": "2026-11-28 06:19",
+   "msg": "修正：506高频推送AT指令排查报告两处跨仓库死链改为WorkRecord来源标注（KNOWLEDGE-125 评审返工"
+  },
   {
    "sha": "912606e0",
    "date": "2026-11-26 06:22",
@@ -147,11 +152,6 @@
    "sha": "f99bdbdf",
    "date": "2026-11-21 14:27",
    "msg": "merge: 合入 T2 查看器「项目总览」实现（KNOWLEDGE-12）"
-  },
-  {
-   "sha": "12d5cee3",
-   "date": "2026-11-21 14:25",
-   "msg": "merge: 合入 T1 项目卡片数据落库（KNOWLEDGE-11）"
   }
  ]
 }
