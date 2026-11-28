@@ -21,7 +21,7 @@ HEAD_OVERRIDE = None
 # dir: single directory name (str), or a tuple of names for a multi-root section.
 SECTIONS = [
     ("esp",    "ESP",           "📡", "#4f8cff", "ESP32 / ESP32-CAM / ESP8266 三个芯片平台的固件工程知识：透传、网页终端、视频监控、五云协议、踩坑记录"),
-    ("imu",    "IMU",           "🧭", "#3fb27f", "GD32F103 / GD32F303 两个 MCU 平台的 IMU 固件知识：串口丢字节、参数页迁移、指令集、PPS 功能"),
+    ("imu",    "IMU",           "🧭", "#3fb27f", "GD32F103 / GD32F303 / GD32F470 / GD32F450 四个 MCU 平台的 IMU 固件知识：串口丢字节、参数页迁移、指令集、标定、PPS 功能、高频推送，含 Linux 串口验证工程"),
     ("stm32",  "STM32",         "🔧", "#5a9bd4", "STM32_F10x 工程知识：MAX7219 点阵显示、四层改三层架构重构、跨仓库工程架构规范"),
     ("qt",     "QT-Tools",      "🖥", "#e2a03f", "志翔 IMU 上位机（Qt 6 / QML）：Hex 指令、蓝牙、波形与页面性能优化、协议开发规范"),
     ("linux",  "Linux-Scripts", "🐧", "#e05c5c", "常用机环境脚本：Claude Code / OpenClaw 安装配置、FTP 服务、硬盘挂载、依赖清理、share-hub 公网下载站部署与运维（Tailscale Funnel）"),
