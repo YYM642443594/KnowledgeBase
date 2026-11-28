@@ -1,7 +1,7 @@
 ---
 title: IMU 知识库
 created: 2026-10-23
-updated: 2026-11-23
+updated: 2026-11-28
 tags: [IMU, GD32, 嵌入式]
 source: 原创
 ---
@@ -12,6 +12,7 @@ source: 原创
 > 产品归属记录在各 MCU 目录 Readme 中；所有 IMU 共用本知识库。
 > 2026-11-13 新增：GD32F303 平台并入 506 工程（GD32F303MCU，产品 506/硬件 B06），同目录双工程共存，详见该目录 Readme。
 > 2026-11-23 新增：GD32F470ZGT6 平台（工程 GD32F4xxMCU + GD32F4xx_Loader 升级框架），详见该目录 Readme。
+> 2026-11-28 新增：GD32F450 平台并入 501 工程（GD32F4xxMCU，分支 `feature/501Project`，GD32F450VGH6），详见该目录 Readme。
 
 ## MCU 目录与工程映射
 
@@ -19,7 +20,8 @@ source: 原创
 |------------------|----------|-----------|----------|
 | [GD32F103/](GD32F103/) | IMU_103_303_333 | Cortex-M3 @ 108MHz（量产 Loader 布局实测 GD32F103T8） | 303、333 |
 | [GD32F303/](GD32F303/) | IMU_303_351；GD32F303MCU（506Custom，子仓 BSP_IMU `develop` + 主仓 `feature/506Custom`） | Cortex-M4 @ 120MHz（351:GD32F303CB / 506:GD32F303CGT6） | 351、506 |
-| [GD32F470/](GD32F470/) | GD32F4xxMCU（BSP_501_PROJECT，分支 `feature/IMUProject`）+ GD32F4xx_Loader（升级框架，分支 `feature/upgrade`） | Cortex-M4 @ 200MHz（GD32F470ZGT6，1MB Flash 非均匀扇区） | 新平台 |
+| [GD32F450/](GD32F450/) | GD32F4xxMCU（BSP_501_PROJECT，分支 `feature/501Project`，子仓 BSP_IMU `develop`） | Cortex-M4 @ 200MHz（GD32F450VGH6，1MB Flash 非均匀扇区） | 501 |
+| [GD32F470/](GD32F470/) | GD32F4xxMCU（BSP_507_PROJECT，分支 `feature/IMUProject`）+ GD32F4xx_Loader（升级框架，分支 `feature/upgrade`） | Cortex-M4 @ 200MHz（GD32F470ZGT6，1MB Flash 非均匀扇区） | 507 |
 
 > 工程名规则解读：`IMU_{MCU}_{产品...}`。新工程 = 新 MCU 平台时，在映射表登记并新建同名目录；同平台新增产品只更新对应目录 Readme 的「服务产品」，不新建目录。
 
@@ -30,7 +32,8 @@ IMU/
 ├── Readme.md      ← 本索引（工程映射、文档索引、知识链、归档规则）
 ├── GD32F103/      ← 工程 IMU_103_303_333（产品 303、333）
 ├── GD32F303/      ← 工程 IMU_303_351（产品 351）+ GD32F303MCU（产品 506/B06）
-├── GD32F470/      ← 工程 GD32F4xxMCU（BSP_501_PROJECT）+ GD32F4xx_Loader 升级框架
+├── GD32F450/      ← 工程 GD32F4xxMCU（BSP_501_PROJECT，分支 feature/501Project，产品 501）
+├── GD32F470/      ← 工程 GD32F4xxMCU（BSP_507_PROJECT）+ GD32F4xx_Loader 升级框架
 └── Linux-UartTestVerifDemo/ ← 上位机测试工具（Linux 串口验证程序 imu_test）
 ```
 
@@ -63,6 +66,8 @@ IMU/
 | GD32F470 | [507-推送时间戳DWT实测us时基修复报告](GD32F470/507-推送时间戳DWT实测us时基修复报告.md) | 名义 1ms 累加 vs DWT 实测增量根因、时基源注册契约（回绕安全差分/预热基准/禁重复清 CYCCNT）、dwt.h 冻结符号差异陷阱、验证方法 |
 | GD32F470 | [507-PPS输入捕获功能接入报告](GD32F470/507-PPS输入捕获功能接入报告.md) | PA2/EXTI2 捕获层+50ms 消抖（507 guard 零影响）、上电从配置恢复开关/模式、主循环时间同步消费校准值（未锁定等价无退化）、模式 1/2 功能矩阵、NMEA 串口未移植边界与实机验证清单 |
 | GD32F470 | [507-升级进不去与Flash假成功双根因修复报告](GD32F470/507-升级进不去与Flash假成功双根因修复报告.md) | 纠正前篇 0604 机制：清 APP 存在标志进不了升级（loader 真实逻辑=AppToLoaderFlag 置 1 常驻待升级）+FMC 未解锁致全部 Flash 写/擦假成功（参数存储连带无效）、FlashInf_S 24B 布局与 CRC8 整区重写、bin 产出配置修正、跨仓库接口对读代码/假成功 API/IDE 缓冲回写教训 |
+| GD32F450 | [Readme（平台说明）](GD32F450/Readme.md) | GD32F4xxMCU `feature/501Project` 工程映射、Flash 分区速查（sector7 标定参数区）、单位域与 CAN 能力、提交履历 |
+| GD32F450 | [501-标定功能参照335实现报告](GD32F450/501-标定功能参照335实现报告.md) | 8 类标定指令与协议帧集、122 参数 sector7 存储与温控 PID、温补 98 浮点全链路对齐核查（98 vs 24 之辨）、CAN 覆盖审计、上板验证清单 |
 | Linux-UartTestVerifDemo | [模块文档 01~07](Linux-UartTestVerifDemo/Doc/01-架构与线程模型.md) | 三层架构与线程模型 / termios 驱动 / SPSC 无锁队列 / 帧同步+CRC16+统计 / AT·HEX 验证器（混流容错、自动还原、压力模式）/ 构建运行与排障 |
 
 ## 跨平台知识链（串口丢字节，全平台通用）
